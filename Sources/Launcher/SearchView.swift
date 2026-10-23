@@ -182,6 +182,7 @@ struct ResultRow: View {
         case .clipboardHistory: Image(systemName: "list.clipboard")
         case .usageStats: Image(systemName: "chart.bar")
         case .calculator: Image(systemName: "plus.forwardslash.minus")
+        case .quit: Image(systemName: "power")
         case .calculation: Image(systemName: "equal.square")
         case .pastCalculation: Image(systemName: "clock.arrow.circlepath")
         case .clipboard(let item): Image(systemName: item.kind.symbolName)

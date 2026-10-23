@@ -45,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             case kVK_LeftArrow where isPlainArrow, kVK_RightArrow where isPlainArrow:
                 guard model.moveColumn(by: Int(event.keyCode) == kVK_LeftArrow ? -1 : 1) else { return event }
             case kVK_ANSI_P where modifiers == [.command, .shift]: model.togglePinnedSelection()
+            case kVK_ANSI_Q where modifiers == [.command]: NSApp.terminate(nil)
             default: return event
             }
             return nil

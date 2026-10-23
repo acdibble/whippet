@@ -5,6 +5,7 @@ enum LauncherResult: Identifiable, Hashable {
     case calculation(Calculation)
     case pastCalculation(CalculationRecord)
     case calculator
+    case quit
     case clipboardHistory
     case usageStats
     case app(AppEntry)
@@ -15,6 +16,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation: "calculation"
         case .pastCalculation(let record): "calculation:\(record.id)"
         case .calculator: "command:calculator"
+        case .quit: "command:quit"
         case .clipboardHistory: "command:clipboard-history"
         case .usageStats: "command:usage-stats"
         case .app(let app): "app:\(app.url.path)"
@@ -27,6 +29,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation(let calculation): calculation.answer
         case .pastCalculation(let record): "\(record.expression) = \(record.answer)"
         case .calculator: "Calculator"
+        case .quit: "Quit Launcher"
         case .clipboardHistory: "Clipboard History"
         case .usageStats: "Usage Stats"
         case .app(let app): app.name
@@ -38,7 +41,7 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation: "Calculator"
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
-        case .calculator, .clipboardHistory, .usageStats: "Command"
+        case .calculator, .clipboardHistory, .usageStats, .quit: "Command"
         case .app: "Application"
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
         }
@@ -53,6 +56,7 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation, .pastCalculation: "Copy Answer"
         case .calculator, .clipboardHistory, .usageStats: "Open Command"
+        case .quit: "Quit"
         case .app: "Open Application"
         case .clipboard: "Copy to Clipboard"
         }
@@ -100,7 +104,7 @@ final class LauncherModel {
             if let calculation = Calculator.evaluate(query) {
                 return calculatorResults(calculation)
             }
-            let commands: [LauncherResult] = [.calculator, .clipboardHistory, .usageStats]
+            let commands: [LauncherResult] = [.calculator, .clipboardHistory, .usageStats, .quit]
             return ranked(commands + appIndex.apps.map(LauncherResult.app))
         case .calculator:
             return calculatorResults(Calculator.evaluate(query))
@@ -211,6 +215,8 @@ final class LauncherModel {
         case .calculator:
             mode = .calculator
             query = ""
+        case .quit:
+            NSApp.terminate(nil)
         case .clipboardHistory:
             mode = .clipboard
             query = ""
