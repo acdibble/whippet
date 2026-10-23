@@ -8,6 +8,10 @@ enum LauncherResult: Identifiable, Hashable {
     case settings
     case quit
     case clipboardHistory
+    case caffeinate
+    case caffeinateFor
+    case decaffeinate(until: String)
+    case caffeinateMenuBar(isShown: Bool)
     case app(AppEntry)
     case clipboard(ClipboardItem)
 
@@ -19,6 +23,10 @@ enum LauncherResult: Identifiable, Hashable {
         case .settings: "command:settings"
         case .quit: "command:quit"
         case .clipboardHistory: "command:clipboard-history"
+        case .caffeinate: "command:caffeinate"
+        case .caffeinateFor: "command:caffeinate-for"
+        case .decaffeinate: "command:decaffeinate"
+        case .caffeinateMenuBar: "command:caffeinate-menu-bar"
         case .app(let app): "app:\(app.url.path)"
         case .clipboard(let item): "clipboard:\(item.id)"
         }
@@ -32,6 +40,11 @@ enum LauncherResult: Identifiable, Hashable {
         case .settings: String(localized: "Settings")
         case .quit: String(localized: "Quit Whippet")
         case .clipboardHistory: String(localized: "Clipboard History")
+        case .caffeinate: String(localized: "Caffeinate")
+        case .caffeinateFor: String(localized: "Caffeinate for…")
+        case .decaffeinate: String(localized: "Decaffeinate")
+        case .caffeinateMenuBar(let isShown):
+            isShown ? String(localized: "Hide Caffeinate in Menu Bar") : String(localized: "Show Caffeinate in Menu Bar")
         case .app(let app): app.name
         case .clipboard(let item): item.title
         }
@@ -42,6 +55,9 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
         case .calculator, .clipboardHistory, .settings, .quit: String(localized: "Command")
+        case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
+        case .caffeinateMenuBar: String(localized: "Command")
+        case .decaffeinate(let until): until
         case .app: String(localized: "Application")
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
         }
@@ -74,6 +90,8 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation, .pastCalculation: String(localized: "Copy Answer")
         case .calculator, .clipboardHistory, .settings: String(localized: "Open Command")
+        case .caffeinate, .decaffeinate, .caffeinateMenuBar: String(localized: "Run Command")
+        case .caffeinateFor: String(localized: "Choose Duration")
         case .quit: String(localized: "Quit")
         case .app: String(localized: "Open Application")
         case .clipboard: String(localized: "Copy to Clipboard")
@@ -166,8 +184,15 @@ final class LauncherModel {
 
     private let appIndex: AppIndex
     private let clipboard: ClipboardHistory
+    private let caffeine: Caffeine
 
-    init(appIndex: AppIndex, clipboard: ClipboardHistory) {
+    /// True while the Hours, Minutes and Seconds fields of "Caffeinate for…" are shown beside the search field.
+    private(set) var isEnteringDuration = false
+    /// Hours, minutes and seconds as typed into those fields.
+    var durationFields = ["", "", ""]
+
+    init(appIndex: AppIndex, clipboard: ClipboardHistory, caffeine: Caffeine) {
+        self.caffeine = caffeine
         self.appIndex = appIndex
         self.clipboard = clipboard
     }
@@ -183,6 +208,9 @@ final class LauncherModel {
                 return calculatorResults(calculation)
             }
             let commands: [LauncherResult] = [.calculator, .clipboardHistory, .settings, .quit]
+                + [.caffeinate, .caffeinateFor]
+                + (caffeine.isActive ? [.decaffeinate(until: caffeine.untilDescription)] : [])
+                + [.caffeinateMenuBar(isShown: caffeine.showsInMenuBar)]
             return ranked(commands + appIndex.apps.map(LauncherResult.app))
         case .calculator:
             return calculatorResults(Calculator.evaluate(query))
@@ -268,6 +296,7 @@ final class LauncherModel {
         case (.copyPath, .app(let app)):
             clipboard.copy(text: app.url.path)
             onDismiss()
+            Toast.shared.show(String(localized: "Copied Path"), symbol: "link")
         case (.delete, .clipboard(let item)):
             clipboard.delete(item)
             selection = min(selection, max(results.count - 1, 0))
@@ -285,6 +314,7 @@ final class LauncherModel {
         mode = newMode
         query = ""
         clipboardKind = nil
+        isEnteringDuration = false
         resetSelection()
     }
 
@@ -299,6 +329,10 @@ final class LauncherModel {
 
     /// Runs the selected result. Clipboard items and answers are pasted into `targetApp`, or only copied when `copyOnly`.
     func activate(copyOnly: Bool = false) {
+        if isEnteringDuration {
+            startTimedCaffeinate()
+            return
+        }
         let results = results
         guard results.indices.contains(selection) else { return }
 
@@ -318,6 +352,22 @@ final class LauncherModel {
             open(.calculator)
         case .settings:
             onOpenSettings()
+        case .caffeinate:
+            caffeine.start(seconds: nil)
+            onDismiss()
+        case .caffeinateFor:
+            durationFields = ["", "", ""]
+            isEnteringDuration = true
+        case .caffeinateMenuBar(let isShown):
+            caffeine.showsInMenuBar = !isShown
+            onDismiss()
+            Toast.shared.show(
+                isShown ? String(localized: "Caffeinate hidden from menu bar") : String(localized: "Caffeinate shown in menu bar"),
+                symbol: "menubar.rectangle"
+            )
+        case .decaffeinate:
+            caffeine.stop()
+            onDismiss()
         case .quit:
             NSApp.terminate(nil)
         case .clipboardHistory:
@@ -332,6 +382,7 @@ final class LauncherModel {
     }
 
     func actionTitle(for result: LauncherResult) -> String {
+        if isEnteringDuration, case .caffeinateFor = result { return String(localized: "Caffeinate") }
         guard result.pastes, let name = targetApp?.localizedName else { return result.actionTitle }
         return String(localized: "Paste to \(name)")
     }
@@ -339,15 +390,38 @@ final class LauncherModel {
     /// Without Accessibility permission the item stays copied and macOS is asked to show its permission prompt.
     private func dismissAndPaste(copyOnly: Bool) {
         onDismiss()
-        if copyOnly || targetApp == nil { return }
-        if Paster.isTrusted {
+        if !copyOnly, targetApp != nil, Paster.isTrusted {
             Paster.pasteAfterPanelCloses()
             return
         }
-        Paster.requestTrust()
+        if !copyOnly, targetApp != nil {
+            Paster.requestTrust()
+        }
+        Toast.shared.show(String(localized: "Copied to Clipboard"), symbol: "doc.on.doc")
+    }
+
+    /// Starts "Caffeinate for…" with the typed duration; blank fields count as zero, and a zero or invalid duration beeps.
+    func startTimedCaffeinate() {
+        let parts = durationFields.map { $0.trimmingCharacters(in: .whitespaces) }
+        let values = parts.map { $0.isEmpty ? 0 : Int($0) }
+        guard values.allSatisfy({ ($0 ?? -1) >= 0 }) else {
+            NSSound.beep()
+            return
+        }
+        let seconds = zip(values.compactMap { $0 }, [3600, 60, 1]).reduce(0) { $0 + $1.0 * $1.1 }
+        guard seconds > 0 else {
+            NSSound.beep()
+            return
+        }
+        caffeine.start(seconds: seconds)
+        onDismiss()
     }
 
     func back() {
+        if isEnteringDuration {
+            isEnteringDuration = false
+            return
+        }
         if mode != .root {
             reset()
             return

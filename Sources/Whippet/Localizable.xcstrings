@@ -161,6 +161,106 @@
         }
       }
     },
+    "Awake until %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بیدار تا %@"
+          }
+        }
+      }
+    },
+    "Awake until turned off" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بیدار تا زمان خاموش کردن"
+          }
+        }
+      }
+    },
+    "Caffeinate" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بیدار نگه داشتن"
+          }
+        }
+      }
+    },
+    "Caffeinate for %lld Minutes" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بیدار نگه داشتن به مدت %lld دقیقه"
+          }
+        }
+      }
+    },
+    "Caffeinate for 1 Hour" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بیدار نگه داشتن به مدت ۱ ساعت"
+          }
+        }
+      }
+    },
+    "Caffeinate for 2 Hours" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بیدار نگه داشتن به مدت ۲ ساعت"
+          }
+        }
+      }
+    },
+    "Caffeinate for 30 Minutes" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بیدار نگه داشتن به مدت ۳۰ دقیقه"
+          }
+        }
+      }
+    },
+    "Caffeinate for…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بیدار نگه داشتن به مدت…"
+          }
+        }
+      }
+    },
+    "Caffeinate hidden from menu bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«بیدار نگه داشتن» از نوار منو پنهان شد"
+          }
+        }
+      }
+    },
+    "Caffeinate shown in menu bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«بیدار نگه داشتن» در نوار منو نمایش داده شد"
+          }
+        }
+      }
+    },
     "Calculations" : {
       "localizations" : {
         "fa" : {
@@ -197,6 +297,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "در حال بررسی حساب iCloud…"
+          }
+        }
+      }
+    },
+    "Choose Duration" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتخاب مدت"
           }
         }
       }
@@ -271,12 +381,32 @@
         }
       }
     },
+    "Copied Path" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسیر کپی شد"
+          }
+        }
+      }
+    },
     "Copied images and their recognized text" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تصاویر کپی‌شده و متن شناسایی‌شدهٔ آن‌ها"
+          }
+        }
+      }
+    },
+    "Copied to Clipboard" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در کلیپ‌بورد کپی شد"
           }
         }
       }
@@ -347,6 +477,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "پایگاه داده"
+          }
+        }
+      }
+    },
+    "Decaffeinate" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پایان بیدار نگه داشتن"
+          }
+        }
+      }
+    },
+    "Decaffeinated" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بیدار نگه داشتن پایان یافت"
           }
         }
       }
@@ -451,6 +601,16 @@
         }
       }
     },
+    "Hide Caffeinate in Menu Bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پنهان کردن «بیدار نگه داشتن» در نوار منو"
+          }
+        }
+      }
+    },
     "History" : {
       "localizations" : {
         "fa" : {
@@ -467,6 +627,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تاریخچه باز نشد، بنابراین چیزی برای همگام‌سازی وجود ندارد."
+          }
+        }
+      }
+    },
+    "Hours" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ساعت"
           }
         }
       }
@@ -541,6 +711,16 @@
         }
       }
     },
+    "Keep this Mac awake" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این Mac را بیدار نگه دار"
+          }
+        }
+      }
+    },
     "Language" : {
       "localizations" : {
         "fa" : {
@@ -587,6 +767,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حافظه"
+          }
+        }
+      }
+    },
+    "Minutes" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دقیقه"
           }
         }
       }
@@ -841,6 +1031,16 @@
         }
       }
     },
+    "Run Command" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجرای فرمان"
+          }
+        }
+      }
+    },
     "Search applications" : {
       "localizations" : {
         "fa" : {
@@ -857,6 +1057,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جست‌وجوی برنامه‌ها و فرمان‌ها"
+          }
+        }
+      }
+    },
+    "Seconds" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثانیه"
           }
         }
       }
@@ -887,6 +1097,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "میان‌برها"
+          }
+        }
+      }
+    },
+    "Show Caffeinate in Menu Bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمایش «بیدار نگه داشتن» در نوار منو"
           }
         }
       }

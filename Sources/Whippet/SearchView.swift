@@ -4,7 +4,12 @@ import SwiftUI
 /// The launcher shell. The search field stays mounted across every mode so it keeps keyboard focus when switching views.
 struct SearchView: View {
     @Bindable var model: LauncherModel
-    @FocusState private var isSearchFocused: Bool
+    @FocusState private var focus: Field?
+
+    private enum Field: Hashable {
+        case search
+        case duration(Int)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,8 +26,24 @@ struct SearchView: View {
                 TextField(placeholder, text: $model.query)
                     .textFieldStyle(.plain)
                     .font(.system(size: 20))
-                    .focused($isSearchFocused)
+                    .focused($focus, equals: .search)
+                    .fixedSize(horizontal: model.isEnteringDuration, vertical: false)
                     .onSubmit { model.activate() }
+
+                if model.isEnteringDuration {
+                    ForEach(Array(Self.durationPlaceholders.enumerated()), id: \.offset) { index, placeholder in
+                        TextField(placeholder, text: $model.durationFields[index])
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 15))
+                            .frame(width: 64)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
+                            .focused($focus, equals: .duration(index))
+                            .onSubmit { model.startTimedCaffeinate() }
+                    }
+                    Spacer()
+                }
 
                 if model.mode == .clipboard {
                     ClipboardKindMenu(model: model)
@@ -48,8 +69,17 @@ struct SearchView: View {
         .shadow(color: .black.opacity(0.3), radius: 20, y: 8)
         .padding(LauncherPanel.shadowInset)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .onAppear { isSearchFocused = true }
+        .onAppear { focus = .search }
+        .onChange(of: model.isEnteringDuration) { _, isEntering in
+            focus = isEntering ? .duration(0) : .search
+        }
     }
+
+    private static let durationPlaceholders = [
+        String(localized: "Hours"),
+        String(localized: "Minutes"),
+        String(localized: "Seconds"),
+    ]
 
     private var placeholder: String {
         switch model.mode {
@@ -175,6 +205,9 @@ struct ResultRow: View {
         case .calculator: Image(systemName: "plus.forwardslash.minus")
         case .settings: Image(systemName: "gearshape")
         case .quit: Image(systemName: "power")
+        case .caffeinate, .caffeinateFor: Image(systemName: "cup.and.heat.waves.fill")
+        case .caffeinateMenuBar: Image(systemName: "menubar.rectangle")
+        case .decaffeinate: Image(systemName: "cup.and.heat.waves")
         case .calculation: Image(systemName: "equal.square")
         case .pastCalculation: Image(systemName: "clock.arrow.circlepath")
         case .clipboard(let item): Image(systemName: item.kind.symbolName)
