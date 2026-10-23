@@ -95,11 +95,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Never shown, since an accessory app has no menu bar, but it is what gives windows their standard shortcuts.
     private func makeMainMenu() -> NSMenu {
+        let about = NSMenuItem(title: String(localized: "About Fetch"), action: #selector(showAboutFromMenu), keyEquivalent: "")
+        about.target = self
         let settings = NSMenuItem(title: String(localized: "Settings…"), action: #selector(showSettingsFromMenu), keyEquivalent: ",")
         settings.target = self
         let sections: [(String, [NSMenuItem])] = [
             ("Fetch", [
-                NSMenuItem(title: String(localized: "About Fetch"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""),
+                about,
                 .separator(),
                 settings,
                 .separator(),
@@ -135,6 +137,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
         item.keyEquivalentModifierMask = modifiers
         return item
+    }
+
+    @objc private func showAboutFromMenu() {
+        NSApp.showAboutPanel()
     }
 
     @objc private func showSettingsFromMenu() {

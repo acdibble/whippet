@@ -72,8 +72,7 @@ final class MenuBarItem: NSObject {
     }
 
     @objc private func showAbout() {
-        NSApp.activate()
-        NSApp.orderFrontStandardAboutPanel(nil)
+        NSApp.showAboutPanel()
     }
 
     @objc private func showSettings() {
@@ -86,5 +85,14 @@ final class MenuBarItem: NSObject {
 
     @objc private func quit() {
         NSApp.terminate(nil)
+    }
+}
+
+extension NSApplication {
+    /// The standard About panel titled with the full display name, Fetch Launcher, instead of the short bundle name.
+    func showAboutPanel() {
+        activate()
+        let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+        orderFrontStandardAboutPanel(options: name.map { [.applicationName: $0] } ?? [:])
     }
 }

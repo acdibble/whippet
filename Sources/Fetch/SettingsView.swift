@@ -216,6 +216,7 @@ private struct AboutPane: View {
     var body: some View {
         Form {
             Section {
+                LabeledContent("Developer", value: "Dibble Codes")
                 LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
                 LabeledContent("Data Folder") {
                     Button("Show in Finder") {
