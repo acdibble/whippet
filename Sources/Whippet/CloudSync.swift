@@ -44,9 +44,9 @@ final class CloudSync {
 
     @ObservationIgnored private let store: ClipboardStore?
     @ObservationIgnored private var engine: CKSyncEngine?
-    @ObservationIgnored private let container = CKContainer(identifier: "iCloud.com.acdibble.fetch")
+    @ObservationIgnored private let container = CKContainer(identifier: "iCloud.com.acdibble.whippet")
 
-    private static let zoneID = CKRecordZone.ID(zoneName: "Fetch")
+    private static let zoneID = CKRecordZone.ID(zoneName: "Whippet")
     private static let clipboardType = "ClipboardItem"
     private static let calculationType = "Calculation"
 
@@ -133,6 +133,8 @@ final class CloudSync {
             let engine = CKSyncEngine(configuration)
             self.engine = engine
             if savedState == nil {
+                // A first sync with this container: sync markers left over from another container or account are stale.
+                try? store.forgetAllSyncState()
                 engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: Self.zoneID))])
             }
             enqueueUnsyncedRecords(in: store)
@@ -173,7 +175,7 @@ final class CloudSync {
     // MARK: - Saved engine state
 
     private var stateURL: URL {
-        ClipboardStore.defaultDirectory.appending(path: "cloud-sync-state.json")
+        ClipboardStore.defaultDirectory.appending(path: "cloud-sync-state-\(container.containerIdentifier ?? "default").json")
     }
 
     private func loadSavedState() -> CKSyncEngine.State.Serialization? {

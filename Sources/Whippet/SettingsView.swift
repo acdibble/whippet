@@ -19,13 +19,13 @@ final class SettingsWindow {
         self.window = window
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
-        // While Fetch is not the active app, ordering front only reorders its own windows, so raise it above other apps too.
+        // While Whippet is not the active app, ordering front only reorders its own windows, so raise it above other apps too.
         window.orderFrontRegardless()
     }
 
     /// A full-size, transparent-titlebar window with a toolbar, which lets the split view's sidebar run under the
     /// traffic lights as a floating glass panel. It is a non-activating panel so it can take keyboard focus even when
-    /// macOS refuses to activate Fetch, which it does since macOS 14 when the request comes from the search panel.
+    /// macOS refuses to activate Whippet, which it does since macOS 14 when the request comes from the search panel.
     private func makeWindow() -> NSWindow {
         let window = SettingsPanel(
             contentRect: NSRect(x: 0, y: 0, width: 760, height: 520),
@@ -147,7 +147,7 @@ private struct GeneralPane: View {
         Form {
             Section {
                 Toggle("Open at Login", isOn: Binding(get: { launchesAtLogin }, set: setLaunchAtLogin))
-                LabeledContent("Fetch Hotkey") {
+                LabeledContent("Whippet Hotkey") {
                     KeyChip(text: "⌥ Space")
                 }
             }
@@ -223,7 +223,7 @@ private struct CloudSyncPane: View {
             }
         }
         .toggleStyle(.switch)
-        .confirmationDialog("Delete Fetch data from iCloud?", isPresented: $isConfirmingDelete) {
+        .confirmationDialog("Delete Whippet data from iCloud?", isPresented: $isConfirmingDelete) {
             Button("Delete iCloud Data", role: .destructive) {
                 Task { await cloudSync.deleteCloudData() }
             }

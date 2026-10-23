@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 import Carbon.HIToolbox
 
-/// Pastes into the frontmost app by sending ⌘V, which macOS only allows once Fetch has Accessibility permission.
+/// Pastes into the frontmost app by sending ⌘V, which macOS only allows once Whippet has Accessibility permission.
 enum Paster {
     static var isTrusted: Bool {
         AXIsProcessTrusted()

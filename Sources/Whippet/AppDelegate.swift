@@ -99,17 +99,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Never shown, since an accessory app has no menu bar, but it is what gives windows their standard shortcuts.
     private func makeMainMenu() -> NSMenu {
-        let about = NSMenuItem(title: String(localized: "About Fetch"), action: #selector(showAboutFromMenu), keyEquivalent: "")
+        let about = NSMenuItem(title: String(localized: "About Whippet"), action: #selector(showAboutFromMenu), keyEquivalent: "")
         about.target = self
         let settings = NSMenuItem(title: String(localized: "Settings…"), action: #selector(showSettingsFromMenu), keyEquivalent: ",")
         settings.target = self
         let sections: [(String, [NSMenuItem])] = [
-            ("Fetch", [
+            ("Whippet", [
                 about,
                 .separator(),
                 settings,
                 .separator(),
-                NSMenuItem(title: String(localized: "Quit Fetch"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"),
+                NSMenuItem(title: String(localized: "Quit Whippet"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"),
             ]),
             (String(localized: "Edit"), [
                 NSMenuItem(title: String(localized: "Undo"), action: Selector(("undo:")), keyEquivalent: "z"),
@@ -151,7 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         showSettings()
     }
 
-    /// The main menu only handles shortcuts while Fetch is active, and the Settings window can have focus without that.
+    /// The main menu only handles shortcuts while Whippet is active, and the Settings window can have focus without that.
     private func handleSettingsKey(_ event: NSEvent, modifiers: NSEvent.ModifierFlags) -> Bool {
         guard modifiers == [.command] else { return false }
         switch Int(event.keyCode) {

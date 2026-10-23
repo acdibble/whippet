@@ -12,52 +12,61 @@ final class MenuBarItem: NSObject {
         self.onSettings = onSettings
         super.init()
 
-        statusItem.button?.image = Self.boneImage()
-        statusItem.button?.setAccessibilityLabel(String(localized: "Fetch"))
+        statusItem.button?.image = Self.whippetImage()
+        statusItem.button?.setAccessibilityLabel(String(localized: "Whippet"))
 
-        let openItem = menuItem(String(localized: "Open Fetch"), symbol: "magnifyingglass", action: #selector(open), key: " ")
+        let openItem = menuItem(String(localized: "Open Whippet"), symbol: "magnifyingglass", action: #selector(open), key: " ")
         openItem.keyEquivalentModifierMask = .option
 
         let menu = NSMenu()
         menu.items = [
             openItem,
             .separator(),
-            menuItem(String(localized: "About Fetch"), symbol: "info.circle", action: #selector(showAbout)),
+            menuItem(String(localized: "About Whippet"), symbol: "info.circle", action: #selector(showAbout)),
             menuItem(String(localized: "Settings…"), symbol: "gearshape", action: #selector(showSettings), key: ","),
             .separator(),
             menuItem(String(localized: "Show Data Folder"), symbol: "folder", action: #selector(showDataFolder)),
             .separator(),
-            menuItem(String(localized: "Quit Fetch"), action: #selector(quit), key: "q"),
+            menuItem(String(localized: "Quit Whippet"), action: #selector(quit), key: "q"),
         ]
         statusItem.menu = menu
     }
 
-    /// A dog bone outline drawn as a template image, since SF Symbols has no bone; macOS tints it to match the menu bar.
-    private static func boneImage() -> NSImage {
+    /// A whippet's head in profile, drawn as a template image since SF Symbols has no whippet; macOS tints it to match the menu bar.
+    private static func whippetImage() -> NSImage {
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
             guard let context = NSGraphicsContext.current?.cgContext else { return false }
-            context.addPath(bonePath())
+            context.addPath(headPath())
             context.setLineWidth(1.4)
             context.setLineJoin(.round)
+            context.setLineCap(.round)
             context.setStrokeColor(NSColor.black.cgColor)
             context.strokePath()
+            context.setFillColor(NSColor.black.cgColor)
+            context.fillEllipse(in: CGRect(x: 7.1, y: 8.6, width: 1.3, height: 1.3))
             return true
         }
         image.isTemplate = true
         return image
     }
 
-    /// Two knobs at each end of a shaft, merged into one outline and turned 45 degrees within the 18-point canvas.
-    private static func bonePath() -> CGPath {
-        let radius: CGFloat = 1.8
-        let knobs: [(x: CGFloat, y: CGFloat)] = [(3.6, 7.4), (3.6, 10.6), (14.4, 7.4), (14.4, 10.6)]
-        let shaft = CGPath(rect: CGRect(x: 3.6, y: 7.6, width: 10.8, height: 2.8), transform: nil)
-        let outline = knobs.reduce(shaft) { path, knob in
-            let knobRect = CGRect(x: knob.x - radius, y: knob.y - radius, width: radius * 2, height: radius * 2)
-            return path.union(CGPath(ellipseIn: knobRect, transform: nil))
-        }
-        var rotation = CGAffineTransform(translationX: 9, y: 9).rotated(by: .pi / 4).translatedBy(x: -9, y: -9)
-        return outline.copy(using: &rotation) ?? outline
+    /// Facing left in an 18-point canvas: the head and neck outline, the underside of the jaw and neck, and a rose ear.
+    private static func headPath() -> CGPath {
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: 1.7, y: 7.4))
+        path.addCurve(to: CGPoint(x: 1.5, y: 9.0), control1: CGPoint(x: 1.0, y: 7.7), control2: CGPoint(x: 1.0, y: 8.7))
+        path.addCurve(to: CGPoint(x: 6.8, y: 10.6), control1: CGPoint(x: 3.4, y: 9.6), control2: CGPoint(x: 5.4, y: 10.0))
+        path.addCurve(to: CGPoint(x: 12.0, y: 12.0), control1: CGPoint(x: 8.2, y: 12.0), control2: CGPoint(x: 10.6, y: 12.6))
+        path.addCurve(to: CGPoint(x: 15.8, y: 3.0), control1: CGPoint(x: 14.2, y: 10.4), control2: CGPoint(x: 15.4, y: 6.6))
+
+        path.move(to: CGPoint(x: 1.7, y: 7.4))
+        path.addCurve(to: CGPoint(x: 8.8, y: 6.2), control1: CGPoint(x: 4.0, y: 6.8), control2: CGPoint(x: 6.6, y: 6.4))
+        path.addCurve(to: CGPoint(x: 10.8, y: 3.0), control1: CGPoint(x: 10.0, y: 5.4), control2: CGPoint(x: 10.6, y: 4.2))
+
+        path.move(to: CGPoint(x: 10.0, y: 12.2))
+        path.addCurve(to: CGPoint(x: 14.6, y: 13.6), control1: CGPoint(x: 11.4, y: 14.0), control2: CGPoint(x: 13.4, y: 14.4))
+        path.addCurve(to: CGPoint(x: 12.6, y: 11.2), control1: CGPoint(x: 14.4, y: 12.6), control2: CGPoint(x: 13.4, y: 11.8))
+        return path
     }
 
     private func menuItem(_ title: String, symbol: String? = nil, action: Selector, key: String = "") -> NSMenuItem {
@@ -89,7 +98,7 @@ final class MenuBarItem: NSObject {
 }
 
 extension NSApplication {
-    /// The standard About panel titled with the full display name, Fetch Launcher, instead of the short bundle name.
+    /// The standard About panel titled with the full display name instead of the short bundle name.
     func showAboutPanel() {
         activate()
         let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String

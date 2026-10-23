@@ -101,7 +101,7 @@ struct ClipboardUsage {
 /// Clipboard history in a SQLite database in Application Support, with an FTS5 index over copied and recognized text.
 /// Images live beside it as PNG files named by their content hash.
 final class ClipboardStore: Sendable {
-    static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Fetch")
+    static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet")
 
     let directory: URL
     let imagesDirectory: URL
@@ -438,11 +438,14 @@ final class ClipboardStore: Sendable {
         }
     }
 
-    /// Moves data saved under the app's previous name, Launcher, so history survives the rename.
+    /// Moves data saved under the app's previous names, Fetch and before that Launcher, so history survives the renames.
     private static func moveLegacyDirectory() {
-        let legacy = URL.applicationSupportDirectory.appending(path: "Launcher")
         let fileManager = FileManager.default
-        guard fileManager.fileExists(atPath: legacy.path), !fileManager.fileExists(atPath: defaultDirectory.path) else { return }
+        guard !fileManager.fileExists(atPath: defaultDirectory.path) else { return }
+        let legacy = ["Fetch", "Launcher"]
+            .map { URL.applicationSupportDirectory.appending(path: $0) }
+            .first { fileManager.fileExists(atPath: $0.path) }
+        guard let legacy else { return }
         try? fileManager.moveItem(at: legacy, to: defaultDirectory)
     }
 

@@ -1,4 +1,4 @@
-name: Fetch
+name: Whippet
 
 options:
   bundleIdPrefix: com.acdibble
@@ -19,33 +19,33 @@ packages:
     from: 7.0.0
 
 targets:
-  Fetch:
+  Whippet:
     type: application
     platform: macOS
     sources:
-      - Sources/Fetch
+      - Sources/Whippet
     dependencies:
       - package: GRDB
     info:
       path: Resources/Info.plist
       properties:
         LSUIElement: true
-        CFBundleName: Fetch
-        CFBundleDisplayName: Fetch Launcher
+        CFBundleName: Whippet
+        CFBundleDisplayName: Whippet
         NSHumanReadableCopyright: "© 2026 Dibble Codes"
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
     entitlements:
-      path: Resources/Fetch.entitlements
+      path: Resources/Whippet.entitlements
       properties:
         com.apple.security.app-sandbox: false
         com.apple.developer.icloud-services: [CloudKit]
-        com.apple.developer.icloud-container-identifiers: [iCloud.com.acdibble.fetch]
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.acdibble.whippet]
         com.apple.developer.aps-environment: development
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.acdibble.fetch
-        PRODUCT_NAME: Fetch Launcher
+        PRODUCT_BUNDLE_IDENTIFIER: com.acdibble.whippet
+        PRODUCT_NAME: Whippet
         DEVELOPMENT_TEAM: 5G59X57VMZ
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
