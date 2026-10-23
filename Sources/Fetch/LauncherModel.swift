@@ -29,7 +29,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation(let calculation): calculation.answer
         case .pastCalculation(let record): "\(record.expression) = \(record.answer)"
         case .calculator: String(localized: "Calculator")
-        case .quit: String(localized: "Quit Launcher")
+        case .quit: String(localized: "Quit Fetch")
         case .clipboardHistory: String(localized: "Clipboard History")
         case .usageStats: String(localized: "Usage Stats")
         case .app(let app): app.name

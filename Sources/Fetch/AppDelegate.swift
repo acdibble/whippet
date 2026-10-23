@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var model: LauncherModel!
     private var panel: LauncherPanel!
     private var hotKey: HotKey?
+    private var menuBarItem: MenuBarItem?
 
     static func main() {
         let app = NSApplication.shared
@@ -27,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         panel = LauncherPanel(rootView: SearchView(model: model))
         panel.delegate = self
+        menuBarItem = MenuBarItem { [weak self] in self?.showPanel() }
 
         hotKey = HotKey(keyCode: UInt32(kVK_Space), modifiers: UInt32(optionKey)) { [weak self] in
             self?.togglePanel()
