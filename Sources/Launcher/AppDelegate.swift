@@ -37,10 +37,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, event.window === panel else { return event }
             let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            let isPlainArrow = modifiers.isDisjoint(with: [.shift, .command, .option, .control])
             switch Int(event.keyCode) {
             case kVK_Escape: model.back()
             case kVK_UpArrow: model.moveSelection(by: -1)
             case kVK_DownArrow: model.moveSelection(by: 1)
+            case kVK_LeftArrow where isPlainArrow, kVK_RightArrow where isPlainArrow:
+                guard model.moveColumn(by: Int(event.keyCode) == kVK_LeftArrow ? -1 : 1) else { return event }
             case kVK_ANSI_P where modifiers == [.command, .shift]: model.togglePinnedSelection()
             default: return event
             }

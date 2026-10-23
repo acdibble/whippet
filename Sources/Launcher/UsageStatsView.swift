@@ -41,6 +41,7 @@ struct UsageStatsView: View {
         return [InformationRow("Items", total.formatted())]
             + ClipboardKind.allCases.map { InformationRow($0.pluralTitle, (usage.counts[$0] ?? 0).formatted()) }
             + [InformationRow("Images awaiting text recognition", usage.imagesAwaitingRecognition.formatted())]
+            + [InformationRow("Calculations", usage.calculations.formatted())]
     }
 
     private func appRows(_ usage: ClipboardUsage) -> [InformationRow] {

@@ -33,7 +33,7 @@ struct SearchView: View {
 
             if model.isExpanded {
                 switch model.mode {
-                case .root: RootResults(model: model)
+                case .root, .calculator: RootResults(model: model)
                 case .clipboard: ClipboardHistoryView(model: model)
                 case .usage: UsageStatsView(model: model)
                 }
@@ -55,6 +55,7 @@ struct SearchView: View {
     private var placeholder: String {
         switch model.mode {
         case .root: "Search apps and commands"
+        case .calculator: "Type a calculation…"
         case .clipboard: "Type to filter entries…"
         case .usage: "Usage Stats"
         }
@@ -67,28 +68,92 @@ private struct RootResults: View {
     var body: some View {
         let results = model.results
 
-        ScrollViewReader { proxy in
-            List(Array(results.enumerated()), id: \.element.id) { index, result in
-                ResultRow(result: result, isSelected: index == model.selection)
-                    .id(result.id)
-                    .listRowSeparator(.hidden)
-                    .onTapGesture {
-                        model.selection = index
-                        model.activate()
+        VStack(spacing: 0) {
+            Group {
+                if model.showsCalculatorLayout {
+                    CalculatorResults(model: model, results: results)
+                } else {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(alignment: .leading, spacing: 2) {
+                                ForEach(sections(of: results), id: \.title) { section in
+                                    SectionHeader(title: section.title)
+                                    ForEach(section.rows, id: \.result.id) { row in
+                                        ResultRow(result: row.result, isSelected: row.index == model.selection)
+                                            .id(row.result.id)
+                                            .onTapGesture {
+                                                model.selection = row.index
+                                                model.activate()
+                                            }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 6)
+                        }
+                        .onChange(of: model.selection) { _, selection in
+                            guard results.indices.contains(selection) else { return }
+                            proxy.scrollTo(results[selection].id)
+                        }
                     }
+                }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
             .frame(maxHeight: .infinity)
-            .onChange(of: model.selection) { _, selection in
-                guard results.indices.contains(selection) else { return }
-                proxy.scrollTo(results[selection].id)
+
+            HStack {
+                Spacer()
+                if results.indices.contains(model.selection) {
+                    Button(action: model.activate) {
+                        HStack(spacing: 8) {
+                            Text(results[model.selection].actionTitle)
+                            KeyCap(symbol: "return")
+                        }
+                    }
+                    .buttonStyle(.launcher)
+                }
             }
+            .font(.system(size: 13, weight: .medium))
+            .padding(.horizontal, 10)
+            .frame(height: 44)
+        }
+    }
+
+    /// Groups consecutive results under a heading, keeping each result's position in `results` for selection.
+    private func sections(of results: [LauncherResult]) -> [(title: String, rows: [(index: Int, result: LauncherResult)])] {
+        var sections: [(title: String, rows: [(index: Int, result: LauncherResult)])] = []
+        for (index, result) in results.enumerated() {
+            let title = Self.sectionTitle(for: result)
+            if sections.last?.title == title {
+                sections[sections.count - 1].rows.append((index, result))
+                continue
+            }
+            sections.append((title, [(index, result)]))
+        }
+        return sections
+    }
+
+    private static func sectionTitle(for result: LauncherResult) -> String {
+        switch result {
+        case .clipboard: "Clipboard History"
+        default: "Results"
         }
     }
 }
 
-private struct ResultRow: View {
+struct SectionHeader: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(Color.launcherSecondary)
+            .padding(.horizontal, 8)
+            .padding(.top, 10)
+            .padding(.bottom, 4)
+    }
+}
+
+struct ResultRow: View {
     let result: LauncherResult
     let isSelected: Bool
 
@@ -97,19 +162,17 @@ private struct ResultRow: View {
             icon
                 .resizable()
                 .scaledToFit()
-                .frame(width: 24, height: 24)
+                .frame(width: 22, height: 22)
             Text(result.title)
                 .lineLimit(1)
             Spacer()
             Text(result.subtitle)
                 .foregroundStyle(Color.launcherSecondary)
         }
-        .padding(.vertical, 4)
-        .padding(.horizontal, 8)
-        .background(
-            isSelected ? Color.accentColor.opacity(0.25) : .clear,
-            in: RoundedRectangle(cornerRadius: 6)
-        )
+        .font(.system(size: 14))
+        .padding(.horizontal, 10)
+        .frame(height: 40)
+        .background(isSelected ? Color.primary.opacity(0.1) : .clear, in: RoundedRectangle(cornerRadius: 8))
         .contentShape(Rectangle())
     }
 
@@ -118,7 +181,10 @@ private struct ResultRow: View {
         case .app(let app): Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
         case .clipboardHistory: Image(systemName: "list.clipboard")
         case .usageStats: Image(systemName: "chart.bar")
-        case .clipboard: Image(systemName: "doc.on.clipboard")
+        case .calculator: Image(systemName: "plus.forwardslash.minus")
+        case .calculation: Image(systemName: "equal.square")
+        case .pastCalculation: Image(systemName: "clock.arrow.circlepath")
+        case .clipboard(let item): Image(systemName: item.kind.symbolName)
         }
     }
 }

@@ -70,6 +70,25 @@ final class ClipboardHistory {
         pasteboard.setString(item.text ?? "", forType: .string)
     }
 
+    func recordCalculation(expression: String, answer: String, isRPN: Bool) {
+        do {
+            try store?.recordCalculation(expression: expression, answer: answer, mode: isRPN ? "rpn" : "standard")
+            revision += 1
+        } catch {
+            NSLog("Failed to record calculation: \(error)")
+        }
+    }
+
+    func recentCalculations(limit: Int) -> [CalculationRecord] {
+        _ = revision
+        return (try? store?.recentCalculations(limit: limit)) ?? []
+    }
+
+    func copy(text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
     private func poll() {
         let pasteboard = NSPasteboard.general
         guard pasteboard.changeCount != lastChangeCount else { return }

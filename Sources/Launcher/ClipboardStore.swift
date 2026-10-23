@@ -5,6 +5,7 @@ import GRDB
 enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
     case text
     case link
+    case number
     case image
 
     var id: Self { self }
@@ -13,6 +14,7 @@ enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .text: "Text"
         case .link: "Link"
+        case .number: "Number"
         case .image: "Image"
         }
     }
@@ -21,11 +23,22 @@ enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .text: "Text"
         case .link: "Links"
+        case .number: "Numbers"
         case .image: "Images"
         }
     }
 
+    var symbolName: String {
+        switch self {
+        case .text: "doc"
+        case .link: "link"
+        case .number: "number"
+        case .image: "photo"
+        }
+    }
+
     static func classify(_ text: String) -> ClipboardKind {
+        if Calculator.parseNumber(text) != nil { return .number }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard
             !trimmed.contains(where: \.isWhitespace),
@@ -65,6 +78,16 @@ struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, TableRec
     }
 }
 
+struct CalculationRecord: Identifiable, Hashable, Codable, FetchableRecord, TableRecord {
+    static let databaseTableName = "calculation"
+
+    let id: Int64
+    let expression: String
+    let answer: String
+    let mode: String
+    let calculatedAt: Date
+}
+
 struct ClipboardUsage {
     let directory: URL
     let databaseBytes: Int
@@ -72,6 +95,7 @@ struct ClipboardUsage {
     let imageFiles: Int
     let counts: [ClipboardKind: Int]
     let imagesAwaitingRecognition: Int
+    let calculations: Int
 }
 
 /// Clipboard history in a SQLite database in Application Support, with an FTS5 index over copied and recognized text.
@@ -152,6 +176,25 @@ final class ClipboardStore: Sendable {
         }
     }
 
+    /// Records a calculation, moving an expression already in history to the top with its latest answer.
+    func recordCalculation(expression: String, answer: String, mode: String) throws {
+        try database.write { db in
+            try db.execute(
+                sql: """
+                    INSERT INTO calculation (expression, answer, mode, calculatedAt) VALUES (?, ?, ?, ?)
+                    ON CONFLICT(expression, mode) DO UPDATE SET answer = excluded.answer, calculatedAt = excluded.calculatedAt
+                    """,
+                arguments: [expression, answer, mode, Date.now]
+            )
+        }
+    }
+
+    func recentCalculations(limit: Int) throws -> [CalculationRecord] {
+        try database.read { db in
+            try CalculationRecord.order(Column("calculatedAt").desc).limit(limit).fetchAll(db)
+        }
+    }
+
     func imageURL(for item: ClipboardItem) -> URL? {
         item.imageFile.map { imagesDirectory.appending(path: $0) }
     }
@@ -183,7 +226,7 @@ final class ClipboardStore: Sendable {
     }
 
     func usage() throws -> ClipboardUsage {
-        let (counts, awaiting) = try database.read { db in
+        let (counts, awaiting, calculations) = try database.read { db in
             let rows = try Row.fetchAll(db, sql: "SELECT kind, COUNT(*) AS count FROM clipboard GROUP BY kind")
             let counts: [ClipboardKind: Int] = Dictionary(
                 uniqueKeysWithValues: rows.compactMap { row in
@@ -197,7 +240,8 @@ final class ClipboardStore: Sendable {
                 sql: "SELECT COUNT(*) FROM clipboard WHERE kind = ? AND ocrText IS NULL",
                 arguments: [ClipboardKind.image.rawValue]
             )
-            return (counts, awaiting ?? 0)
+            let calculations = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM calculation")
+            return (counts, awaiting ?? 0, calculations ?? 0)
         }
 
         let databaseFiles = ["", "-wal", "-shm"].map { URL(filePath: databaseURL.path + $0) }
@@ -212,7 +256,8 @@ final class ClipboardStore: Sendable {
             imageBytes: Self.allocatedSize(of: imageFiles),
             imageFiles: imageFiles.count,
             counts: counts,
-            imagesAwaitingRecognition: awaiting
+            imagesAwaitingRecognition: awaiting,
+            calculations: calculations
         )
     }
 
@@ -299,6 +344,24 @@ final class ClipboardStore: Sendable {
         migrator.registerMigration("addPinning") { db in
             try db.alter(table: "clipboard") { table in
                 table.add(column: "pinnedAt", .datetime)
+            }
+        }
+        migrator.registerMigration("addCalculations") { db in
+            try db.create(table: "calculation") { table in
+                table.autoIncrementedPrimaryKey("id")
+                table.column("expression", .text).notNull()
+                table.column("answer", .text).notNull()
+                table.column("mode", .text).notNull()
+                table.column("calculatedAt", .datetime).notNull().indexed()
+                table.uniqueKey(["expression", "mode"])
+            }
+        }
+        migrator.registerMigration("classifyNumbers") { db in
+            let rows = try Row.fetchAll(db, sql: "SELECT id, text FROM clipboard WHERE kind = ?", arguments: [ClipboardKind.text.rawValue])
+            for row in rows {
+                let text: String = row["text"]
+                guard Calculator.parseNumber(text) != nil else { continue }
+                try db.execute(sql: "UPDATE clipboard SET kind = ? WHERE id = ?", arguments: [ClipboardKind.number.rawValue, row["id"]])
             }
         }
         return migrator

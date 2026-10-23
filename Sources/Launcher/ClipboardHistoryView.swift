@@ -98,12 +98,7 @@ private struct ItemList: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2) {
                     ForEach(sections, id: \.title) { section in
-                        Text(section.title)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.launcherSecondary)
-                            .padding(.horizontal, 8)
-                            .padding(.top, 10)
-                            .padding(.bottom, 4)
+                        SectionHeader(title: section.title)
                         ForEach(section.rows, id: \.item.id) { row in
                             ItemRow(
                                 item: row.item,
@@ -177,7 +172,7 @@ private struct ItemRow: View {
                 .frame(width: 18, height: 18)
                 .clipShape(RoundedRectangle(cornerRadius: 3))
         } else {
-            Image(systemName: item.kind == .link ? "link" : "doc")
+            Image(systemName: item.kind.symbolName)
                 .foregroundStyle(Color.launcherSecondary)
         }
     }
@@ -306,7 +301,7 @@ private struct EmptyDetail: View {
     }
 }
 
-private struct KeyCap: View {
+struct KeyCap: View {
     private let label: Text
 
     init(symbol: String) {
