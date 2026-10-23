@@ -189,10 +189,9 @@ final class ClipboardStore: Sendable {
         return Self.clipboardRecordName(hash)
     }
 
-    /// Records a calculation, moving an expression already in history to the top with its latest answer,
-    /// and returns its sync record name.
-    @discardableResult
-    func recordCalculation(expression: String, answer: String, mode: String) throws -> String {
+    /// Records a calculation, moving an expression already in history to the top with its latest answer.
+    /// Calculator history stays on this Mac and is not synced.
+    func recordCalculation(expression: String, answer: String, mode: String) throws {
         let key = Self.calculationKey(expression: expression, mode: mode)
         try database.write { db in
             try db.execute(
@@ -206,7 +205,6 @@ final class ClipboardStore: Sendable {
                 arguments: [expression, answer, mode, Date.now, key, Date.now]
             )
         }
-        return Self.calculationRecordName(key)
     }
 
     func recentCalculations(limit: Int) throws -> [CalculationRecord] {
@@ -290,10 +288,6 @@ final class ClipboardStore: Sendable {
         "clip-\(hash)"
     }
 
-    static func calculationRecordName(_ key: String) -> String {
-        "calc-\(key)"
-    }
-
     static func calculationKey(expression: String, mode: String) -> String {
         hash(Data("\(mode)\n\(expression)".utf8))
     }
@@ -301,12 +295,6 @@ final class ClipboardStore: Sendable {
     func clipboardSyncRow(hash: String) throws -> Row? {
         try database.read { db in
             try Row.fetchOne(db, sql: "SELECT * FROM clipboard WHERE contentHash = ?", arguments: [hash])
-        }
-    }
-
-    func calculationSyncRow(key: String) throws -> Row? {
-        try database.read { db in
-            try Row.fetchOne(db, sql: "SELECT * FROM calculation WHERE syncKey = ?", arguments: [key])
         }
     }
 
@@ -318,11 +306,7 @@ final class ClipboardStore: Sendable {
                 sql: "SELECT contentHash FROM clipboard WHERE (syncedAt IS NULL OR updatedAt > syncedAt) AND (? OR kind != ?)",
                 arguments: [includeImages, ClipboardKind.image.rawValue]
             )
-            let keys = try String.fetchAll(
-                db,
-                sql: "SELECT syncKey FROM calculation WHERE syncedAt IS NULL OR updatedAt > syncedAt"
-            )
-            return hashes.map(Self.clipboardRecordName) + keys.map(Self.calculationRecordName)
+            return hashes.map(Self.clipboardRecordName)
         }
     }
 
@@ -350,7 +334,6 @@ final class ClipboardStore: Sendable {
     func forgetAllSyncState() throws {
         try database.write { db in
             try db.execute(sql: "UPDATE clipboard SET syncedAt = NULL, cloudSystemFields = NULL")
-            try db.execute(sql: "UPDATE calculation SET syncedAt = NULL, cloudSystemFields = NULL")
         }
     }
 
@@ -406,35 +389,6 @@ final class ClipboardStore: Sendable {
             let timesCopied: Int = local["timesCopied"]
             let updatedAt: Date = local["updatedAt"]
             return copiedAt > item.copiedAt || timesCopied > item.timesCopied || updatedAt > item.updatedAt
-        }
-    }
-
-    /// Merges a calculation from another Mac, keeping the most recent answer. Returns true when this Mac's copy is newer.
-    func mergeRemote(_ calculation: RemoteCalculation) throws -> Bool {
-        try database.write { db in
-            let localCalculatedAt = try Date.fetchOne(
-                db,
-                sql: "SELECT calculatedAt FROM calculation WHERE syncKey = ?",
-                arguments: [calculation.key]
-            )
-            try db.execute(
-                sql: """
-                    INSERT INTO calculation (expression, answer, mode, calculatedAt, syncKey, updatedAt, syncedAt, cloudSystemFields)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(expression, mode) DO UPDATE SET
-                        answer = CASE WHEN excluded.calculatedAt > calculatedAt THEN excluded.answer ELSE answer END,
-                        calculatedAt = MAX(calculatedAt, excluded.calculatedAt),
-                        updatedAt = MAX(updatedAt, excluded.updatedAt),
-                        syncedAt = excluded.syncedAt,
-                        cloudSystemFields = excluded.cloudSystemFields
-                    """,
-                arguments: [
-                    calculation.expression, calculation.answer, calculation.mode, calculation.calculatedAt,
-                    calculation.key, calculation.updatedAt, Date.now, calculation.systemFields,
-                ]
-            )
-            guard let localCalculatedAt else { return false }
-            return localCalculatedAt > calculation.calculatedAt
         }
     }
 
@@ -596,17 +550,6 @@ struct RemoteClipboardItem {
     let systemFields: Data
 }
 
-/// A calculation as it arrived from another Mac, ready to merge.
-struct RemoteCalculation {
-    let key: String
-    let expression: String
-    let answer: String
-    let mode: String
-    let calculatedAt: Date
-    let updatedAt: Date
-    let systemFields: Data
-}
-
 /// The table and row a sync record name refers to.
 private struct SyncTarget {
     let table: String
@@ -614,12 +557,8 @@ private struct SyncTarget {
     let key: String
 
     init?(recordName: String) {
-        if recordName.hasPrefix("clip-") {
-            self.init(table: "clipboard", keyColumn: "contentHash", key: String(recordName.dropFirst(5)))
-            return
-        }
-        guard recordName.hasPrefix("calc-") else { return nil }
-        self.init(table: "calculation", keyColumn: "syncKey", key: String(recordName.dropFirst(5)))
+        guard recordName.hasPrefix("clip-") else { return nil }
+        self.init(table: "clipboard", keyColumn: "contentHash", key: String(recordName.dropFirst(5)))
     }
 
     private init(table: String, keyColumn: String, key: String) {

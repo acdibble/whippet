@@ -6,7 +6,7 @@ A fast, keyboard-driven launcher for macOS, in the spirit of Raycast. Free and o
 - **Clipboard history** for text, links, numbers and images, with full-text search, recognized text in images, pinning, and paste straight into the app you were using
 - **Calculator** that understands standard and RPN input, thousands separators and hex, octal and binary, with a history of answers
 - **Hotkeys** for opening Whippet, any app or any command
-- **iCloud sync** of clipboard and calculator history across your Macs, end-to-end encrypted for text
+- **iCloud sync** of clipboard history and pins across your Macs, end-to-end encrypted for text
 
 ## Install
 

@@ -211,22 +211,22 @@
         }
       }
     },
-    "Clipboard history, pins and calculations, across your Macs" : {
+    "Clipboard history and pins, across your Macs" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تاریخچهٔ کلیپ‌بورد، موارد سنجاق‌شده و محاسبات، در همهٔ Macهای شما"
+            "value" : "تاریخچهٔ کلیپ‌بورد و موارد سنجاق‌شده، در همهٔ Macهای شما"
           }
         }
       }
     },
-    "Clipboard text and calculations are end-to-end encrypted. Images are stored like other iCloud data, and are end-to-end encrypted only with Advanced Data Protection." : {
+    "Clipboard text is end-to-end encrypted. Images are stored like other iCloud data, and are end-to-end encrypted only with Advanced Data Protection. Calculator history stays on this Mac." : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "متن کلیپ‌بورد و محاسبات به‌صورت سرتاسری رمزگذاری می‌شوند. تصاویر مانند سایر داده‌های iCloud ذخیره می‌شوند و فقط با «محافظت پیشرفته از داده‌ها» به‌صورت سرتاسری رمزگذاری می‌شوند."
+            "value" : "متن کلیپ‌بورد به‌صورت سرتاسری رمزگذاری می‌شود. تصاویر مانند سایر داده‌های iCloud ذخیره می‌شوند و فقط با «محافظت پیشرفته از داده‌ها» به‌صورت سرتاسری رمزگذاری می‌شوند. تاریخچهٔ ماشین‌حساب روی همین Mac می‌ماند."
           }
         }
       }

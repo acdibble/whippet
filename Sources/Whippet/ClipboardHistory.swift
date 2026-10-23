@@ -94,9 +94,7 @@ final class ClipboardHistory {
 
     func recordCalculation(expression: String, answer: String, isRPN: Bool) {
         do {
-            if let recordName = try store?.recordCalculation(expression: expression, answer: answer, mode: isRPN ? "rpn" : "standard") {
-                onLocalChange(recordName)
-            }
+            try store?.recordCalculation(expression: expression, answer: answer, mode: isRPN ? "rpn" : "standard")
             revision += 1
         } catch {
             NSLog("Failed to record calculation: \(error)")
