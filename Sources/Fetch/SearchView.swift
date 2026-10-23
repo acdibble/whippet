@@ -101,13 +101,7 @@ private struct RootResults: View {
             HStack {
                 Spacer()
                 if results.indices.contains(model.selection) {
-                    Button(action: model.activate) {
-                        HStack(spacing: 8) {
-                            Text(results[model.selection].actionTitle)
-                            KeyCap(symbol: "return")
-                        }
-                    }
-                    .buttonStyle(.launcher)
+                    ResultActions(model: model, result: results[model.selection])
                 }
             }
             .font(.system(size: 13, weight: .medium))
@@ -225,5 +219,38 @@ struct HoverHighlight<Label: View>: View {
         if isPressed { return 0.16 }
         if isHovered { return 0.08 }
         return 0
+    }
+}
+
+/// The footer's main action for the selected result, plus a copy-only action when the main one pastes.
+struct ResultActions: View {
+    let model: LauncherModel
+    let result: LauncherResult
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if result.pastes {
+                Button {
+                    model.activate(copyOnly: true)
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Copy")
+                            .padding(.trailing, 4)
+                        KeyCap(symbol: "command")
+                        KeyCap(symbol: "return")
+                    }
+                }
+                .buttonStyle(.launcher)
+            }
+            Button {
+                model.activate()
+            } label: {
+                HStack(spacing: 8) {
+                    Text(model.actionTitle(for: result))
+                    KeyCap(symbol: "return")
+                }
+            }
+            .buttonStyle(.launcher)
+        }
     }
 }

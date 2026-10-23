@@ -60,6 +60,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             case kVK_Escape: model.back()
             case kVK_UpArrow: model.moveSelection(by: -1)
             case kVK_DownArrow: model.moveSelection(by: 1)
+            case kVK_Return where modifiers == [.command], kVK_ANSI_KeypadEnter where modifiers == [.command]:
+                model.activate(copyOnly: true)
             case kVK_LeftArrow where isPlainArrow, kVK_RightArrow where isPlainArrow:
                 guard model.moveColumn(by: Int(event.keyCode) == kVK_LeftArrow ? -1 : 1) else { return event }
             case kVK_ANSI_P where modifiers == [.command, .shift]: model.togglePinnedSelection()
@@ -85,6 +87,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func showPanel() {
         model.reset()
+        let frontmost = NSWorkspace.shared.frontmostApplication
+        model.targetApp = frontmost?.processIdentifier == ProcessInfo.processInfo.processIdentifier ? nil : frontmost
         panel.center()
         panel.makeKeyAndOrderFront(nil)
     }

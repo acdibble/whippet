@@ -75,13 +75,9 @@ struct ClipboardHistoryView: View {
                 .padding(.trailing, 12)
             }
 
-            Button(action: model.activate) {
-                HStack(spacing: 8) {
-                    Text("Copy to Clipboard")
-                    KeyCap(symbol: "return")
-                }
+            if let selected {
+                ResultActions(model: model, result: .clipboard(selected))
             }
-            .buttonStyle(.launcher)
         }
         .font(.system(size: 13, weight: .medium))
         .padding(.horizontal, 10)

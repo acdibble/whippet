@@ -141,6 +141,7 @@ private struct PaneIcon: View {
 
 private struct GeneralPane: View {
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
+    @State private var canPaste = Paster.isTrusted
 
     var body: some View {
         Form {
@@ -150,8 +151,28 @@ private struct GeneralPane: View {
                     KeyChip(text: "⌥ Space")
                 }
             }
+
+            Section {
+                LabeledContent {
+                    if canPaste {
+                        Text("Allowed")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Button("Allow…") {
+                            Paster.requestTrust()
+                        }
+                    }
+                } label: {
+                    Text("Paste into Apps")
+                    Text("Needs Accessibility permission to send ⌘V; without it, Return only copies")
+                }
+            }
         }
         .toggleStyle(.switch)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            canPaste = Paster.isTrusted
+        }
+        .onAppear { canPaste = Paster.isTrusted }
     }
 
     private func setLaunchAtLogin(_ isEnabled: Bool) {

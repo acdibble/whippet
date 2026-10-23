@@ -52,6 +52,14 @@ enum LauncherResult: Identifiable, Hashable {
         return true
     }
 
+    /// Results whose action puts text or an image on the clipboard, which Return then pastes into the target app.
+    var pastes: Bool {
+        switch self {
+        case .calculation, .pastCalculation, .clipboard: true
+        default: false
+        }
+    }
+
     var actionTitle: String {
         switch self {
         case .calculation, .pastCalculation: String(localized: "Copy Answer")
@@ -73,15 +81,23 @@ final class LauncherModel {
     }
 
     var query = "" {
-        didSet { resetSelection() }
+        didSet {
+            guard query != oldValue else { return }
+            resetSelection()
+        }
     }
     var selection = 0
     var clipboardKind: ClipboardKind? {
-        didSet { resetSelection() }
+        didSet {
+            guard clipboardKind != oldValue else { return }
+            resetSelection()
+        }
     }
     private(set) var mode = Mode.root
 
     @ObservationIgnored var onDismiss: () -> Void = {}
+    /// The app that was in front when the panel opened, which keeps keyboard focus underneath it and receives pastes.
+    var targetApp: NSRunningApplication?
     @ObservationIgnored var onOpenSettings: () -> Void = {}
 
     private static let calculatorColumnLength = 10
@@ -130,9 +146,7 @@ final class LauncherModel {
     }
 
     func reset() {
-        mode = .root
-        query = ""
-        clipboardKind = nil
+        open(.root)
     }
 
     var showsCalculatorLayout: Bool {
@@ -181,6 +195,14 @@ final class LauncherModel {
         selection = clipboardItems.firstIndex { $0.id == item.id } ?? 0
     }
 
+    /// Switches view with an empty search and the default selection for that view.
+    private func open(_ newMode: Mode) {
+        mode = newMode
+        query = ""
+        clipboardKind = nil
+        resetSelection()
+    }
+
     /// Clipboard history opens on the most recent copy rather than the pinned items above it.
     private func resetSelection() {
         if mode == .clipboard {
@@ -190,7 +212,8 @@ final class LauncherModel {
         selection = 0
     }
 
-    func activate() {
+    /// Runs the selected result. Clipboard items and answers are pasted into `targetApp`, or only copied when `copyOnly`.
+    func activate(copyOnly: Bool = false) {
         let results = results
         guard results.indices.contains(selection) else { return }
 
@@ -202,27 +225,41 @@ final class LauncherModel {
                 isRPN: calculation.isRPN
             )
             clipboard.copy(text: calculation.answer)
-            onDismiss()
+            dismissAndPaste(copyOnly: copyOnly)
         case .pastCalculation(let record):
             clipboard.copy(text: record.answer)
-            onDismiss()
+            dismissAndPaste(copyOnly: copyOnly)
         case .calculator:
-            mode = .calculator
-            query = ""
+            open(.calculator)
         case .settings:
             onOpenSettings()
         case .quit:
             NSApp.terminate(nil)
         case .clipboardHistory:
-            mode = .clipboard
-            query = ""
+            open(.clipboard)
         case .app(let app):
             appIndex.open(app)
             onDismiss()
         case .clipboard(let item):
             clipboard.copy(item)
-            onDismiss()
+            dismissAndPaste(copyOnly: copyOnly)
         }
+    }
+
+    func actionTitle(for result: LauncherResult) -> String {
+        guard result.pastes, let name = targetApp?.localizedName else { return result.actionTitle }
+        return String(localized: "Paste to \(name)")
+    }
+
+    /// Without Accessibility permission the item stays copied and macOS is asked to show its permission prompt.
+    private func dismissAndPaste(copyOnly: Bool) {
+        onDismiss()
+        if copyOnly || targetApp == nil { return }
+        if Paster.isTrusted {
+            Paster.pasteAfterPanelCloses()
+            return
+        }
+        Paster.requestTrust()
     }
 
     func back() {
