@@ -98,12 +98,32 @@ private struct PaneIcon: View {
 private struct GeneralPane: View {
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
     @State private var canPaste = Paster.isTrusted
+    @State private var language = AppLanguage.current
+    @State private var needsRelaunch = false
 
     var body: some View {
         Form {
             Section {
                 Toggle("Open at Login", isOn: Binding(get: { launchesAtLogin }, set: setLaunchAtLogin))
                 KeyboardShortcuts.Recorder("Whippet Hotkey", name: .togglePanel)
+            }
+
+            Section {
+                Picker("Language", selection: $language) {
+                    Text("System").tag(String?.none)
+                    ForEach(AppLanguage.available, id: \.self) { code in
+                        Text(AppLanguage.name(of: code)).tag(Optional(code))
+                    }
+                }
+                .onChange(of: language) { _, newLanguage in
+                    AppLanguage.set(newLanguage)
+                    needsRelaunch = true
+                }
+                if needsRelaunch {
+                    LabeledContent("Relaunch Whippet to use the new language") {
+                        Button("Relaunch", action: AppLanguage.relaunch)
+                    }
+                }
             }
 
             Section {
@@ -283,5 +303,41 @@ private struct ToolbarFade: View {
                 .offset(y: -inset)
         }
         .allowsHitTesting(false)
+    }
+}
+
+/// The app's language, stored as the same per-app preference that System Settings › Language & Region › Applications sets.
+enum AppLanguage {
+    /// The languages Whippet ships, excluding the base localization.
+    static let available = Bundle.main.localizations.filter { $0 != "Base" }.sorted()
+
+    /// The chosen language, or nil to follow the system.
+    static var current: String? {
+        let domain = UserDefaults.standard.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "")
+        guard let preferred = (domain?["AppleLanguages"] as? [String])?.first else { return nil }
+        return available.first { preferred == $0 || preferred.hasPrefix("\($0)-") }
+    }
+
+    /// The language's name in that language, such as فارسی for Farsi.
+    static func name(of code: String) -> String {
+        let locale = Locale(identifier: code)
+        return locale.localizedString(forLanguageCode: code)?.capitalized(with: locale) ?? code
+    }
+
+    static func set(_ code: String?) {
+        if let code {
+            UserDefaults.standard.set([code], forKey: "AppleLanguages")
+            return
+        }
+        UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+    }
+
+    /// Opens a fresh copy of the app before quitting, since the language is only read at launch.
+    static func relaunch() {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in
+            DispatchQueue.main.async { NSApp.terminate(nil) }
+        }
     }
 }

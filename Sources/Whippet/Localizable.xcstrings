@@ -541,6 +541,16 @@
         }
       }
     },
+    "Language" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زبان"
+          }
+        }
+      }
+    },
     "Last copied" : {
       "localizations" : {
         "fa" : {
@@ -791,6 +801,26 @@
         }
       }
     },
+    "Relaunch" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راه‌اندازی دوباره"
+          }
+        }
+      }
+    },
+    "Relaunch Whippet to use the new language" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای استفاده از زبان جدید، Whippet را دوباره راه‌اندازی کنید"
+          }
+        }
+      }
+    },
     "Remainder" : {
       "localizations" : {
         "fa" : {
@@ -957,6 +987,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "در حال همگام‌سازی…"
+          }
+        }
+      }
+    },
+    "System" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سیستم"
           }
         }
       }
