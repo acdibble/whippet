@@ -14,5 +14,7 @@ The app has no icon, so Finder, the Dock while Settings is open and the About pa
 
 ## Notes
 
+A designer is working on it.
+
 The menu bar whippet head could inspire it, but the app icon needs colour and depth.
 
