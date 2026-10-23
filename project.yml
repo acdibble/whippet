@@ -37,6 +37,9 @@ targets:
       path: Resources/Fetch.entitlements
       properties:
         com.apple.security.app-sandbox: false
+        com.apple.developer.icloud-services: [CloudKit]
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.acdibble.fetch]
+        com.apple.developer.aps-environment: development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.acdibble.fetch

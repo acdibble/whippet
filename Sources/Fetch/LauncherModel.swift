@@ -5,9 +5,9 @@ enum LauncherResult: Identifiable, Hashable {
     case calculation(Calculation)
     case pastCalculation(CalculationRecord)
     case calculator
+    case settings
     case quit
     case clipboardHistory
-    case usageStats
     case app(AppEntry)
     case clipboard(ClipboardItem)
 
@@ -16,9 +16,9 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation: "calculation"
         case .pastCalculation(let record): "calculation:\(record.id)"
         case .calculator: "command:calculator"
+        case .settings: "command:settings"
         case .quit: "command:quit"
         case .clipboardHistory: "command:clipboard-history"
-        case .usageStats: "command:usage-stats"
         case .app(let app): "app:\(app.url.path)"
         case .clipboard(let item): "clipboard:\(item.id)"
         }
@@ -29,9 +29,9 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation(let calculation): calculation.answer
         case .pastCalculation(let record): "\(record.expression) = \(record.answer)"
         case .calculator: String(localized: "Calculator")
+        case .settings: String(localized: "Settings")
         case .quit: String(localized: "Quit Fetch")
         case .clipboardHistory: String(localized: "Clipboard History")
-        case .usageStats: String(localized: "Usage Stats")
         case .app(let app): app.name
         case .clipboard(let item): item.title
         }
@@ -41,7 +41,7 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
-        case .calculator, .clipboardHistory, .usageStats, .quit: String(localized: "Command")
+        case .calculator, .clipboardHistory, .settings, .quit: String(localized: "Command")
         case .app: String(localized: "Application")
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
         }
@@ -55,7 +55,7 @@ enum LauncherResult: Identifiable, Hashable {
     var actionTitle: String {
         switch self {
         case .calculation, .pastCalculation: String(localized: "Copy Answer")
-        case .calculator, .clipboardHistory, .usageStats: String(localized: "Open Command")
+        case .calculator, .clipboardHistory, .settings: String(localized: "Open Command")
         case .quit: String(localized: "Quit")
         case .app: String(localized: "Open Application")
         case .clipboard: String(localized: "Copy to Clipboard")
@@ -70,7 +70,6 @@ final class LauncherModel {
         case root
         case calculator
         case clipboard
-        case usage
     }
 
     var query = "" {
@@ -83,6 +82,7 @@ final class LauncherModel {
     private(set) var mode = Mode.root
 
     @ObservationIgnored var onDismiss: () -> Void = {}
+    @ObservationIgnored var onOpenSettings: () -> Void = {}
 
     private static let calculatorColumnLength = 10
 
@@ -104,14 +104,12 @@ final class LauncherModel {
             if let calculation = Calculator.evaluate(query) {
                 return calculatorResults(calculation)
             }
-            let commands: [LauncherResult] = [.calculator, .clipboardHistory, .usageStats, .quit]
+            let commands: [LauncherResult] = [.calculator, .clipboardHistory, .settings, .quit]
             return ranked(commands + appIndex.apps.map(LauncherResult.app))
         case .calculator:
             return calculatorResults(Calculator.evaluate(query))
         case .clipboard:
             return clipboardItems.map(LauncherResult.clipboard)
-        case .usage:
-            return []
         }
     }
 
@@ -129,10 +127,6 @@ final class LauncherModel {
 
     func imageURL(for item: ClipboardItem) -> URL? {
         clipboard.imageURL(for: item)
-    }
-
-    func usage() -> ClipboardUsage? {
-        clipboard.usage()
     }
 
     func reset() {
@@ -215,13 +209,12 @@ final class LauncherModel {
         case .calculator:
             mode = .calculator
             query = ""
+        case .settings:
+            onOpenSettings()
         case .quit:
             NSApp.terminate(nil)
         case .clipboardHistory:
             mode = .clipboard
-            query = ""
-        case .usageStats:
-            mode = .usage
             query = ""
         case .app(let app):
             appIndex.open(app)

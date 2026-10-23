@@ -35,7 +35,6 @@ struct SearchView: View {
                 switch model.mode {
                 case .root, .calculator: RootResults(model: model)
                 case .clipboard: ClipboardHistoryView(model: model)
-                case .usage: UsageStatsView(model: model)
                 }
             }
         }
@@ -57,7 +56,6 @@ struct SearchView: View {
         case .root: String(localized: "Search apps and commands")
         case .calculator: String(localized: "Type a calculation…")
         case .clipboard: String(localized: "Type to filter entries…")
-        case .usage: String(localized: "Usage Stats")
         }
     }
 }
@@ -180,8 +178,8 @@ struct ResultRow: View {
         switch result {
         case .app(let app): Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
         case .clipboardHistory: Image(systemName: "list.clipboard")
-        case .usageStats: Image(systemName: "chart.bar")
         case .calculator: Image(systemName: "plus.forwardslash.minus")
+        case .settings: Image(systemName: "gearshape")
         case .quit: Image(systemName: "power")
         case .calculation: Image(systemName: "equal.square")
         case .pastCalculation: Image(systemName: "clock.arrow.circlepath")

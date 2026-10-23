@@ -8,7 +8,9 @@ final class ClipboardHistory {
     /// Bumped whenever history changes so views reading `search` refresh.
     private(set) var revision = 0
 
-    @ObservationIgnored private let store: ClipboardStore?
+    @ObservationIgnored let store: ClipboardStore?
+    /// Called with the sync record name of every item changed on this Mac.
+    @ObservationIgnored var onLocalChange: (String) -> Void = { _ in }
     @ObservationIgnored private var lastChangeCount = NSPasteboard.general.changeCount
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var isRecognizing = false
@@ -53,11 +55,18 @@ final class ClipboardHistory {
 
     func setPinned(_ pinned: Bool, item: ClipboardItem) {
         do {
-            try store?.setPinned(pinned, id: item.id)
+            if let recordName = try store?.setPinned(pinned, id: item.id) {
+                onLocalChange(recordName)
+            }
             revision += 1
         } catch {
             NSLog("Failed to pin clipboard item: \(error)")
         }
+    }
+
+    /// Refreshes views after another Mac's changes were merged into the store.
+    func didMergeRemoteChanges() {
+        revision += 1
     }
 
     func copy(_ item: ClipboardItem) {
@@ -72,7 +81,9 @@ final class ClipboardHistory {
 
     func recordCalculation(expression: String, answer: String, isRPN: Bool) {
         do {
-            try store?.recordCalculation(expression: expression, answer: answer, mode: isRPN ? "rpn" : "standard")
+            if let recordName = try store?.recordCalculation(expression: expression, answer: answer, mode: isRPN ? "rpn" : "standard") {
+                onLocalChange(recordName)
+            }
             revision += 1
         } catch {
             NSLog("Failed to record calculation: \(error)")
@@ -100,7 +111,7 @@ final class ClipboardHistory {
 
         do {
             if let text = pasteboard.string(forType: .string), !text.isEmpty {
-                try store.recordText(text, sourceBundleID: source)
+                onLocalChange(try store.recordText(text, sourceBundleID: source))
                 revision += 1
                 return
             }
@@ -109,7 +120,7 @@ final class ClipboardHistory {
                 let bitmap = NSBitmapImageRep(data: data),
                 let png = bitmap.representation(using: .png, properties: [:])
             else { return }
-            try store.recordImage(png: png, width: bitmap.pixelsWide, height: bitmap.pixelsHigh, sourceBundleID: source)
+            onLocalChange(try store.recordImage(png: png, width: bitmap.pixelsWide, height: bitmap.pixelsHigh, sourceBundleID: source))
             revision += 1
             recognizePendingImages()
         } catch {
@@ -124,7 +135,8 @@ final class ClipboardHistory {
         Task {
             while let pending = try? store.nextImageAwaitingRecognition() {
                 let text = await Task.detached(priority: .utility) { Self.recognizeText(in: pending.file) }.value
-                guard (try? store.setRecognizedText(text, hash: pending.hash)) != nil else { break }
+                guard let recordName = try? store.setRecognizedText(text, hash: pending.hash) else { break }
+                onLocalChange(recordName)
                 revision += 1
             }
             isRecognizing = false

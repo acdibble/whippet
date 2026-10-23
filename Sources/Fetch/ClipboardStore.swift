@@ -118,25 +118,28 @@ final class ClipboardStore: Sendable {
         try Self.migrator.migrate(database)
     }
 
-    /// Records a copy, moving content that is already in history to the top.
-    func recordText(_ text: String, sourceBundleID: String?) throws {
+    /// Records a copy, moving content that is already in history to the top, and returns its sync record name.
+    @discardableResult
+    func recordText(_ text: String, sourceBundleID: String?) throws -> String {
+        let hash = Self.hash(Data(text.utf8))
         try database.write { db in
             try db.execute(
                 sql: """
-                    INSERT INTO clipboard (contentHash, kind, text, copiedAt, sourceBundleID) VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO clipboard (contentHash, kind, text, copiedAt, sourceBundleID, updatedAt) VALUES (?, ?, ?, ?, ?, ?)
                     ON CONFLICT(contentHash) DO UPDATE SET
                         copiedAt = excluded.copiedAt,
                         sourceBundleID = excluded.sourceBundleID,
-                        timesCopied = timesCopied + 1
+                        timesCopied = timesCopied + 1,
+                        updatedAt = excluded.updatedAt
                     """,
-                arguments: [
-                    Self.hash(Data(text.utf8)), ClipboardKind.classify(text).rawValue, text, Date.now, sourceBundleID,
-                ]
+                arguments: [hash, ClipboardKind.classify(text).rawValue, text, Date.now, sourceBundleID, Date.now]
             )
         }
+        return Self.clipboardRecordName(hash)
     }
 
-    func recordImage(png: Data, width: Int, height: Int, sourceBundleID: String?) throws {
+    @discardableResult
+    func recordImage(png: Data, width: Int, height: Int, sourceBundleID: String?) throws -> String {
         let hash = Self.hash(png)
         let file = imagesDirectory.appending(path: "\(hash).png")
         if !FileManager.default.fileExists(atPath: file.path) {
@@ -145,19 +148,21 @@ final class ClipboardStore: Sendable {
         try database.write { db in
             try db.execute(
                 sql: """
-                    INSERT INTO clipboard (contentHash, kind, imageFile, imageWidth, imageHeight, imageBytes, copiedAt, sourceBundleID)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO clipboard (contentHash, kind, imageFile, imageWidth, imageHeight, imageBytes, copiedAt, sourceBundleID, updatedAt)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(contentHash) DO UPDATE SET
                         copiedAt = excluded.copiedAt,
                         sourceBundleID = excluded.sourceBundleID,
-                        timesCopied = timesCopied + 1
+                        timesCopied = timesCopied + 1,
+                        updatedAt = excluded.updatedAt
                     """,
                 arguments: [
                     hash, ClipboardKind.image.rawValue, file.lastPathComponent, width, height, png.count, Date.now,
-                    sourceBundleID,
+                    sourceBundleID, Date.now,
                 ]
             )
         }
+        return Self.clipboardRecordName(hash)
     }
 
     func nextImageAwaitingRecognition() throws -> (hash: String, file: URL)? {
@@ -173,23 +178,35 @@ final class ClipboardStore: Sendable {
         }
     }
 
-    func setRecognizedText(_ text: String, hash: String) throws {
+    @discardableResult
+    func setRecognizedText(_ text: String, hash: String) throws -> String {
         try database.write { db in
-            try db.execute(sql: "UPDATE clipboard SET ocrText = ? WHERE contentHash = ?", arguments: [text, hash])
+            try db.execute(
+                sql: "UPDATE clipboard SET ocrText = ?, updatedAt = ? WHERE contentHash = ?",
+                arguments: [text, Date.now, hash]
+            )
         }
+        return Self.clipboardRecordName(hash)
     }
 
-    /// Records a calculation, moving an expression already in history to the top with its latest answer.
-    func recordCalculation(expression: String, answer: String, mode: String) throws {
+    /// Records a calculation, moving an expression already in history to the top with its latest answer,
+    /// and returns its sync record name.
+    @discardableResult
+    func recordCalculation(expression: String, answer: String, mode: String) throws -> String {
+        let key = Self.calculationKey(expression: expression, mode: mode)
         try database.write { db in
             try db.execute(
                 sql: """
-                    INSERT INTO calculation (expression, answer, mode, calculatedAt) VALUES (?, ?, ?, ?)
-                    ON CONFLICT(expression, mode) DO UPDATE SET answer = excluded.answer, calculatedAt = excluded.calculatedAt
+                    INSERT INTO calculation (expression, answer, mode, calculatedAt, syncKey, updatedAt) VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(expression, mode) DO UPDATE SET
+                        answer = excluded.answer,
+                        calculatedAt = excluded.calculatedAt,
+                        updatedAt = excluded.updatedAt
                     """,
-                arguments: [expression, answer, mode, Date.now]
+                arguments: [expression, answer, mode, Date.now, key, Date.now]
             )
         }
+        return Self.calculationRecordName(key)
     }
 
     func recentCalculations(limit: Int) throws -> [CalculationRecord] {
@@ -202,13 +219,16 @@ final class ClipboardStore: Sendable {
         item.imageFile.map { imagesDirectory.appending(path: $0) }
     }
 
-    func setPinned(_ pinned: Bool, id: Int64) throws {
-        try database.write { db in
-            try db.execute(
-                sql: "UPDATE clipboard SET pinnedAt = ? WHERE id = ?",
-                arguments: [pinned ? Date.now : nil, id]
+    /// Returns the sync record name of the item, or nil when it no longer exists.
+    func setPinned(_ pinned: Bool, id: Int64) throws -> String? {
+        let hash = try database.write { db in
+            try String.fetchOne(
+                db,
+                sql: "UPDATE clipboard SET pinnedAt = ?, updatedAt = ? WHERE id = ? RETURNING contentHash",
+                arguments: [pinned ? Date.now : nil, Date.now, id]
             )
         }
+        return hash.map(Self.clipboardRecordName)
     }
 
     /// Pinned items first in the order they were pinned, then newest first; an empty query returns everything.
@@ -262,6 +282,160 @@ final class ClipboardStore: Sendable {
             imagesAwaitingRecognition: awaiting,
             calculations: calculations
         )
+    }
+
+    // MARK: - Sync
+
+    static func clipboardRecordName(_ hash: String) -> String {
+        "clip-\(hash)"
+    }
+
+    static func calculationRecordName(_ key: String) -> String {
+        "calc-\(key)"
+    }
+
+    static func calculationKey(expression: String, mode: String) -> String {
+        hash(Data("\(mode)\n\(expression)".utf8))
+    }
+
+    func clipboardSyncRow(hash: String) throws -> Row? {
+        try database.read { db in
+            try Row.fetchOne(db, sql: "SELECT * FROM clipboard WHERE contentHash = ?", arguments: [hash])
+        }
+    }
+
+    func calculationSyncRow(key: String) throws -> Row? {
+        try database.read { db in
+            try Row.fetchOne(db, sql: "SELECT * FROM calculation WHERE syncKey = ?", arguments: [key])
+        }
+    }
+
+    /// Record names changed on this Mac since they last synced, which covers changes made while sync was off.
+    func unsyncedRecordNames(includeImages: Bool) throws -> [String] {
+        try database.read { db in
+            let hashes = try String.fetchAll(
+                db,
+                sql: "SELECT contentHash FROM clipboard WHERE (syncedAt IS NULL OR updatedAt > syncedAt) AND (? OR kind != ?)",
+                arguments: [includeImages, ClipboardKind.image.rawValue]
+            )
+            let keys = try String.fetchAll(
+                db,
+                sql: "SELECT syncKey FROM calculation WHERE syncedAt IS NULL OR updatedAt > syncedAt"
+            )
+            return hashes.map(Self.clipboardRecordName) + keys.map(Self.calculationRecordName)
+        }
+    }
+
+    func markSynced(recordName: String, systemFields: Data) throws {
+        guard let target = SyncTarget(recordName: recordName) else { return }
+        try database.write { db in
+            try db.execute(
+                sql: "UPDATE \(target.table) SET syncedAt = ?, cloudSystemFields = ? WHERE \(target.keyColumn) = ?",
+                arguments: [Date.now, systemFields, target.key]
+            )
+        }
+    }
+
+    /// Forgets the server's copy of a record, so the next upload creates it afresh.
+    func forgetSyncState(recordName: String) throws {
+        guard let target = SyncTarget(recordName: recordName) else { return }
+        try database.write { db in
+            try db.execute(
+                sql: "UPDATE \(target.table) SET syncedAt = NULL, cloudSystemFields = NULL WHERE \(target.keyColumn) = ?",
+                arguments: [target.key]
+            )
+        }
+    }
+
+    func forgetAllSyncState() throws {
+        try database.write { db in
+            try db.execute(sql: "UPDATE clipboard SET syncedAt = NULL, cloudSystemFields = NULL")
+            try db.execute(sql: "UPDATE calculation SET syncedAt = NULL, cloudSystemFields = NULL")
+        }
+    }
+
+    func deleteRecord(named recordName: String) throws {
+        guard let target = SyncTarget(recordName: recordName) else { return }
+        let imageFile = try database.write { db in
+            let imageFile = target.table == "clipboard"
+                ? try String.fetchOne(db, sql: "SELECT imageFile FROM clipboard WHERE contentHash = ?", arguments: [target.key])
+                : nil
+            try db.execute(sql: "DELETE FROM \(target.table) WHERE \(target.keyColumn) = ?", arguments: [target.key])
+            return imageFile
+        }
+        if let imageFile {
+            try? FileManager.default.removeItem(at: imagesDirectory.appending(path: imageFile))
+        }
+    }
+
+    /// Merges an item from another Mac: the latest copy time and highest copy count win, and the most recently
+    /// changed side decides the pin and source app. Returns true when this Mac's copy is ahead and should be uploaded.
+    func mergeRemote(_ item: RemoteClipboardItem) throws -> Bool {
+        try database.write { db in
+            let local = try Row.fetchOne(
+                db,
+                sql: "SELECT copiedAt, timesCopied, updatedAt FROM clipboard WHERE contentHash = ?",
+                arguments: [item.hash]
+            )
+            try db.execute(
+                sql: """
+                    INSERT INTO clipboard (
+                        contentHash, kind, text, imageFile, imageWidth, imageHeight, imageBytes, ocrText, copiedAt,
+                        sourceBundleID, timesCopied, pinnedAt, updatedAt, syncedAt, cloudSystemFields
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(contentHash) DO UPDATE SET
+                        imageFile = COALESCE(imageFile, excluded.imageFile),
+                        ocrText = COALESCE(ocrText, excluded.ocrText),
+                        pinnedAt = CASE WHEN excluded.updatedAt > updatedAt THEN excluded.pinnedAt ELSE pinnedAt END,
+                        sourceBundleID = CASE WHEN excluded.updatedAt > updatedAt THEN excluded.sourceBundleID ELSE sourceBundleID END,
+                        copiedAt = MAX(copiedAt, excluded.copiedAt),
+                        timesCopied = MAX(timesCopied, excluded.timesCopied),
+                        updatedAt = MAX(updatedAt, excluded.updatedAt),
+                        syncedAt = excluded.syncedAt,
+                        cloudSystemFields = excluded.cloudSystemFields
+                    """,
+                arguments: [
+                    item.hash, item.kind.rawValue, item.text, item.imageFile, item.imageWidth, item.imageHeight,
+                    item.imageBytes, item.ocrText, item.copiedAt, item.sourceBundleID, item.timesCopied, item.pinnedAt,
+                    item.updatedAt, Date.now, item.systemFields,
+                ]
+            )
+            guard let local else { return false }
+            let copiedAt: Date = local["copiedAt"]
+            let timesCopied: Int = local["timesCopied"]
+            let updatedAt: Date = local["updatedAt"]
+            return copiedAt > item.copiedAt || timesCopied > item.timesCopied || updatedAt > item.updatedAt
+        }
+    }
+
+    /// Merges a calculation from another Mac, keeping the most recent answer. Returns true when this Mac's copy is newer.
+    func mergeRemote(_ calculation: RemoteCalculation) throws -> Bool {
+        try database.write { db in
+            let localCalculatedAt = try Date.fetchOne(
+                db,
+                sql: "SELECT calculatedAt FROM calculation WHERE syncKey = ?",
+                arguments: [calculation.key]
+            )
+            try db.execute(
+                sql: """
+                    INSERT INTO calculation (expression, answer, mode, calculatedAt, syncKey, updatedAt, syncedAt, cloudSystemFields)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(expression, mode) DO UPDATE SET
+                        answer = CASE WHEN excluded.calculatedAt > calculatedAt THEN excluded.answer ELSE answer END,
+                        calculatedAt = MAX(calculatedAt, excluded.calculatedAt),
+                        updatedAt = MAX(updatedAt, excluded.updatedAt),
+                        syncedAt = excluded.syncedAt,
+                        cloudSystemFields = excluded.cloudSystemFields
+                    """,
+                arguments: [
+                    calculation.expression, calculation.answer, calculation.mode, calculation.calculatedAt,
+                    calculation.key, calculation.updatedAt, Date.now, calculation.systemFields,
+                ]
+            )
+            guard let localCalculatedAt else { return false }
+            return localCalculatedAt > calculation.calculatedAt
+        }
     }
 
     /// Moves data saved under the app's previous name, Launcher, so history survives the rename.
@@ -375,6 +549,79 @@ final class ClipboardStore: Sendable {
                 try db.execute(sql: "UPDATE clipboard SET kind = ? WHERE id = ?", arguments: [ClipboardKind.number.rawValue, row["id"]])
             }
         }
+        migrator.registerMigration("addSync") { db in
+            for table in ["clipboard", "calculation"] {
+                try db.alter(table: table) { table in
+                    table.add(column: "updatedAt", .datetime)
+                    table.add(column: "syncedAt", .datetime)
+                    table.add(column: "cloudSystemFields", .blob)
+                }
+            }
+            try db.execute(sql: "UPDATE clipboard SET updatedAt = copiedAt")
+            try db.alter(table: "calculation") { table in
+                table.add(column: "syncKey", .text)
+            }
+            for row in try Row.fetchAll(db, sql: "SELECT id, expression, mode FROM calculation") {
+                let expression: String = row["expression"]
+                let mode: String = row["mode"]
+                try db.execute(
+                    sql: "UPDATE calculation SET syncKey = ?, updatedAt = calculatedAt WHERE id = ?",
+                    arguments: [calculationKey(expression: expression, mode: mode), row["id"]]
+                )
+            }
+            try db.create(index: "calculation_on_syncKey", on: "calculation", columns: ["syncKey"], unique: true)
+        }
         return migrator
+    }
+}
+
+/// A clipboard item as it arrived from another Mac, ready to merge.
+struct RemoteClipboardItem {
+    let hash: String
+    let kind: ClipboardKind
+    let text: String?
+    let ocrText: String?
+    let imageFile: String?
+    let imageWidth: Int?
+    let imageHeight: Int?
+    let imageBytes: Int?
+    let copiedAt: Date
+    let sourceBundleID: String?
+    let timesCopied: Int
+    let pinnedAt: Date?
+    let updatedAt: Date
+    let systemFields: Data
+}
+
+/// A calculation as it arrived from another Mac, ready to merge.
+struct RemoteCalculation {
+    let key: String
+    let expression: String
+    let answer: String
+    let mode: String
+    let calculatedAt: Date
+    let updatedAt: Date
+    let systemFields: Data
+}
+
+/// The table and row a sync record name refers to.
+private struct SyncTarget {
+    let table: String
+    let keyColumn: String
+    let key: String
+
+    init?(recordName: String) {
+        if recordName.hasPrefix("clip-") {
+            self.init(table: "clipboard", keyColumn: "contentHash", key: String(recordName.dropFirst(5)))
+            return
+        }
+        guard recordName.hasPrefix("calc-") else { return nil }
+        self.init(table: "calculation", keyColumn: "syncKey", key: String(recordName.dropFirst(5)))
+    }
+
+    private init(table: String, keyColumn: String, key: String) {
+        self.table = table
+        self.keyColumn = keyColumn
+        self.key = key
     }
 }

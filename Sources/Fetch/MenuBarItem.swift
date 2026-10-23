@@ -1,15 +1,15 @@
 import AppKit
-import ServiceManagement
 
-/// The menu bar icon, which keeps the app reachable without the hotkey and owns the launch at login setting.
+/// The menu bar icon, which keeps the app reachable without the hotkey.
 @MainActor
-final class MenuBarItem: NSObject, NSMenuDelegate {
+final class MenuBarItem: NSObject {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-    private let launchAtLoginItem = NSMenuItem()
     private let onOpen: () -> Void
+    private let onSettings: () -> Void
 
-    init(onOpen: @escaping () -> Void) {
+    init(onOpen: @escaping () -> Void, onSettings: @escaping () -> Void) {
         self.onOpen = onOpen
+        self.onSettings = onSettings
         super.init()
 
         statusItem.button?.image = Self.boneImage()
@@ -17,18 +17,13 @@ final class MenuBarItem: NSObject, NSMenuDelegate {
 
         let openItem = menuItem(String(localized: "Open Fetch"), symbol: "magnifyingglass", action: #selector(open), key: " ")
         openItem.keyEquivalentModifierMask = .option
-        launchAtLoginItem.title = String(localized: "Launch at Login")
-        launchAtLoginItem.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
-        launchAtLoginItem.action = #selector(toggleLaunchAtLogin)
-        launchAtLoginItem.target = self
 
         let menu = NSMenu()
-        menu.delegate = self
         menu.items = [
             openItem,
             .separator(),
             menuItem(String(localized: "About Fetch"), symbol: "info.circle", action: #selector(showAbout)),
-            launchAtLoginItem,
+            menuItem(String(localized: "Settings…"), symbol: "gearshape", action: #selector(showSettings), key: ","),
             .separator(),
             menuItem(String(localized: "Show Data Folder"), symbol: "folder", action: #selector(showDataFolder)),
             .separator(),
@@ -65,10 +60,6 @@ final class MenuBarItem: NSObject, NSMenuDelegate {
         return outline.copy(using: &rotation) ?? outline
     }
 
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        launchAtLoginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
-    }
-
     private func menuItem(_ title: String, symbol: String? = nil, action: Selector, key: String = "") -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
         item.image = symbol.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
@@ -85,28 +76,15 @@ final class MenuBarItem: NSObject, NSMenuDelegate {
         NSApp.orderFrontStandardAboutPanel(nil)
     }
 
+    @objc private func showSettings() {
+        onSettings()
+    }
+
     @objc private func showDataFolder() {
         NSWorkspace.shared.activateFileViewerSelecting([ClipboardStore.defaultDirectory])
     }
 
     @objc private func quit() {
         NSApp.terminate(nil)
-    }
-
-    @objc private func toggleLaunchAtLogin() {
-        let service = SMAppService.mainApp
-        do {
-            if service.status == .enabled {
-                try service.unregister()
-                return
-            }
-            try service.register()
-            if service.status == .requiresApproval {
-                SMAppService.openSystemSettingsLoginItems()
-            }
-        } catch {
-            NSApp.activate()
-            NSAlert(error: error).runModal()
-        }
     }
 }
