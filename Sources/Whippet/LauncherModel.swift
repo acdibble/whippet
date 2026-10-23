@@ -195,6 +195,10 @@ final class LauncherModel {
         selection = clipboardItems.firstIndex { $0.id == item.id } ?? 0
     }
 
+    func show(_ newMode: Mode) {
+        open(newMode)
+    }
+
     /// Switches view with an empty search and the default selection for that view.
     private func open(_ newMode: Mode) {
         mode = newMode
@@ -273,9 +277,18 @@ final class LauncherModel {
     private func ranked(_ candidates: [LauncherResult]) -> [LauncherResult] {
         if query.isEmpty { return candidates }
         return candidates
-            .compactMap { result in FuzzyMatch.score(query, in: result.title).map { (result, $0) } }
-            .sorted { $0.1 > $1.1 }
-            .map(\.0)
+            .compactMap { result in FuzzyMatch.score(query, in: result.title).map { (result: result, score: $0) } }
+            .sorted { lhs, rhs in
+                if lhs.score != rhs.score { return lhs.score > rhs.score }
+                return launchCount(of: lhs.result) > launchCount(of: rhs.result)
+            }
+            .map(\.result)
+    }
+
+    /// Breaks ties between equally good matches in favour of apps opened more often.
+    private func launchCount(of result: LauncherResult) -> Int {
+        guard case .app(let app) = result else { return 0 }
+        return appIndex.launchCount(of: app)
     }
 }
 

@@ -5,6 +5,7 @@ import SwiftUI
 
 enum SettingsPane: String, CaseIterable, Identifiable {
     case general
+    case shortcuts
     case cloudSync
     case usage
     case about
@@ -14,6 +15,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var title: LocalizedStringKey {
         switch self {
         case .general: "General"
+        case .shortcuts: "Shortcuts"
         case .cloudSync: "Cloud Sync"
         case .usage: "Usage"
         case .about: "About"
@@ -23,6 +25,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .general: "gearshape.fill"
+        case .shortcuts: "command"
         case .cloudSync: "icloud.fill"
         case .usage: "chart.bar.fill"
         case .about: "info.circle.fill"
@@ -32,6 +35,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var tint: Color {
         switch self {
         case .general: .gray
+        case .shortcuts: .purple
         case .cloudSync: .blue
         case .usage: .green
         case .about: .gray
@@ -44,6 +48,7 @@ struct SettingsView: View {
 
     let cloudSync: CloudSync
     let clipboard: ClipboardHistory
+    let appIndex: AppIndex
     @State private var selection: SettingsPane? = .general
 
     var body: some View {
@@ -61,6 +66,7 @@ struct SettingsView: View {
             Group {
                 switch selection ?? .general {
                 case .general: GeneralPane()
+                case .shortcuts: ShortcutsPane(appIndex: appIndex)
                 case .cloudSync: CloudSyncPane(cloudSync: cloudSync)
                 case .usage: UsagePane(clipboard: clipboard)
                 case .about: AboutPane()
@@ -130,6 +136,43 @@ private struct GeneralPane: View {
             NSAlert(error: error).runModal()
         }
         launchesAtLogin = LaunchAtLogin.isEnabled
+    }
+}
+
+/// A hotkey recorder for each command and installed application; recorded hotkeys are live immediately.
+private struct ShortcutsPane: View {
+    let appIndex: AppIndex
+    @State private var search = ""
+
+    var body: some View {
+        Form {
+            Section("Commands") {
+                ForEach(CommandShortcut.allCases) { command in
+                    KeyboardShortcuts.Recorder(for: command.name) {
+                        Label(command.title, systemImage: command.symbol)
+                    }
+                }
+            }
+            Section("Applications") {
+                ForEach(filteredApps) { app in
+                    KeyboardShortcuts.Recorder(for: app.shortcutName) {
+                        Label {
+                            Text(app.name)
+                        } icon: {
+                            Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
+                                .resizable()
+                                .frame(width: 18, height: 18)
+                        }
+                    }
+                }
+            }
+        }
+        .searchable(text: $search, prompt: "Search applications")
+    }
+
+    private var filteredApps: [AppEntry] {
+        if search.isEmpty { return appIndex.apps }
+        return appIndex.apps.filter { $0.name.localizedCaseInsensitiveContains(search) }
     }
 }
 

@@ -14,7 +14,7 @@ struct WhippetApp: App {
         }
 
         Window("Whippet Settings", id: SettingsView.windowID) {
-            SettingsView(cloudSync: appDelegate.cloudSync, clipboard: appDelegate.clipboard)
+            SettingsView(cloudSync: appDelegate.cloudSync, clipboard: appDelegate.clipboard, appIndex: appDelegate.appIndex)
         }
         .windowToolbarStyle(.unified)
         .defaultSize(width: 760, height: 520)

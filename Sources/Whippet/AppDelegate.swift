@@ -2,10 +2,6 @@ import AppKit
 import Carbon.HIToolbox
 import KeyboardShortcuts
 
-extension KeyboardShortcuts.Name {
-    static let togglePanel = Self("togglePanel", initial: .init(.space, modifiers: [.option]))
-}
-
 /// Owns the search panel, the global hotkey and the services shared with the SwiftUI scenes in `WhippetApp`.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
@@ -15,9 +11,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// Set by `WhippetApp`, which is the only place SwiftUI's `openWindow` action is available.
     var openSettingsWindow: () -> Void = {}
 
-    private let appIndex = AppIndex()
+    let appIndex = AppIndex()
     private var model: LauncherModel!
     private var panel: LauncherPanel!
+    private var registeredAppHotkeys: Set<String> = []
 
     override init() {
         clipboard = ClipboardHistory()
@@ -42,6 +39,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         KeyboardShortcuts.onKeyDown(for: .togglePanel) { [weak self] in
             self?.togglePanel()
         }
+        for command in CommandShortcut.allCases {
+            KeyboardShortcuts.onKeyDown(for: command.name) { [weak self] in
+                self?.run(command)
+            }
+        }
+        registerAppHotkeys()
+        appIndex.onChange = { [weak self] in self?.registerAppHotkeys() }
+        appIndex.startWatching()
 
         // Navigation keys are handled before they reach the focused view, because text fields treat Escape as "complete"
         // and focus can sit outside the search field.
@@ -94,6 +99,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.setActivationPolicy(.regular)
         openSettingsWindow()
         NSApp.activate()
+    }
+
+    /// Registers a handler once per app; the handler looks the app up when pressed, so it follows the app if it moves.
+    private func registerAppHotkeys() {
+        for app in appIndex.apps where !registeredAppHotkeys.contains(app.stableID) {
+            registeredAppHotkeys.insert(app.stableID)
+            let name = app.shortcutName
+            KeyboardShortcuts.onKeyDown(for: name) { [weak self] in
+                guard let self, let app = appIndex.apps.first(where: { $0.shortcutName == name }) else { return }
+                appIndex.open(app)
+            }
+        }
+    }
+
+    private func run(_ command: CommandShortcut) {
+        switch command {
+        case .calculator:
+            showPanel()
+            model.show(.calculator)
+        case .clipboardHistory:
+            showPanel()
+            model.show(.clipboard)
+        case .settings:
+            showSettings()
+        }
     }
 
     private func togglePanel() {
