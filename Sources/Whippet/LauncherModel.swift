@@ -6,6 +6,8 @@ enum LauncherResult: Identifiable, Hashable {
     case pastCalculation(CalculationRecord)
     case calculator
     case settings
+    case sendFeedback
+    case readFeedback
     case quit
     case clipboardHistory
     case caffeinate
@@ -21,6 +23,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .pastCalculation(let record): "calculation:\(record.id)"
         case .calculator: "command:calculator"
         case .settings: "command:settings"
+        case .sendFeedback: "command:send-feedback"
+        case .readFeedback: "command:read-feedback"
         case .quit: "command:quit"
         case .clipboardHistory: "command:clipboard-history"
         case .caffeinate: "command:caffeinate"
@@ -38,6 +42,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .pastCalculation(let record): "\(record.expression) = \(record.answer)".leftToRightIsolated
         case .calculator: String(localized: "Calculator")
         case .settings: String(localized: "Settings")
+        case .sendFeedback: String(localized: "Send Feedback")
+        case .readFeedback: String(localized: "Read Feedback")
         case .quit: String(localized: "Quit Whippet")
         case .clipboardHistory: String(localized: "Clipboard History")
         case .caffeinate: String(localized: "Caffeinate")
@@ -54,13 +60,19 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
-        case .calculator, .clipboardHistory, .settings, .quit: String(localized: "Command")
+        case .calculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .quit: String(localized: "Command")
         case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
         case .caffeinateMenuBar: String(localized: "Command")
         case .decaffeinate(let until): until
         case .app: String(localized: "Application")
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
         }
+    }
+
+    /// Commands only an account with the CloudKit Admin role sees, shown with an Admin badge.
+    var isAdminOnly: Bool {
+        guard case .readFeedback = self else { return false }
+        return true
     }
 
     var isApp: Bool {
@@ -89,7 +101,7 @@ enum LauncherResult: Identifiable, Hashable {
     var actionTitle: String {
         switch self {
         case .calculation, .pastCalculation: String(localized: "Copy Answer")
-        case .calculator, .clipboardHistory, .settings: String(localized: "Open Command")
+        case .calculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback: String(localized: "Open Command")
         case .caffeinate, .decaffeinate, .caffeinateMenuBar: String(localized: "Run Command")
         case .caffeinateFor: String(localized: "Choose Duration")
         case .quit: String(localized: "Quit")
@@ -178,6 +190,10 @@ final class LauncherModel {
     /// The app that was in front when the panel opened, which keeps keyboard focus underneath it and receives pastes.
     var targetApp: NSRunningApplication?
     @ObservationIgnored var onOpenSettings: () -> Void = {}
+    @ObservationIgnored var onSendFeedback: () -> Void = {}
+    @ObservationIgnored var onReadFeedback: () -> Void = {}
+    /// Set at launch when this iCloud account has the CloudKit Admin role, which shows the Read Feedback command.
+    var isFeedbackAdmin = false
     @ObservationIgnored var onShowActions: () -> Void = {}
 
     private static let calculatorColumnLength = 10
@@ -207,7 +223,8 @@ final class LauncherModel {
             if let calculation = Calculator.evaluate(query) {
                 return calculatorResults(calculation)
             }
-            let commands: [LauncherResult] = [.calculator, .clipboardHistory, .settings, .quit]
+            let commands: [LauncherResult] = [.calculator, .clipboardHistory, .settings, .sendFeedback, .quit]
+                + (isFeedbackAdmin ? [.readFeedback] : [])
                 + [.caffeinate, .caffeinateFor]
                 + (caffeine.isActive ? [.decaffeinate(until: caffeine.untilDescription)] : [])
                 + [.caffeinateMenuBar(isShown: caffeine.showsInMenuBar)]
@@ -352,6 +369,10 @@ final class LauncherModel {
             open(.calculator)
         case .settings:
             onOpenSettings()
+        case .sendFeedback:
+            onSendFeedback()
+        case .readFeedback:
+            onReadFeedback()
         case .caffeinate:
             caffeine.start(seconds: nil)
             onDismiss()

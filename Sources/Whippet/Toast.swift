@@ -57,6 +57,7 @@ private struct ToastView: View {
     var body: some View {
         Label(message, systemImage: symbol)
             .font(.system(size: 14, weight: .medium))
+            .fixedSize()
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
             .background(.regularMaterial, in: Capsule())

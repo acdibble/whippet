@@ -10,9 +10,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let cloudSync: CloudSync
     /// Set by `WhippetApp`, which is the only place SwiftUI's `openWindow` action is available.
     var openSettingsWindow: () -> Void = {}
+    var openFeedbackWindow: () -> Void = {}
 
     let appIndex = AppIndex()
     let caffeine = Caffeine()
+    let feedbackStore = FeedbackStore()
+    let settingsNavigation = SettingsNavigation()
     private var model: LauncherModel!
     private var panel: LauncherPanel!
     private var registeredAppHotkeys: Set<String> = []
@@ -36,6 +39,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model = LauncherModel(appIndex: appIndex, clipboard: clipboard, caffeine: caffeine)
         model.onDismiss = { [weak self] in self?.dismissPanel() }
         model.onOpenSettings = { [weak self] in self?.showSettings() }
+        model.onSendFeedback = { [weak self] in self?.showFeedback() }
+        model.onReadFeedback = { [weak self] in self?.showSettings(pane: .feedback) }
+        Task { model.isFeedbackAdmin = await feedbackStore.isAdmin }
         model.onShowActions = { [weak self] in self?.showActions() }
 
         panel = LauncherPanel(rootView: SearchView(model: model))
@@ -105,13 +111,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     /// Whippet runs without a Dock icon and takes one while Settings is open; `SettingsView` gives it up on close.
-    func showSettings() {
+    func showSettings(pane: SettingsPane? = nil) {
+        if let pane {
+            settingsNavigation.pane = pane
+        }
         panel.orderOut(nil)
         // From the menu bar Whippet is a background app, and macOS refuses the cooperative NSApp.activate() request then,
         // so Settings opens behind the front app. The deprecated call still forces activation, as other menu bar apps rely on.
         NSApp.activate(ignoringOtherApps: true)
         NSApp.setActivationPolicy(.regular)
         openSettingsWindow()
+    }
+
+    func showFeedback() {
+        panel.orderOut(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.setActivationPolicy(.regular)
+        openFeedbackWindow()
     }
 
     /// Registers a handler once per app; the handler looks the app up when pressed, so it follows the app if it moves.

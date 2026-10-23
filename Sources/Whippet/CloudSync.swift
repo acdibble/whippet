@@ -69,6 +69,12 @@ final class CloudSync {
         }
     }
 
+    /// The CloudKit user record ID of the account signed into iCloud on this Mac, which is the record to give a role
+    /// to in the CloudKit Console.
+    func userRecordName() async -> String? {
+        try? await container.userRecordID().recordName
+    }
+
     /// Queues a record changed on this Mac for upload.
     func recordChanged(_ recordName: String) {
         guard let engine else { return }

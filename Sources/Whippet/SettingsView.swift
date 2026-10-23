@@ -3,11 +3,19 @@ import ServiceManagement
 import KeyboardShortcuts
 import SwiftUI
 
+/// The pane Settings shows, shared so commands can open Settings on a particular pane.
+@MainActor
+@Observable
+final class SettingsNavigation {
+    var pane: SettingsPane? = .general
+}
+
 enum SettingsPane: String, CaseIterable, Identifiable {
     case general
     case shortcuts
     case cloudSync
     case usage
+    case feedback
     case about
 
     var id: Self { self }
@@ -18,6 +26,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shortcuts: "Shortcuts"
         case .cloudSync: "Cloud Sync"
         case .usage: "Usage"
+        case .feedback: "Feedback"
         case .about: "About"
         }
     }
@@ -28,6 +37,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shortcuts: "command"
         case .cloudSync: "icloud.fill"
         case .usage: "chart.bar.fill"
+        case .feedback: "tray.full.fill"
         case .about: "info.circle.fill"
         }
     }
@@ -38,6 +48,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shortcuts: .purple
         case .cloudSync: .blue
         case .usage: .green
+        case .feedback: .orange
         case .about: .gray
         }
     }
@@ -50,13 +61,22 @@ struct SettingsView: View {
     let clipboard: ClipboardHistory
     let appIndex: AppIndex
     let caffeine: Caffeine
-    @State private var selection: SettingsPane? = .general
+    let feedbackStore: FeedbackStore
+    @Bindable var navigation: SettingsNavigation
+    /// Only accounts with the CloudKit Admin role can read feedback, so the Feedback pane only appears for them.
+    @State private var isAdmin = false
 
     var body: some View {
         NavigationSplitView {
-            List(SettingsPane.allCases, selection: $selection) { pane in
+            List(SettingsPane.allCases.filter { $0 != .feedback || isAdmin }, selection: $navigation.pane) { pane in
                 Label {
-                    Text(pane.title)
+                    HStack {
+                        Text(pane.title)
+                        if pane == .feedback {
+                            Spacer()
+                            AdminBadge()
+                        }
+                    }
                 } icon: {
                     PaneIcon(symbol: pane.symbol, tint: pane.tint)
                 }
@@ -65,20 +85,22 @@ struct SettingsView: View {
             .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
         } detail: {
             Group {
-                switch selection ?? .general {
+                switch navigation.pane ?? .general {
                 case .general: GeneralPane(caffeine: caffeine)
                 case .shortcuts: ShortcutsPane(appIndex: appIndex)
                 case .cloudSync: CloudSyncPane(cloudSync: cloudSync)
                 case .usage: UsagePane(clipboard: clipboard)
+                case .feedback: FeedbackAdminPane(store: feedbackStore)
                 case .about: AboutPane()
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle(Text((selection ?? .general).title))
+            .navigationTitle(Text((navigation.pane ?? .general).title))
         }
         .frame(minWidth: 680, minHeight: 440)
-        .onAppear { NSApp.setActivationPolicy(.regular) }
-        .onDisappear { NSApp.setActivationPolicy(.accessory) }
+        .onAppear { DockIcon.update() }
+        .onDisappear { DockIcon.update() }
+        .task { isAdmin = await feedbackStore.isAdmin }
     }
 }
 
@@ -202,6 +224,7 @@ private struct ShortcutsPane: View {
 private struct CloudSyncPane: View {
     @Bindable var cloudSync: CloudSync
     @State private var isConfirmingDelete = false
+    @State private var userRecordName: String?
 
     var body: some View {
         Form {
@@ -217,6 +240,28 @@ private struct CloudSyncPane: View {
                 .disabled(!cloudSync.isEnabled)
             } footer: {
                 Text("Clipboard text is end-to-end encrypted. Images are stored like other iCloud data, and are end-to-end encrypted only with Advanced Data Protection. Calculator history stays on this Mac.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                LabeledContent("iCloud User") {
+                    HStack {
+                        Text(userRecordName ?? String(localized: "Not signed in"))
+                            .font(.callout.monospaced())
+                            .textSelection(.enabled)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        if let userRecordName {
+                            Button("Copy") {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(userRecordName, forType: .string)
+                            }
+                        }
+                    }
+                }
+            } footer: {
+                Text("The CloudKit user record for the Apple Account signed into iCloud on this Mac. Give it a role, such as Admin, in the CloudKit Console.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -237,6 +282,7 @@ private struct CloudSyncPane: View {
             }
         }
         .toggleStyle(.switch)
+        .task { userRecordName = await cloudSync.userRecordName() }
         .confirmationDialog("Delete Whippet data from iCloud?", isPresented: $isConfirmingDelete) {
             Button("Delete iCloud Data", role: .destructive) {
                 Task { await cloudSync.deleteCloudData() }
@@ -248,6 +294,8 @@ private struct CloudSyncPane: View {
 }
 
 private struct AboutPane: View {
+    @Environment(\.openWindow) private var openWindow
+
     var body: some View {
         Form {
             Section {
@@ -256,6 +304,11 @@ private struct AboutPane: View {
                 LabeledContent("Data Folder") {
                     Button("Show in Finder") {
                         NSWorkspace.shared.activateFileViewerSelecting([ClipboardStore.defaultDirectory])
+                    }
+                }
+                LabeledContent("Feedback") {
+                    Button("Send Feedback…") {
+                        openWindow(id: FeedbackView.windowID)
                     }
                 }
             }

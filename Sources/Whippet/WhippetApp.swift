@@ -18,7 +18,9 @@ struct WhippetApp: App {
                 cloudSync: appDelegate.cloudSync,
                 clipboard: appDelegate.clipboard,
                 appIndex: appDelegate.appIndex,
-                caffeine: appDelegate.caffeine
+                caffeine: appDelegate.caffeine,
+                feedbackStore: appDelegate.feedbackStore,
+                navigation: appDelegate.settingsNavigation
             )
         }
         .windowToolbarStyle(.unified)
@@ -33,18 +35,23 @@ struct WhippetApp: App {
                     .keyboardShortcut(",")
             }
             CommandGroup(replacing: .appTermination) {
-                CloseSettingsButton()
+                CloseWindowButton()
             }
         }
+
+        Window("Send Feedback", id: FeedbackView.windowID) {
+            FeedbackView(store: appDelegate.feedbackStore)
+        }
+        .windowResizability(.contentSize)
+        .defaultLaunchBehavior(.suppressed)
     }
 }
 
-/// The app menu only exists while Settings is open, so ⌘Q there closes Settings and leaves Whippet running in the menu bar.
-private struct CloseSettingsButton: View {
-    @Environment(\.dismissWindow) private var dismissWindow
-
+/// The app menu only exists while one of Whippet's windows is open, so ⌘Q there closes that window and leaves Whippet
+/// running in the menu bar.
+private struct CloseWindowButton: View {
     var body: some View {
-        Button("Close Settings") { dismissWindow(id: SettingsView.windowID) }
+        Button("Close Window") { NSApp.keyWindow?.performClose(nil) }
             .keyboardShortcut("q")
     }
 }
@@ -58,6 +65,7 @@ private struct MenuBarLabel: View {
         Image(nsImage: WhippetIcon.menuBarImage)
             .onAppear {
                 appDelegate.openSettingsWindow = { openWindow(id: SettingsView.windowID) }
+                appDelegate.openFeedbackWindow = { openWindow(id: FeedbackView.windowID) }
             }
     }
 }
@@ -72,6 +80,7 @@ private struct MenuBarMenu: View {
         Button("About Whippet", systemImage: "info.circle") { NSApp.showAboutPanel() }
         Button("Settings…", systemImage: "gearshape") { appDelegate.showSettings() }
             .keyboardShortcut(",")
+        Button("Send Feedback…", systemImage: "bubble.left") { appDelegate.showFeedback() }
         Divider()
         Button("Show Data Folder", systemImage: "folder") {
             NSWorkspace.shared.activateFileViewerSelecting([ClipboardStore.defaultDirectory])

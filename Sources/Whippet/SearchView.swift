@@ -188,6 +188,9 @@ struct ResultRow: View {
             Text(result.title)
                 .lineLimit(1)
             Spacer()
+            if result.isAdminOnly {
+                AdminBadge()
+            }
             Text(result.subtitle)
                 .foregroundStyle(Color.launcherSecondary)
         }
@@ -204,6 +207,8 @@ struct ResultRow: View {
         case .clipboardHistory: Image(systemName: "list.clipboard")
         case .calculator: Image(systemName: "plus.forwardslash.minus")
         case .settings: Image(systemName: "gearshape")
+        case .sendFeedback: Image(systemName: "bubble.left")
+        case .readFeedback: Image(systemName: "tray.full")
         case .quit: Image(systemName: "power")
         case .caffeinate, .caffeinateFor: Image(systemName: "cup.and.heat.waves.fill")
         case .caffeinateMenuBar: Image(systemName: "menubar.rectangle")
@@ -285,5 +290,17 @@ struct ResultActions: View {
             }
             .buttonStyle(.launcher)
         }
+    }
+}
+
+/// Marks commands and settings only CloudKit Admin accounts can see, like Raycast's Pro badge.
+struct AdminBadge: View {
+    var body: some View {
+        Text("Admin")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .background(.orange.opacity(0.15), in: Capsule())
     }
 }

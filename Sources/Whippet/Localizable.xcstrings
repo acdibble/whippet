@@ -91,6 +91,16 @@
         }
       }
     },
+    "Admin" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مدیر"
+          }
+        }
+      }
+    },
     "All Types" : {
       "localizations" : {
         "fa" : {
@@ -341,12 +351,12 @@
         }
       }
     },
-    "Close Settings" : {
+    "Close Window" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "بستن تنظیمات"
+            "value" : "بستن پنجره"
           }
         }
       }
@@ -461,6 +471,16 @@
         }
       }
     },
+    "Create Issue…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ایجاد گزارش…"
+          }
+        }
+      }
+    },
     "Data Folder" : {
       "localizations" : {
         "fa" : {
@@ -541,6 +561,26 @@
         }
       }
     },
+    "Delete this feedback?" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این بازخورد حذف شود؟"
+          }
+        }
+      }
+    },
+    "Delete…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف…"
+          }
+        }
+      }
+    },
     "Developer" : {
       "localizations" : {
         "fa" : {
@@ -581,12 +621,42 @@
         }
       }
     },
+    "Email" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ایمیل"
+          }
+        }
+      }
+    },
     "Expression" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "عبارت"
+          }
+        }
+      }
+    },
+    "Feedback" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بازخورد"
+          }
+        }
+      }
+    },
+    "From" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "از طرف"
           }
         }
       }
@@ -701,6 +771,16 @@
         }
       }
     },
+    "Issue created" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "گزارش ایجاد شد"
+          }
+        }
+      }
+    },
     "Items" : {
       "localizations" : {
         "fa" : {
@@ -801,6 +881,36 @@
         }
       }
     },
+    "No email" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدون ایمیل"
+          }
+        }
+      }
+    },
+    "No feedback yet" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هنوز بازخوردی نیست"
+          }
+        }
+      }
+    },
+    "Not signed in" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد نشده"
+          }
+        }
+      }
+    },
     "Number" : {
       "localizations" : {
         "fa" : {
@@ -861,6 +971,16 @@
         }
       }
     },
+    "Open GitHub Issue…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن گزارش در GitHub…"
+          }
+        }
+      }
+    },
     "Open Whippet" : {
       "localizations" : {
         "fa" : {
@@ -877,6 +997,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "باز شدن هنگام ورود"
+          }
+        }
+      }
+    },
+    "Optional, if you'd like a reply" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختیاری، اگر پاسخ می‌خواهید"
           }
         }
       }
@@ -981,12 +1111,32 @@
         }
       }
     },
+    "Read Feedback" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خواندن بازخوردها"
+          }
+        }
+      }
+    },
     "Recognized words" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "واژه‌های شناسایی‌شده"
+          }
+        }
+      }
+    },
+    "Refresh" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تازه‌سازی"
           }
         }
       }
@@ -1017,6 +1167,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "باقی‌مانده"
+          }
+        }
+      }
+    },
+    "Reply…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پاسخ…"
           }
         }
       }
@@ -1067,6 +1227,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ثانیه"
+          }
+        }
+      }
+    },
+    "Send" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ارسال"
+          }
+        }
+      }
+    },
+    "Send Feedback" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ارسال بازخورد"
+          }
+        }
+      }
+    },
+    "Send Feedback…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ارسال بازخورد…"
+          }
+        }
+      }
+    },
+    "Sent" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ارسال‌شده"
+          }
+        }
+      }
+    },
+    "Sent with your feedback" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "همراه بازخورد شما ارسال می‌شود"
           }
         }
       }
@@ -1127,6 +1337,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نمایش در Finder"
+          }
+        }
+      }
+    },
+    "Sign in to iCloud to send feedback from Whippet, or open an issue on GitHub instead." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای ارسال بازخورد از Whippet وارد iCloud شوید، یا به‌جای آن یک گزارش در GitHub باز کنید."
           }
         }
       }
@@ -1227,6 +1447,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "متن"
+          }
+        }
+      }
+    },
+    "Thanks for the feedback" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "از بازخورد شما سپاسگزاریم"
+          }
+        }
+      }
+    },
+    "The CloudKit user record for the Apple Account signed into iCloud on this Mac. Give it a role, such as Admin, in the CloudKit Console." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رکورد کاربر CloudKit برای حساب Apple که در این Mac وارد iCloud شده است. در CloudKit Console به آن نقشی مانند Admin بدهید."
           }
         }
       }
@@ -1391,6 +1631,16 @@
         }
       }
     },
+    "What's on your mind?" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "چه چیزی در ذهن دارید؟"
+          }
+        }
+      }
+    },
     "Whippet Hotkey" : {
       "localizations" : {
         "fa" : {
@@ -1427,6 +1677,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "دیروز"
+          }
+        }
+      }
+    },
+    "Your Whippet feedback" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بازخورد شما دربارهٔ Whippet"
+          }
+        }
+      }
+    },
+    "iCloud User" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کاربر iCloud"
           }
         }
       }
