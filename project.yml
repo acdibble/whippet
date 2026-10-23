@@ -17,6 +17,9 @@ packages:
   GRDB:
     url: https://github.com/groue/GRDB.swift
     from: 7.0.0
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: 3.1.0
 
 targets:
   Whippet:
@@ -26,6 +29,7 @@ targets:
       - Sources/Whippet
     dependencies:
       - package: GRDB
+      - package: KeyboardShortcuts
     info:
       path: Resources/Info.plist
       properties:

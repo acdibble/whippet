@@ -1,4 +1,5 @@
 import AppKit
+import KeyboardShortcuts
 import SwiftUI
 
 @main
@@ -61,7 +62,7 @@ private struct MenuBarMenu: View {
 
     var body: some View {
         Button("Open Whippet", systemImage: "magnifyingglass") { appDelegate.showPanel() }
-            .keyboardShortcut(.space, modifiers: .option)
+            .keyboardShortcut(KeyboardShortcuts.getShortcut(for: .togglePanel)?.toSwiftUI)
         Divider()
         Button("About Whippet", systemImage: "info.circle") { NSApp.showAboutPanel() }
         Button("Settings…", systemImage: "gearshape") { appDelegate.showSettings() }

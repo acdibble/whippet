@@ -1,5 +1,6 @@
 import AppKit
 import ServiceManagement
+import KeyboardShortcuts
 import SwiftUI
 
 enum SettingsPane: String, CaseIterable, Identifiable {
@@ -96,9 +97,7 @@ private struct GeneralPane: View {
         Form {
             Section {
                 Toggle("Open at Login", isOn: Binding(get: { launchesAtLogin }, set: setLaunchAtLogin))
-                LabeledContent("Whippet Hotkey") {
-                    KeyChip(text: "⌥ Space")
-                }
+                KeyboardShortcuts.Recorder("Whippet Hotkey", name: .togglePanel)
             }
 
             Section {
@@ -195,19 +194,6 @@ private struct AboutPane: View {
                 }
             }
         }
-    }
-}
-
-/// A key combination drawn as a rounded chip, like a recorded shortcut.
-private struct KeyChip: View {
-    let text: String
-
-    var body: some View {
-        Text(text)
-            .font(.system(size: 13, weight: .medium))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
     }
 }
 

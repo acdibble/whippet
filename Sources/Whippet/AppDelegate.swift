@@ -1,5 +1,10 @@
 import AppKit
 import Carbon.HIToolbox
+import KeyboardShortcuts
+
+extension KeyboardShortcuts.Name {
+    static let togglePanel = Self("togglePanel", initial: .init(.space, modifiers: [.option]))
+}
 
 /// Owns the search panel, the global hotkey and the services shared with the SwiftUI scenes in `WhippetApp`.
 @MainActor
@@ -13,7 +18,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let appIndex = AppIndex()
     private var model: LauncherModel!
     private var panel: LauncherPanel!
-    private var hotKey: HotKey?
 
     override init() {
         clipboard = ClipboardHistory()
@@ -35,7 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         panel = LauncherPanel(rootView: SearchView(model: model))
         panel.delegate = self
 
-        hotKey = HotKey(keyCode: UInt32(kVK_Space), modifiers: UInt32(optionKey)) { [weak self] in
+        KeyboardShortcuts.onKeyDown(for: .togglePanel) { [weak self] in
             self?.togglePanel()
         }
 
