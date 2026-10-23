@@ -37,19 +37,21 @@ targets:
         CFBundleName: Whippet
         CFBundleDisplayName: Whippet
         NSHumanReadableCopyright: "© 2026 Dibble Codes"
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
-    entitlements:
-      path: Resources/Whippet.entitlements
-      properties:
-        com.apple.security.app-sandbox: false
-        com.apple.developer.icloud-services: [CloudKit]
-        com.apple.developer.icloud-container-identifiers: [iCloud.codes.dibble.whippet]
-        com.apple.developer.aps-environment: development
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     settings:
       base:
+        CODE_SIGN_ENTITLEMENTS: Resources/Whippet.entitlements
         PRODUCT_BUNDLE_IDENTIFIER: codes.dibble.whippet
         PRODUCT_NAME: Whippet
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
         DEVELOPMENT_TEAM: 5G59X57VMZ
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
+      configs:
+        Release:
+          CODE_SIGN_ENTITLEMENTS: Resources/WhippetRelease.entitlements
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: Developer ID Application
+          PROVISIONING_PROFILE_SPECIFIER: Whippet Developer ID
