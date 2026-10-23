@@ -104,9 +104,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// Whippet runs without a Dock icon and takes one while Settings is open; `SettingsView` gives it up on close.
     func showSettings() {
         panel.orderOut(nil)
+        // From the menu bar Whippet is a background app, and macOS refuses the cooperative NSApp.activate() request then,
+        // so Settings opens behind the front app. The deprecated call still forces activation, as other menu bar apps rely on.
+        NSApp.activate(ignoringOtherApps: true)
         NSApp.setActivationPolicy(.regular)
         openSettingsWindow()
-        NSApp.activate()
     }
 
     /// Registers a handler once per app; the handler looks the app up when pressed, so it follows the app if it moves.
