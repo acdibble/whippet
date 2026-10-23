@@ -2,59 +2,6 @@ import AppKit
 import ServiceManagement
 import SwiftUI
 
-/// Owns the single Settings window and brings it to the front, since an accessory app has no app menu to do it.
-@MainActor
-final class SettingsWindow {
-    private let cloudSync: CloudSync
-    private let clipboard: ClipboardHistory
-    private(set) var window: NSWindow?
-
-    init(cloudSync: CloudSync, clipboard: ClipboardHistory) {
-        self.cloudSync = cloudSync
-        self.clipboard = clipboard
-    }
-
-    func show() {
-        let window = window ?? makeWindow()
-        self.window = window
-        NSApp.activate()
-        window.makeKeyAndOrderFront(nil)
-        // While Whippet is not the active app, ordering front only reorders its own windows, so raise it above other apps too.
-        window.orderFrontRegardless()
-    }
-
-    /// A full-size, transparent-titlebar window with a toolbar, which lets the split view's sidebar run under the
-    /// traffic lights as a floating glass panel. It is a non-activating panel so it can take keyboard focus even when
-    /// macOS refuses to activate Whippet, which it does since macOS 14 when the request comes from the search panel.
-    private func makeWindow() -> NSWindow {
-        let window = SettingsPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 760, height: 520),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        let controller = NSHostingController(rootView: SettingsView(cloudSync: cloudSync, clipboard: clipboard))
-        controller.sceneBridgingOptions = [.toolbars, .title]
-        window.contentViewController = controller
-        window.setContentSize(NSSize(width: 760, height: 520))
-        window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
-        window.toolbar = NSToolbar()
-        window.toolbarStyle = .unified
-        window.isFloatingPanel = false
-        window.hidesOnDeactivate = false
-        window.becomesKeyOnlyIfNeeded = false
-        window.isReleasedWhenClosed = false
-        window.center()
-        return window
-    }
-}
-
-private final class SettingsPanel: NSPanel {
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
-}
-
 enum SettingsPane: String, CaseIterable, Identifiable {
     case general
     case cloudSync
@@ -92,6 +39,8 @@ enum SettingsPane: String, CaseIterable, Identifiable {
 }
 
 struct SettingsView: View {
+    static let windowID = "settings"
+
     let cloudSync: CloudSync
     let clipboard: ClipboardHistory
     @State private var selection: SettingsPane? = .general
@@ -117,11 +66,11 @@ struct SettingsView: View {
                 }
             }
             .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
             .navigationTitle(Text((selection ?? .general).title))
         }
         .frame(minWidth: 680, minHeight: 440)
-        .translucentWindowBackground()
+        .onAppear { NSApp.setActivationPolicy(.regular) }
+        .onDisappear { NSApp.setActivationPolicy(.accessory) }
     }
 }
 
@@ -262,18 +211,6 @@ private struct KeyChip: View {
     }
 }
 
-private extension View {
-    /// Lets the desktop show through the window behind the panes, where the system supports a material window background.
-    @ViewBuilder
-    func translucentWindowBackground() -> some View {
-        if #available(macOS 15.0, *) {
-            containerBackground(.thinMaterial, for: .window)
-        } else {
-            self
-        }
-    }
-}
-
 enum LaunchAtLogin {
     static var isEnabled: Bool {
         SMAppService.mainApp.status == .enabled
@@ -290,5 +227,32 @@ enum LaunchAtLogin {
             return
         }
         try service.unregister()
+    }
+}
+
+/// The window's material over the toolbar area, fading out just below it, so content scrolled under the pane title
+/// blurs away instead of overlapping it. The system's own scroll edge effect does not appear over a material window.
+private struct ToolbarFade: View {
+    private static let fadeHeight: CGFloat = 16
+
+    var body: some View {
+        GeometryReader { proxy in
+            let inset = proxy.safeAreaInsets.top
+            Rectangle()
+                .fill(.thinMaterial)
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black, location: inset / (inset + Self.fadeHeight)),
+                            .init(color: .clear, location: 1),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(height: inset + Self.fadeHeight)
+                .offset(y: -inset)
+        }
+        .allowsHitTesting(false)
     }
 }

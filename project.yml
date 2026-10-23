@@ -4,7 +4,7 @@ options:
   bundleIdPrefix: com.acdibble
   developmentLanguage: en
   deploymentTarget:
-    macOS: "14.0"
+    macOS: "15.0"
   createIntermediateGroups: true
 
 settings:

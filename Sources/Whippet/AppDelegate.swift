@@ -1,46 +1,39 @@
 import AppKit
 import Carbon.HIToolbox
 
-@main
+/// Owns the search panel, the global hotkey and the services shared with the SwiftUI scenes in `WhippetApp`.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+    let clipboard: ClipboardHistory
+    /// Created with the delegate because SwiftUI builds the Settings scene before the app finishes launching.
+    let cloudSync: CloudSync
+    /// Set by `WhippetApp`, which is the only place SwiftUI's `openWindow` action is available.
+    var openSettingsWindow: () -> Void = {}
+
     private let appIndex = AppIndex()
-    private let clipboard = ClipboardHistory()
     private var model: LauncherModel!
     private var panel: LauncherPanel!
     private var hotKey: HotKey?
-    private var menuBarItem: MenuBarItem?
-    private var cloudSync: CloudSync!
-    private var settingsWindow: SettingsWindow!
 
-    static func main() {
-        let app = NSApplication.shared
-        let delegate = AppDelegate()
-        app.delegate = delegate
-        app.setActivationPolicy(.accessory)
-        app.run()
+    override init() {
+        clipboard = ClipboardHistory()
+        cloudSync = CloudSync(store: clipboard.store)
+        super.init()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         appIndex.refresh()
         clipboard.start()
 
-        cloudSync = CloudSync(store: clipboard.store)
         clipboard.onLocalChange = { [weak self] in self?.cloudSync.recordChanged($0) }
         cloudSync.onRemoteChanges = { [weak self] in self?.clipboard.didMergeRemoteChanges() }
-        settingsWindow = SettingsWindow(cloudSync: cloudSync, clipboard: clipboard)
 
         model = LauncherModel(appIndex: appIndex, clipboard: clipboard)
-        model.onDismiss = { [weak self] in self?.hidePanel() }
+        model.onDismiss = { [weak self] in self?.dismissPanel() }
         model.onOpenSettings = { [weak self] in self?.showSettings() }
 
         panel = LauncherPanel(rootView: SearchView(model: model))
         panel.delegate = self
-        NSApp.mainMenu = makeMainMenu()
-        menuBarItem = MenuBarItem(
-            onOpen: { [weak self] in self?.showPanel() },
-            onSettings: { [weak self] in self?.showSettings() }
-        )
 
         hotKey = HotKey(keyCode: UInt32(kVK_Space), modifiers: UInt32(optionKey)) { [weak self] in
             self?.togglePanel()
@@ -49,12 +42,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // Navigation keys are handled before they reach the focused view, because text fields treat Escape as "complete"
         // and focus can sit outside the search field.
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self, let window = event.window else { return event }
+            guard let self, event.window === panel else { return event }
             let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            if window === settingsWindow.window {
-                return handleSettingsKey(event, modifiers: modifiers) ? nil : event
-            }
-            guard window === panel else { return event }
             let isPlainArrow = modifiers.isDisjoint(with: [.shift, .command, .option, .control])
             switch Int(event.keyCode) {
             case kVK_Escape: model.back()
@@ -73,98 +62,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    /// Clicking the Dock icon, which only shows while Settings is open, brings Settings forward.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showSettings()
+        return false
+    }
+
+    /// Clicking into another app takes focus away from the panel; that app is already active, so only the panel closes.
     func windowDidResignKey(_ notification: Notification) {
-        hidePanel()
+        panel.orderOut(nil)
+    }
+
+    /// Activates Whippet, as Raycast does, so anything opened from the panel such as Settings can come to the front.
+    /// The hotkey is the user's own input, which is what lets macOS grant the activation.
+    func showPanel() {
+        model.reset()
+        let frontmost = NSWorkspace.shared.frontmostApplication
+        model.targetApp = frontmost?.processIdentifier == ProcessInfo.processInfo.processIdentifier ? nil : frontmost
+        NSApp.activate()
+        panel.center()
+        panel.makeKeyAndOrderFront(nil)
+    }
+
+    /// Whippet runs without a Dock icon and takes one while Settings is open; `SettingsView` gives it up on close.
+    func showSettings() {
+        panel.orderOut(nil)
+        NSApp.setActivationPolicy(.regular)
+        openSettingsWindow()
+        NSApp.activate()
     }
 
     private func togglePanel() {
         if panel.isVisible {
-            hidePanel()
+            dismissPanel()
             return
         }
         showPanel()
     }
 
-    private func showPanel() {
-        model.reset()
-        let frontmost = NSWorkspace.shared.frontmostApplication
-        model.targetApp = frontmost?.processIdentifier == ProcessInfo.processInfo.processIdentifier ? nil : frontmost
-        panel.center()
-        panel.makeKeyAndOrderFront(nil)
-    }
-
-    private func hidePanel() {
+    /// Hiding Whippet hands focus back to the app the panel opened over, which is where pastes land.
+    /// While Settings is open only the panel closes, so Settings is not hidden with it.
+    private func dismissPanel() {
         panel.orderOut(nil)
+        guard NSApp.isActive, !isSettingsOpen else { return }
+        NSApp.hide(nil)
     }
 
-    /// Never shown, since an accessory app has no menu bar, but it is what gives windows their standard shortcuts.
-    private func makeMainMenu() -> NSMenu {
-        let about = NSMenuItem(title: String(localized: "About Whippet"), action: #selector(showAboutFromMenu), keyEquivalent: "")
-        about.target = self
-        let settings = NSMenuItem(title: String(localized: "Settings…"), action: #selector(showSettingsFromMenu), keyEquivalent: ",")
-        settings.target = self
-        let sections: [(String, [NSMenuItem])] = [
-            ("Whippet", [
-                about,
-                .separator(),
-                settings,
-                .separator(),
-                NSMenuItem(title: String(localized: "Quit Whippet"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"),
-            ]),
-            (String(localized: "Edit"), [
-                NSMenuItem(title: String(localized: "Undo"), action: Selector(("undo:")), keyEquivalent: "z"),
-                Self.menuItem(String(localized: "Redo"), action: Selector(("redo:")), key: "z", modifiers: [.command, .shift]),
-                .separator(),
-                NSMenuItem(title: String(localized: "Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x"),
-                NSMenuItem(title: String(localized: "Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c"),
-                NSMenuItem(title: String(localized: "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v"),
-                NSMenuItem(title: String(localized: "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"),
-            ]),
-            (String(localized: "Window"), [
-                NSMenuItem(title: String(localized: "Close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"),
-                NSMenuItem(title: String(localized: "Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m"),
-            ]),
-        ]
-
-        let mainMenu = NSMenu()
-        for (title, items) in sections {
-            let submenu = NSMenu(title: title)
-            submenu.items = items
-            let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-            item.submenu = submenu
-            mainMenu.addItem(item)
-        }
-        return mainMenu
-    }
-
-    private static func menuItem(_ title: String, action: Selector, key: String, modifiers: NSEvent.ModifierFlags) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
-        item.keyEquivalentModifierMask = modifiers
-        return item
-    }
-
-    @objc private func showAboutFromMenu() {
-        NSApp.showAboutPanel()
-    }
-
-    @objc private func showSettingsFromMenu() {
-        showSettings()
-    }
-
-    /// The main menu only handles shortcuts while Whippet is active, and the Settings window can have focus without that.
-    private func handleSettingsKey(_ event: NSEvent, modifiers: NSEvent.ModifierFlags) -> Bool {
-        guard modifiers == [.command] else { return false }
-        switch Int(event.keyCode) {
-        case kVK_ANSI_W: settingsWindow.window?.performClose(nil)
-        case kVK_ANSI_Q: NSApp.terminate(nil)
-        case kVK_ANSI_Comma: settingsWindow.show()
-        default: return false
-        }
-        return true
-    }
-
-    private func showSettings() {
-        hidePanel()
-        settingsWindow.show()
+    private var isSettingsOpen: Bool {
+        NSApp.windows.contains { $0.identifier?.rawValue.hasPrefix(SettingsView.windowID) == true && $0.isVisible }
     }
 }
