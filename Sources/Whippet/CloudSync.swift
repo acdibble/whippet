@@ -44,7 +44,7 @@ final class CloudSync {
 
     @ObservationIgnored private let store: ClipboardStore?
     @ObservationIgnored private var engine: CKSyncEngine?
-    @ObservationIgnored private let container = CKContainer(identifier: "iCloud.com.acdibble.whippet")
+    @ObservationIgnored private let container = CKContainer(identifier: "iCloud.codes.dibble.whippet")
 
     private static let zoneID = CKRecordZone.ID(zoneName: "Whippet")
     private static let clipboardType = "ClipboardItem"

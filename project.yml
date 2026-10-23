@@ -1,7 +1,7 @@
 name: Whippet
 
 options:
-  bundleIdPrefix: com.acdibble
+  bundleIdPrefix: codes.dibble
   developmentLanguage: en
   deploymentTarget:
     macOS: "15.0"
@@ -44,11 +44,11 @@ targets:
       properties:
         com.apple.security.app-sandbox: false
         com.apple.developer.icloud-services: [CloudKit]
-        com.apple.developer.icloud-container-identifiers: [iCloud.com.acdibble.whippet]
+        com.apple.developer.icloud-container-identifiers: [iCloud.codes.dibble.whippet]
         com.apple.developer.aps-environment: development
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.acdibble.whippet
+        PRODUCT_BUNDLE_IDENTIFIER: codes.dibble.whippet
         PRODUCT_NAME: Whippet
         DEVELOPMENT_TEAM: 5G59X57VMZ
         CODE_SIGN_STYLE: Automatic
