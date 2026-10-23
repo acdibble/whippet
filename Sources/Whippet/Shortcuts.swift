@@ -9,6 +9,7 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
     case calculator
     case clipboardHistory
     case settings
+    case caffeinate
 
     var id: Self { self }
 
@@ -21,6 +22,7 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
         case .calculator: String(localized: "Calculator")
         case .clipboardHistory: String(localized: "Clipboard History")
         case .settings: String(localized: "Settings")
+        case .caffeinate: String(localized: "Caffeinate")
         }
     }
 
@@ -29,6 +31,7 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
         case .calculator: "plus.forwardslash.minus"
         case .clipboardHistory: "list.clipboard"
         case .settings: "gearshape"
+        case .caffeinate: "cup.and.heat.waves.fill"
         }
     }
 }

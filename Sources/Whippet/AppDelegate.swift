@@ -12,9 +12,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var openSettingsWindow: () -> Void = {}
 
     let appIndex = AppIndex()
+    let caffeine = Caffeine()
     private var model: LauncherModel!
     private var panel: LauncherPanel!
     private var registeredAppHotkeys: Set<String> = []
+    private var caffeineStatusItem: CaffeineStatusItem?
 
     override init() {
         LegacySettings.migrate()
@@ -31,7 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         clipboard.onLocalDelete = { [weak self] in self?.cloudSync.recordDeleted($0) }
         cloudSync.onRemoteChanges = { [weak self] in self?.clipboard.didMergeRemoteChanges() }
 
-        model = LauncherModel(appIndex: appIndex, clipboard: clipboard)
+        model = LauncherModel(appIndex: appIndex, clipboard: clipboard, caffeine: caffeine)
         model.onDismiss = { [weak self] in self?.dismissPanel() }
         model.onOpenSettings = { [weak self] in self?.showSettings() }
         model.onShowActions = { [weak self] in self?.showActions() }
@@ -50,6 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         registerAppHotkeys()
         appIndex.onChange = { [weak self] in self?.registerAppHotkeys() }
         appIndex.startWatching()
+        caffeineStatusItem = CaffeineStatusItem(caffeine: caffeine)
 
         // Navigation keys are handled before they reach the focused view, because text fields treat Escape as "complete"
         // and focus can sit outside the search field.
@@ -133,6 +136,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             model.show(.clipboard)
         case .settings:
             showSettings()
+        case .caffeinate:
+            caffeine.toggle()
         }
     }
 
@@ -205,7 +210,7 @@ private enum LegacySettings {
 }
 
 /// A menu item that runs a closure, so actions do not need an Objective-C selector each.
-private final class ActionMenuItem: NSMenuItem {
+final class ActionMenuItem: NSMenuItem {
     private let handler: () -> Void
 
     init(title: String, handler: @escaping () -> Void) {

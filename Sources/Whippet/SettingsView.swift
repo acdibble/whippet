@@ -49,6 +49,7 @@ struct SettingsView: View {
     let cloudSync: CloudSync
     let clipboard: ClipboardHistory
     let appIndex: AppIndex
+    let caffeine: Caffeine
     @State private var selection: SettingsPane? = .general
 
     var body: some View {
@@ -65,7 +66,7 @@ struct SettingsView: View {
         } detail: {
             Group {
                 switch selection ?? .general {
-                case .general: GeneralPane()
+                case .general: GeneralPane(caffeine: caffeine)
                 case .shortcuts: ShortcutsPane(appIndex: appIndex)
                 case .cloudSync: CloudSyncPane(cloudSync: cloudSync)
                 case .usage: UsagePane(clipboard: clipboard)
@@ -96,6 +97,7 @@ private struct PaneIcon: View {
 }
 
 private struct GeneralPane: View {
+    let caffeine: Caffeine
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
     @State private var canPaste = Paster.isTrusted
     @State private var language = AppLanguage.current
@@ -106,6 +108,7 @@ private struct GeneralPane: View {
             Section {
                 Toggle("Open at Login", isOn: Binding(get: { launchesAtLogin }, set: setLaunchAtLogin))
                 KeyboardShortcuts.Recorder("Whippet Hotkey", name: .togglePanel)
+                Toggle("Show Caffeinate in Menu Bar", isOn: Bindable(caffeine).showsInMenuBar)
             }
 
             Section {
