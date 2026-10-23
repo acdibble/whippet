@@ -304,9 +304,10 @@ final class CloudSync {
             merge(serverRecord)
             engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
         case .zoneNotFound:
+            // The zone was removed, for example by resetting the development environment, so every record must go up again.
             try? store?.forgetAllSyncState()
             engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: Self.zoneID))])
-            engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+            enqueueUnsyncedRecords()
         case .unknownItem:
             try? store?.forgetSyncState(recordName: recordID.recordName)
             engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
