@@ -28,10 +28,10 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation(let calculation): calculation.answer
         case .pastCalculation(let record): "\(record.expression) = \(record.answer)"
-        case .calculator: "Calculator"
-        case .quit: "Quit Launcher"
-        case .clipboardHistory: "Clipboard History"
-        case .usageStats: "Usage Stats"
+        case .calculator: String(localized: "Calculator")
+        case .quit: String(localized: "Quit Launcher")
+        case .clipboardHistory: String(localized: "Clipboard History")
+        case .usageStats: String(localized: "Usage Stats")
         case .app(let app): app.name
         case .clipboard(let item): item.title
         }
@@ -39,10 +39,10 @@ enum LauncherResult: Identifiable, Hashable {
 
     var subtitle: String {
         switch self {
-        case .calculation: "Calculator"
+        case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
-        case .calculator, .clipboardHistory, .usageStats, .quit: "Command"
-        case .app: "Application"
+        case .calculator, .clipboardHistory, .usageStats, .quit: String(localized: "Command")
+        case .app: String(localized: "Application")
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
         }
     }
@@ -54,11 +54,11 @@ enum LauncherResult: Identifiable, Hashable {
 
     var actionTitle: String {
         switch self {
-        case .calculation, .pastCalculation: "Copy Answer"
-        case .calculator, .clipboardHistory, .usageStats: "Open Command"
-        case .quit: "Quit"
-        case .app: "Open Application"
-        case .clipboard: "Copy to Clipboard"
+        case .calculation, .pastCalculation: String(localized: "Copy Answer")
+        case .calculator, .clipboardHistory, .usageStats: String(localized: "Open Command")
+        case .quit: String(localized: "Quit")
+        case .app: String(localized: "Open Application")
+        case .clipboard: String(localized: "Copy to Clipboard")
         }
     }
 }

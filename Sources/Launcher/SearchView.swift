@@ -54,10 +54,10 @@ struct SearchView: View {
 
     private var placeholder: String {
         switch model.mode {
-        case .root: "Search apps and commands"
-        case .calculator: "Type a calculation…"
-        case .clipboard: "Type to filter entries…"
-        case .usage: "Usage Stats"
+        case .root: String(localized: "Search apps and commands")
+        case .calculator: String(localized: "Type a calculation…")
+        case .clipboard: String(localized: "Type to filter entries…")
+        case .usage: String(localized: "Usage Stats")
         }
     }
 }
@@ -134,8 +134,8 @@ private struct RootResults: View {
 
     private static func sectionTitle(for result: LauncherResult) -> String {
         switch result {
-        case .clipboard: "Clipboard History"
-        default: "Results"
+        case .clipboard: String(localized: "Clipboard History")
+        default: String(localized: "Results")
         }
     }
 }

@@ -15,14 +15,14 @@ struct Calculation: Hashable {
             guard case .operation(let operation) = token else { return nil }
             return operation
         })
-        guard operations.count == 1, let operation = operations.first else { return "Expression" }
+        guard operations.count == 1, let operation = operations.first else { return String(localized: "Expression") }
         switch operation {
-        case "+": return "Sum"
-        case "-": return "Difference"
-        case "*": return "Product"
-        case "/": return "Quotient"
-        case "%": return "Remainder"
-        default: return "Power"
+        case "+": return String(localized: "Sum")
+        case "-": return String(localized: "Difference")
+        case "*": return String(localized: "Product")
+        case "/": return String(localized: "Quotient")
+        case "%": return String(localized: "Remainder")
+        default: return String(localized: "Power")
         }
     }
 

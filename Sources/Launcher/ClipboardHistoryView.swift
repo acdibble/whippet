@@ -12,7 +12,7 @@ struct ClipboardKindMenu: View {
                     Button(kind.pluralTitle) { model.clipboardKind = kind }
                 }
             } label: {
-                Label(model.clipboardKind?.pluralTitle ?? "All Types", systemImage: "list.bullet")
+                Label(model.clipboardKind?.pluralTitle ?? String(localized: "All Types"), systemImage: "list.bullet")
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
@@ -64,7 +64,7 @@ struct ClipboardHistoryView: View {
             if let selected {
                 Button(action: model.togglePinnedSelection) {
                     HStack(spacing: 4) {
-                        Text(selected.pinnedAt == nil ? "Pin" : "Unpin")
+                        Text(selected.pinnedAt == nil ? String(localized: "Pin") : String(localized: "Unpin"))
                             .padding(.trailing, 4)
                         KeyCap(symbol: "command")
                         KeyCap(symbol: "shift")
@@ -124,7 +124,7 @@ private struct ItemList: View {
     private var sections: [(title: String, rows: [(index: Int, item: ClipboardItem)])] {
         var sections: [(title: String, rows: [(index: Int, item: ClipboardItem)])] = []
         for (index, item) in items.enumerated() {
-            let title = item.pinnedAt == nil ? Self.dayTitle(for: item.copiedAt) : "Pinned"
+            let title = item.pinnedAt == nil ? Self.dayTitle(for: item.copiedAt) : String(localized: "Pinned")
             if sections.last?.title == title {
                 sections[sections.count - 1].rows.append((index, item))
                 continue
@@ -136,8 +136,8 @@ private struct ItemList: View {
 
     private static func dayTitle(for date: Date) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "Today" }
-        if calendar.isDateInYesterday(date) { return "Yesterday" }
+        if calendar.isDateInToday(date) { return String(localized: "Today") }
+        if calendar.isDateInYesterday(date) { return String(localized: "Yesterday") }
         return date.formatted(.dateTime.weekday(.wide).month(.wide).day())
     }
 }
@@ -237,7 +237,7 @@ private struct ItemDetail: View {
     }
 
     private var recognizedWords: String {
-        guard let ocrText = item.ocrText else { return "Processing…" }
+        guard let ocrText = item.ocrText else { return String(localized: "Processing…") }
         return ocrText.split(whereSeparator: \.isWhitespace).count.formatted()
     }
 }
@@ -247,7 +247,12 @@ struct InformationRow {
     let value: String
     let icon: NSImage?
 
-    init(_ label: String, _ value: String, icon: NSImage? = nil) {
+    init(_ label: LocalizedStringResource, _ value: String, icon: NSImage? = nil) {
+        self.init(verbatim: String(localized: label), value, icon: icon)
+    }
+
+    /// For a label that is already localized, such as a clipboard type name.
+    init(verbatim label: String, _ value: String, icon: NSImage? = nil) {
         self.label = label
         self.value = value
         self.icon = icon
@@ -258,6 +263,11 @@ struct InformationRow {
 struct InformationList: View {
     let title: String
     let rows: [InformationRow]
+
+    init(title: LocalizedStringResource, rows: [InformationRow]) {
+        self.title = String(localized: title)
+        self.rows = rows
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -327,7 +337,7 @@ private struct SourceApp {
 
     init(bundleID: String?) {
         guard let bundleID else {
-            name = "Unknown"
+            name = String(localized: "Unknown")
             icon = nil
             return
         }
@@ -336,7 +346,7 @@ private struct SourceApp {
             icon = nil
             return
         }
-        name = url.deletingPathExtension().lastPathComponent
+        name = AppIndex.displayName(of: url)
         icon = NSWorkspace.shared.icon(forFile: url.path)
     }
 }

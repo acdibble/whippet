@@ -31,8 +31,15 @@ final class AppIndex {
                 return contents ?? []
             }
             .filter { $0.pathExtension == "app" }
-            .map { AppEntry(url: $0, name: $0.deletingPathExtension().lastPathComponent) }
+            .map { AppEntry(url: $0, name: Self.displayName(of: $0)) }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    /// The name Finder shows, which is localized for apps such as System Settings and drops the `.app` extension.
+    nonisolated static func displayName(of app: URL) -> String {
+        let name = FileManager.default.displayName(atPath: app.path)
+        guard name.hasSuffix(".app") else { return name }
+        return String(name.dropLast(4))
     }
 
     func open(_ app: AppEntry) {

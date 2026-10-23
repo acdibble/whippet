@@ -12,19 +12,19 @@ enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .text: "Text"
-        case .link: "Link"
-        case .number: "Number"
-        case .image: "Image"
+        case .text: String(localized: "Text")
+        case .link: String(localized: "Link")
+        case .number: String(localized: "Number")
+        case .image: String(localized: "Image")
         }
     }
 
     var pluralTitle: String {
         switch self {
-        case .text: "Text"
-        case .link: "Links"
-        case .number: "Numbers"
-        case .image: "Images"
+        case .text: String(localized: "Text")
+        case .link: String(localized: "Links")
+        case .number: String(localized: "Numbers")
+        case .image: String(localized: "Images")
         }
     }
 
@@ -71,7 +71,7 @@ struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, TableRec
 
     var title: String {
         if kind == .image {
-            return "Image (\(imageWidth ?? 0)×\(imageHeight ?? 0))"
+            return String(localized: "Image (\(imageWidth ?? 0)×\(imageHeight ?? 0))")
         }
         let trimmed = (text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.split(whereSeparator: \.isNewline).first.map(String.init) ?? trimmed

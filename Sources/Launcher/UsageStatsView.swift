@@ -31,7 +31,7 @@ struct UsageStatsView: View {
     private func diskRows(_ usage: ClipboardUsage) -> [InformationRow] {
         [
             InformationRow("Database", Self.bytes(usage.databaseBytes)),
-            InformationRow("Images", "\(Self.bytes(usage.imageBytes)) in \(usage.imageFiles.formatted()) files"),
+            InformationRow("Images", String(localized: "\(Self.bytes(usage.imageBytes)) in \(usage.imageFiles) files")),
             InformationRow("Total", Self.bytes(usage.databaseBytes + usage.imageBytes)),
         ]
     }
@@ -39,14 +39,14 @@ struct UsageStatsView: View {
     private func historyRows(_ usage: ClipboardUsage) -> [InformationRow] {
         let total = usage.counts.values.reduce(0, +)
         return [InformationRow("Items", total.formatted())]
-            + ClipboardKind.allCases.map { InformationRow($0.pluralTitle, (usage.counts[$0] ?? 0).formatted()) }
+            + ClipboardKind.allCases.map { InformationRow(verbatim: $0.pluralTitle, (usage.counts[$0] ?? 0).formatted()) }
             + [InformationRow("Images awaiting text recognition", usage.imagesAwaitingRecognition.formatted())]
             + [InformationRow("Calculations", usage.calculations.formatted())]
     }
 
     private func appRows(_ usage: ClipboardUsage) -> [InformationRow] {
         [
-            InformationRow("Memory", Self.memoryFootprint().map(Self.bytes) ?? "Unknown"),
+            InformationRow("Memory", Self.memoryFootprint().map(Self.bytes) ?? String(localized: "Unknown")),
             InformationRow("Data folder", usage.directory.path(percentEncoded: false)),
         ]
     }

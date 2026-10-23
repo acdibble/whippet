@@ -2,6 +2,7 @@ name: Launcher
 
 options:
   bundleIdPrefix: com.acdibble
+  developmentLanguage: en
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
@@ -9,6 +10,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
 
 packages:
   GRDB:

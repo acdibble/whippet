@@ -14,7 +14,7 @@ struct CalculatorResults: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
-                    SectionHeader(title: "Calculator")
+                    SectionHeader(title: String(localized: "Calculator"))
                     if let current, case .calculation(let calculation) = current.result {
                         CalculationCard(calculation: calculation, isSelected: current.index == model.selection)
                             .id(current.result.id)
@@ -45,9 +45,13 @@ struct CalculatorResults: View {
         }
     }
 
-    private func column(title: String, rows: [(index: Int, result: LauncherResult)], emptyText: String) -> some View {
+    private func column(
+        title: LocalizedStringResource,
+        rows: [(index: Int, result: LauncherResult)],
+        emptyText: LocalizedStringResource
+    ) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            SectionHeader(title: title)
+            SectionHeader(title: String(localized: title))
             if rows.isEmpty {
                 Text(emptyText)
                     .font(.system(size: 13))
