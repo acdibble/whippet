@@ -14,12 +14,14 @@ settings:
     SWIFT_EMIT_LOC_STRINGS: YES
 
 packages:
+  # Pinned to exact commits so a release build can't pick up a new upstream version while the signing keychain is
+  # unlocked. Bump these on purpose.
   GRDB:
     url: https://github.com/groue/GRDB.swift
-    from: 7.0.0
+    revision: b83108d10f42680d78f23fe4d4d80fc88dab3212 # 7.11.1
   KeyboardShortcuts:
     url: https://github.com/sindresorhus/KeyboardShortcuts
-    from: 3.1.0
+    revision: 772133d9dbe800fdac0473226822994c5c162c58 # 3.1.0
 
 targets:
   Whippet:

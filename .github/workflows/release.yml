@@ -18,15 +18,21 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Read version from tag
         run: |
           echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
           echo "BUILD_NUMBER=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      # Generate the project before any signing material is on the runner, since Homebrew installs whatever
+      # XcodeGen version is current.
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
 
       - name: Install the Developer ID certificate in a temporary keychain
         env:
@@ -60,7 +66,6 @@ jobs:
       # here would also apply it to the Swift packages, which Xcode rejects.
       - name: Archive
         run: |
-          xcodegen generate
           xcodebuild archive \
             -project Whippet.xcodeproj \
             -scheme Whippet \
