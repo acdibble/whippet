@@ -28,11 +28,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         clipboard.start()
 
         clipboard.onLocalChange = { [weak self] in self?.cloudSync.recordChanged($0) }
+        clipboard.onLocalDelete = { [weak self] in self?.cloudSync.recordDeleted($0) }
         cloudSync.onRemoteChanges = { [weak self] in self?.clipboard.didMergeRemoteChanges() }
 
         model = LauncherModel(appIndex: appIndex, clipboard: clipboard)
         model.onDismiss = { [weak self] in self?.dismissPanel() }
         model.onOpenSettings = { [weak self] in self?.showSettings() }
+        model.onShowActions = { [weak self] in self?.showActions() }
 
         panel = LauncherPanel(rootView: SearchView(model: model))
         panel.delegate = self
@@ -60,10 +62,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             case kVK_UpArrow: model.moveSelection(by: -1)
             case kVK_DownArrow: model.moveSelection(by: 1)
             case kVK_Return where modifiers == [.command], kVK_ANSI_KeypadEnter where modifiers == [.command]:
-                model.activate(copyOnly: true)
+                model.perform(.secondary)
             case kVK_LeftArrow where isPlainArrow, kVK_RightArrow where isPlainArrow:
                 guard model.moveColumn(by: Int(event.keyCode) == kVK_LeftArrow ? -1 : 1) else { return event }
-            case kVK_ANSI_P where modifiers == [.command, .shift]: model.togglePinnedSelection()
+            case kVK_ANSI_P where modifiers == [.command, .shift]: model.perform(.togglePin)
+            case kVK_ANSI_C where modifiers == [.command, .shift]: model.perform(.copyPath)
+            case kVK_ANSI_X where modifiers == [.control]: model.perform(.delete)
+            case kVK_ANSI_K where modifiers == [.command]: showActions()
             case kVK_ANSI_Q where modifiers == [.command]: NSApp.terminate(nil)
             case kVK_ANSI_Comma where modifiers == [.command]: showSettings()
             default: return event
@@ -127,6 +132,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    /// A native menu of the selected result's actions, which brings arrow keys, Return, Escape and type-to-select with it.
+    /// It opens above the footer at the panel's bottom right, where Raycast shows its actions.
+    private func showActions() {
+        guard let result = model.selectedResult, let view = panel.contentView else { return }
+        let menu = NSMenu()
+        for action in ResultAction.allCases where action.isAvailable(for: result) {
+            let item = ActionMenuItem(title: action.title(for: result, model: model)) { [weak self] in
+                self?.model.perform(action)
+            }
+            item.image = NSImage(systemSymbolName: action.symbol, accessibilityDescription: nil)
+            item.keyEquivalent = action.shortcut.key
+            item.keyEquivalentModifierMask = action.shortcut.modifiers
+            menu.addItem(item)
+        }
+
+        let inset = LauncherPanel.shadowInset
+        let size = LauncherPanel.contentSize
+        let footerHeight: CGFloat = 44
+        let origin = NSPoint(
+            x: inset + size.width - menu.size.width - 12,
+            y: inset + size.height - footerHeight - menu.size.height
+        )
+        menu.popUp(positioning: nil, at: origin, in: view)
+    }
+
     private func togglePanel() {
         if panel.isVisible {
             dismissPanel()
@@ -166,5 +196,24 @@ private enum LegacySettings {
             if skippedKeys.contains(key) || skippedPrefixes.contains(where: key.hasPrefix) { continue }
             defaults.set(value, forKey: key)
         }
+    }
+}
+
+/// A menu item that runs a closure, so actions do not need an Objective-C selector each.
+private final class ActionMenuItem: NSMenuItem {
+    private let handler: () -> Void
+
+    init(title: String, handler: @escaping () -> Void) {
+        self.handler = handler
+        super.init(title: title, action: #selector(run), keyEquivalent: "")
+        target = self
+    }
+
+    required init(coder: NSCoder) {
+        fatalError("init(coder:) is not used")
+    }
+
+    @objc private func run() {
+        handler()
     }
 }

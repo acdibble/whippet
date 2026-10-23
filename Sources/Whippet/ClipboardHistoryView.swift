@@ -62,20 +62,6 @@ struct ClipboardHistoryView: View {
             Spacer()
 
             if let selected {
-                Button(action: model.togglePinnedSelection) {
-                    HStack(spacing: 4) {
-                        Text(selected.pinnedAt == nil ? String(localized: "Pin") : String(localized: "Unpin"))
-                            .padding(.trailing, 4)
-                        KeyCap(symbol: "command")
-                        KeyCap(symbol: "shift")
-                        KeyCap("P")
-                    }
-                }
-                .buttonStyle(.launcher)
-                .padding(.trailing, 12)
-            }
-
-            if let selected {
                 ResultActions(model: model, result: .clipboard(selected))
             }
         }

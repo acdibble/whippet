@@ -47,6 +47,16 @@ enum LauncherResult: Identifiable, Hashable {
         }
     }
 
+    var isApp: Bool {
+        guard case .app = self else { return false }
+        return true
+    }
+
+    var isPinned: Bool {
+        guard case .clipboard(let item) = self else { return false }
+        return item.pinnedAt != nil
+    }
+
     var isCalculation: Bool {
         guard case .calculation = self else { return false }
         return true
@@ -67,6 +77,57 @@ enum LauncherResult: Identifiable, Hashable {
         case .quit: String(localized: "Quit")
         case .app: String(localized: "Open Application")
         case .clipboard: String(localized: "Copy to Clipboard")
+        }
+    }
+}
+
+/// What can be done with a result, offered in the ⌘K menu and through each action's own shortcut.
+enum ResultAction: CaseIterable {
+    case primary
+    case secondary
+    case togglePin
+    case copyPath
+    case delete
+
+    func isAvailable(for result: LauncherResult) -> Bool {
+        switch (self, result) {
+        case (.primary, _): true
+        case (.secondary, .app): true
+        case (.secondary, _): result.pastes
+        case (.togglePin, .clipboard), (.delete, .clipboard), (.copyPath, .app): true
+        default: false
+        }
+    }
+
+    @MainActor
+    func title(for result: LauncherResult, model: LauncherModel) -> String {
+        switch self {
+        case .primary: model.actionTitle(for: result)
+        case .secondary: result.isApp ? String(localized: "Show in Finder") : String(localized: "Copy")
+        case .togglePin: result.isPinned ? String(localized: "Unpin") : String(localized: "Pin")
+        case .copyPath: String(localized: "Copy Path")
+        case .delete: String(localized: "Delete")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .primary: "return"
+        case .secondary: "doc.on.doc"
+        case .togglePin: "pin"
+        case .copyPath: "link"
+        case .delete: "trash"
+        }
+    }
+
+    /// The key equivalent shown in the menu; the panel's key monitor handles the same keys outside the menu.
+    var shortcut: (key: String, modifiers: NSEvent.ModifierFlags) {
+        switch self {
+        case .primary: ("\r", [])
+        case .secondary: ("\r", [.command])
+        case .togglePin: ("p", [.command, .shift])
+        case .copyPath: ("c", [.command, .shift])
+        case .delete: ("x", [.control])
         }
     }
 }
@@ -99,6 +160,7 @@ final class LauncherModel {
     /// The app that was in front when the panel opened, which keeps keyboard focus underneath it and receives pastes.
     var targetApp: NSRunningApplication?
     @ObservationIgnored var onOpenSettings: () -> Void = {}
+    @ObservationIgnored var onShowActions: () -> Void = {}
 
     private static let calculatorColumnLength = 10
 
@@ -185,14 +247,33 @@ final class LauncherModel {
         )
     }
 
-    func togglePinnedSelection() {
-        guard mode == .clipboard else { return }
-        let items = clipboardItems
-        guard items.indices.contains(selection) else { return }
+    var selectedResult: LauncherResult? {
+        let results = results
+        return results.indices.contains(selection) ? results[selection] : nil
+    }
 
-        let item = items[selection]
-        clipboard.setPinned(item.pinnedAt == nil, item: item)
-        selection = clipboardItems.firstIndex { $0.id == item.id } ?? 0
+    func perform(_ action: ResultAction) {
+        guard let result = selectedResult, action.isAvailable(for: result) else { return }
+        switch (action, result) {
+        case (.primary, _):
+            activate()
+        case (.secondary, .app(let app)):
+            NSWorkspace.shared.activateFileViewerSelecting([app.url])
+            onDismiss()
+        case (.secondary, _):
+            activate(copyOnly: true)
+        case (.togglePin, .clipboard(let item)):
+            clipboard.setPinned(item.pinnedAt == nil, item: item)
+            selection = results.firstIndex { $0.id == result.id } ?? 0
+        case (.copyPath, .app(let app)):
+            clipboard.copy(text: app.url.path)
+            onDismiss()
+        case (.delete, .clipboard(let item)):
+            clipboard.delete(item)
+            selection = min(selection, max(results.count - 1, 0))
+        default:
+            break
+        }
     }
 
     func show(_ newMode: Mode) {
