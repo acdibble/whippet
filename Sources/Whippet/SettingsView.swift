@@ -104,7 +104,7 @@ private struct GeneralPane: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Open at Login", isOn: Binding(get: { launchesAtLogin }, set: setLaunchAtLogin))
+                Toggle("Open at Login", isOn: Binding(get: { launchesAtLogin }, set: { setLaunchAtLogin($0) }))
                 KeyboardShortcuts.Recorder("Whippet Hotkey", name: .togglePanel)
             }
 
