@@ -251,3 +251,11 @@ private extension Character {
         ("0"..."9").contains(self)
     }
 }
+
+extension String {
+    /// Wraps the text in Unicode left-to-right isolate marks, so a maths expression keeps its order and its brackets
+    /// unmirrored inside a right-to-left interface.
+    var leftToRightIsolated: String {
+        "\u{2066}\(self)\u{2069}"
+    }
+}

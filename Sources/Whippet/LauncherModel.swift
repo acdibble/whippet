@@ -27,7 +27,7 @@ enum LauncherResult: Identifiable, Hashable {
     var title: String {
         switch self {
         case .calculation(let calculation): calculation.answer
-        case .pastCalculation(let record): "\(record.expression) = \(record.answer)"
+        case .pastCalculation(let record): "\(record.expression) = \(record.answer)".leftToRightIsolated
         case .calculator: String(localized: "Calculator")
         case .settings: String(localized: "Settings")
         case .quit: String(localized: "Quit Whippet")

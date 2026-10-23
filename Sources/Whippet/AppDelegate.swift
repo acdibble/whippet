@@ -64,7 +64,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             case kVK_Return where modifiers == [.command], kVK_ANSI_KeypadEnter where modifiers == [.command]:
                 model.perform(.secondary)
             case kVK_LeftArrow where isPlainArrow, kVK_RightArrow where isPlainArrow:
-                guard model.moveColumn(by: Int(event.keyCode) == kVK_LeftArrow ? -1 : 1) else { return event }
+                // Columns swap sides in right-to-left languages, so the arrow keys follow the screen rather than the column order.
+                let towardStart = (Int(event.keyCode) == kVK_LeftArrow) == (NSApp.userInterfaceLayoutDirection == .leftToRight)
+                guard model.moveColumn(by: towardStart ? -1 : 1) else { return event }
             case kVK_ANSI_P where modifiers == [.command, .shift]: model.perform(.togglePin)
             case kVK_ANSI_C where modifiers == [.command, .shift]: model.perform(.copyPath)
             case kVK_ANSI_X where modifiers == [.control]: model.perform(.delete)
@@ -133,7 +135,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     /// A native menu of the selected result's actions, which brings arrow keys, Return, Escape and type-to-select with it.
-    /// It opens above the footer at the panel's bottom right, where Raycast shows its actions.
+    /// It opens above the footer at the panel's bottom right, or bottom left in right-to-left languages, beside the footer actions.
     private func showActions() {
         guard let result = model.selectedResult, let view = panel.contentView else { return }
         let menu = NSMenu()
@@ -150,8 +152,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let inset = LauncherPanel.shadowInset
         let size = LauncherPanel.contentSize
         let footerHeight: CGFloat = 44
+        let isRightToLeft = NSApp.userInterfaceLayoutDirection == .rightToLeft
         let origin = NSPoint(
-            x: inset + size.width - menu.size.width - 12,
+            x: isRightToLeft ? inset + 12 : inset + size.width - menu.size.width - 12,
             y: inset + size.height - footerHeight - menu.size.height
         )
         menu.popUp(positioning: nil, at: origin, in: view)

@@ -84,7 +84,7 @@ struct CalculationCard: View {
                     .font(.system(size: 14, weight: .semibold))
                 Rectangle().fill(Color.primary.opacity(0.1)).frame(width: 1)
             }
-            side(Text(calculation.answer), label: calculation.spelledAnswer)
+            side(Text(calculation.answer.leftToRightIsolated), label: calculation.spelledAnswer)
         }
         .frame(height: 130)
         .background(Color.primary.opacity(isSelected ? 0.1 : 0.05), in: RoundedRectangle(cornerRadius: 10))
@@ -108,7 +108,7 @@ struct CalculationCard: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// The input re-spaced with typographic operators, which are dimmed so the numbers stand out.
+    /// The input re-spaced with typographic operators, which are dimmed so the numbers stand out, kept left to right in right-to-left languages.
     private var expression: AttributedString {
         var expression = AttributedString()
         var previous: Calculator.Token?
@@ -130,7 +130,7 @@ struct CalculationCard: View {
             }
             previous = token
         }
-        return expression
+        return AttributedString("\u{2066}") + expression + AttributedString("\u{2069}")
     }
 
     private static func symbol(for operation: Character) -> String {

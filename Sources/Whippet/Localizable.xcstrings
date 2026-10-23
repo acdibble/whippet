@@ -30,6 +30,1204 @@
               }
             }
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ در %#@files@"
+          },
+          "substitutions" : {
+            "files" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg فایل"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg فایل"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "About" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "درباره"
+          }
+        }
+      }
+    },
+    "About Whippet" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "درباره Whippet"
+          }
+        }
+      }
+    },
+    "Actions" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عملیات"
+          }
+        }
+      }
+    },
+    "All Types" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "همهٔ انواع"
+          }
+        }
+      }
+    },
+    "Allowed" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مجاز"
+          }
+        }
+      }
+    },
+    "Allow…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجازه دادن…"
+          }
+        }
+      }
+    },
+    "Answers you copy appear here" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پاسخ‌هایی که کپی می‌کنید اینجا نمایش داده می‌شوند"
+          }
+        }
+      }
+    },
+    "App" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برنامه"
+          }
+        }
+      }
+    },
+    "Application" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برنامه"
+          }
+        }
+      }
+    },
+    "Applications" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برنامه‌ها"
+          }
+        }
+      }
+    },
+    "Calculations" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محاسبات"
+          }
+        }
+      }
+    },
+    "Calculator" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ماشین‌حساب"
+          }
+        }
+      }
+    },
+    "Characters" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نویسه‌ها"
+          }
+        }
+      }
+    },
+    "Checking iCloud account…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در حال بررسی حساب iCloud…"
+          }
+        }
+      }
+    },
+    "Clipboard History" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخچهٔ کلیپ‌بورد"
+          }
+        }
+      }
+    },
+    "Clipboard history, pins and calculations, across your Macs" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخچهٔ کلیپ‌بورد، موارد سنجاق‌شده و محاسبات، در همهٔ Macهای شما"
+          }
+        }
+      }
+    },
+    "Clipboard text and calculations are end-to-end encrypted. Images are stored like other iCloud data, and are end-to-end encrypted only with Advanced Data Protection." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن کلیپ‌بورد و محاسبات به‌صورت سرتاسری رمزگذاری می‌شوند. تصاویر مانند سایر داده‌های iCloud ذخیره می‌شوند و فقط با «محافظت پیشرفته از داده‌ها» به‌صورت سرتاسری رمزگذاری می‌شوند."
+          }
+        }
+      }
+    },
+    "Close Settings" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بستن تنظیمات"
+          }
+        }
+      }
+    },
+    "Cloud Sync" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "همگام‌سازی ابری"
+          }
+        }
+      }
+    },
+    "Command" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فرمان"
+          }
+        }
+      }
+    },
+    "Commands" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فرمان‌ها"
+          }
+        }
+      }
+    },
+    "Copied images and their recognized text" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصاویر کپی‌شده و متن شناسایی‌شدهٔ آن‌ها"
+          }
+        }
+      }
+    },
+    "Copy" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی"
+          }
+        }
+      }
+    },
+    "Copy Answer" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی پاسخ"
+          }
+        }
+      }
+    },
+    "Copy Path" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی مسیر"
+          }
+        }
+      }
+    },
+    "Copy to Clipboard" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی در کلیپ‌بورد"
+          }
+        }
+      }
+    },
+    "Couldn't check the iCloud account." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بررسی حساب iCloud ممکن نشد."
+          }
+        }
+      }
+    },
+    "Data Folder" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پوشهٔ داده‌ها"
+          }
+        }
+      }
+    },
+    "Database" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پایگاه داده"
+          }
+        }
+      }
+    },
+    "Delete" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف"
+          }
+        }
+      }
+    },
+    "Delete Whippet data from iCloud?" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "داده‌های Whippet از iCloud حذف شود؟"
+          }
+        }
+      }
+    },
+    "Delete iCloud Data" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف داده‌های iCloud"
+          }
+        }
+      }
+    },
+    "Delete iCloud Data…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف داده‌های iCloud…"
+          }
+        }
+      }
+    },
+    "Developer" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توسعه‌دهنده"
+          }
+        }
+      }
+    },
+    "Difference" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفاضل"
+          }
+        }
+      }
+    },
+    "Dimensions" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابعاد"
+          }
+        }
+      }
+    },
+    "Disk" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دیسک"
+          }
+        }
+      }
+    },
+    "Expression" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عبارت"
+          }
+        }
+      }
+    },
+    "General" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عمومی"
+          }
+        }
+      }
+    },
+    "History" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخچه"
+          }
+        }
+      }
+    },
+    "History could not be opened, so there is nothing to sync." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخچه باز نشد، بنابراین چیزی برای همگام‌سازی وجود ندارد."
+          }
+        }
+      }
+    },
+    "Image" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصویر"
+          }
+        }
+      }
+    },
+    "Image (%lld×%lld)" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصویر (%1$lld×%2$lld)"
+          }
+        }
+      }
+    },
+    "Images" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصاویر"
+          }
+        }
+      }
+    },
+    "Images Awaiting Text Recognition" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصاویر در انتظار شناسایی متن"
+          }
+        }
+      }
+    },
+    "Include Images" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شامل تصاویر"
+          }
+        }
+      }
+    },
+    "Information" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اطلاعات"
+          }
+        }
+      }
+    },
+    "Items" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موارد"
+          }
+        }
+      }
+    },
+    "Language" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زبان"
+          }
+        }
+      }
+    },
+    "Last copied" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخرین کپی"
+          }
+        }
+      }
+    },
+    "Link" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوند"
+          }
+        }
+      }
+    },
+    "Links" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوندها"
+          }
+        }
+      }
+    },
+    "Memory" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حافظه"
+          }
+        }
+      }
+    },
+    "Needs Accessibility permission to send ⌘V; without it, Return only copies" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای ارسال ⌘V به مجوز دسترس‌پذیری نیاز دارد؛ بدون آن، Return فقط کپی می‌کند"
+          }
+        }
+      }
+    },
+    "No clipboard history" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخچهٔ کلیپ‌بورد خالی است"
+          }
+        }
+      }
+    },
+    "Number" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عدد"
+          }
+        }
+      }
+    },
+    "Numbers" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعداد"
+          }
+        }
+      }
+    },
+    "Numbers you copy appear here" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعدادی که کپی می‌کنید اینجا نمایش داده می‌شوند"
+          }
+        }
+      }
+    },
+    "Off" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خاموش"
+          }
+        }
+      }
+    },
+    "Open Application" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن برنامه"
+          }
+        }
+      }
+    },
+    "Open Command" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجرای فرمان"
+          }
+        }
+      }
+    },
+    "Open Whippet" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن Whippet"
+          }
+        }
+      }
+    },
+    "Open at Login" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز شدن هنگام ورود"
+          }
+        }
+      }
+    },
+    "Paste into Apps" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جای‌گذاری در برنامه‌ها"
+          }
+        }
+      }
+    },
+    "Paste to %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جای‌گذاری در %@"
+          }
+        }
+      }
+    },
+    "Pin" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سنجاق کردن"
+          }
+        }
+      }
+    },
+    "Pinned" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سنجاق‌شده"
+          }
+        }
+      }
+    },
+    "Power" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توان"
+          }
+        }
+      }
+    },
+    "Processing…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در حال پردازش…"
+          }
+        }
+      }
+    },
+    "Product" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حاصل‌ضرب"
+          }
+        }
+      }
+    },
+    "Quit" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خروج"
+          }
+        }
+      }
+    },
+    "Quit Whippet" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خروج از Whippet"
+          }
+        }
+      }
+    },
+    "Quotient" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خارج‌قسمت"
+          }
+        }
+      }
+    },
+    "Recognized words" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "واژه‌های شناسایی‌شده"
+          }
+        }
+      }
+    },
+    "Relaunch" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راه‌اندازی دوباره"
+          }
+        }
+      }
+    },
+    "Relaunch Whippet to use the new language" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای استفاده از زبان جدید، Whippet را دوباره راه‌اندازی کنید"
+          }
+        }
+      }
+    },
+    "Remainder" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باقی‌مانده"
+          }
+        }
+      }
+    },
+    "Results" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نتایج"
+          }
+        }
+      }
+    },
+    "Search applications" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جست‌وجوی برنامه‌ها"
+          }
+        }
+      }
+    },
+    "Search apps and commands" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جست‌وجوی برنامه‌ها و فرمان‌ها"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنظیمات"
+          }
+        }
+      }
+    },
+    "Settings…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنظیمات…"
+          }
+        }
+      }
+    },
+    "Shortcuts" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "میان‌برها"
+          }
+        }
+      }
+    },
+    "Show Data Folder" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمایش پوشهٔ داده‌ها"
+          }
+        }
+      }
+    },
+    "Show in Finder" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمایش در Finder"
+          }
+        }
+      }
+    },
+    "Sign in to iCloud to sync." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای همگام‌سازی وارد iCloud شوید."
+          }
+        }
+      }
+    },
+    "Size" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اندازه"
+          }
+        }
+      }
+    },
+    "Source" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منبع"
+          }
+        }
+      }
+    },
+    "Status" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وضعیت"
+          }
+        }
+      }
+    },
+    "Sum" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مجموع"
+          }
+        }
+      }
+    },
+    "Sync Now" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "همگام‌سازی اکنون"
+          }
+        }
+      }
+    },
+    "Sync with iCloud" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "همگام‌سازی با iCloud"
+          }
+        }
+      }
+    },
+    "Syncing…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در حال همگام‌سازی…"
+          }
+        }
+      }
+    },
+    "System" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سیستم"
+          }
+        }
+      }
+    },
+    "Text" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن"
+          }
+        }
+      }
+    },
+    "This removes the copy in iCloud and turns sync off. History on this Mac is kept." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این کار نسخهٔ موجود در iCloud را حذف و همگام‌سازی را خاموش می‌کند. تاریخچهٔ این Mac حفظ می‌شود."
+          }
+        }
+      }
+    },
+    "Times copied" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دفعات کپی"
+          }
+        }
+      }
+    },
+    "Today" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "امروز"
+          }
+        }
+      }
+    },
+    "Total" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کل"
+          }
+        }
+      }
+    },
+    "Type" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نوع"
+          }
+        }
+      }
+    },
+    "Type a calculation" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک محاسبه بنویسید"
+          }
+        }
+      }
+    },
+    "Type a calculation…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک محاسبه بنویسید…"
+          }
+        }
+      }
+    },
+    "Type to filter entries…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای فیلتر کردن موارد بنویسید…"
+          }
+        }
+      }
+    },
+    "Unknown" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نامشخص"
+          }
+        }
+      }
+    },
+    "Unpin" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برداشتن سنجاق"
+          }
+        }
+      }
+    },
+    "Up to date" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به‌روز است"
+          }
+        }
+      }
+    },
+    "Up to date, last synced %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به‌روز است، آخرین همگام‌سازی %@"
+          }
+        }
+      }
+    },
+    "Usage" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مصرف"
+          }
+        }
+      }
+    },
+    "Usage is unavailable because clipboard history could not be opened." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اطلاعات مصرف در دسترس نیست، زیرا تاریخچهٔ کلیپ‌بورد باز نشد."
+          }
+        }
+      }
+    },
+    "Version" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخه"
+          }
+        }
+      }
+    },
+    "Waiting to Upload" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در انتظار بارگذاری"
+          }
+        }
+      }
+    },
+    "Whippet Hotkey" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلید میان‌بر Whippet"
+          }
+        }
+      }
+    },
+    "Whippet Settings" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنظیمات Whippet"
+          }
+        }
+      }
+    },
+    "Words" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "واژه‌ها"
+          }
+        }
+      }
+    },
+    "Yesterday" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دیروز"
+          }
+        }
+      }
+    },
+    "iCloud is restricted on this Mac." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud در این Mac محدود شده است."
+          }
+        }
+      }
+    },
+    "iCloud is temporarily unavailable." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud موقتاً در دسترس نیست."
+          }
         }
       }
     }
