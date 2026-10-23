@@ -11,6 +11,8 @@ final class ClipboardHistory {
     @ObservationIgnored let store: ClipboardStore?
     /// Called with the sync record name of every item changed on this Mac.
     @ObservationIgnored var onLocalChange: (String) -> Void = { _ in }
+    /// Called with the sync record name of every item deleted on this Mac.
+    @ObservationIgnored var onLocalDelete: (String) -> Void = { _ in }
     @ObservationIgnored private var lastChangeCount = NSPasteboard.general.changeCount
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var isRecognizing = false
@@ -61,6 +63,17 @@ final class ClipboardHistory {
             revision += 1
         } catch {
             NSLog("Failed to pin clipboard item: \(error)")
+        }
+    }
+
+    func delete(_ item: ClipboardItem) {
+        let recordName = ClipboardStore.clipboardRecordName(item.contentHash)
+        do {
+            try store?.deleteRecord(named: recordName)
+            onLocalDelete(recordName)
+            revision += 1
+        } catch {
+            NSLog("Failed to delete clipboard item: \(error)")
         }
     }
 

@@ -222,32 +222,32 @@ struct HoverHighlight<Label: View>: View {
     }
 }
 
-/// The footer's main action for the selected result, plus a copy-only action when the main one pastes.
+/// The footer's main action for the selected result, and the ⌘K menu with the rest.
 struct ResultActions: View {
     let model: LauncherModel
     let result: LauncherResult
 
     var body: some View {
         HStack(spacing: 4) {
-            if result.pastes {
-                Button {
-                    model.activate(copyOnly: true)
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("Copy")
-                            .padding(.trailing, 4)
-                        KeyCap(symbol: "command")
-                        KeyCap(symbol: "return")
-                    }
-                }
-                .buttonStyle(.launcher)
-            }
             Button {
                 model.activate()
             } label: {
                 HStack(spacing: 8) {
                     Text(model.actionTitle(for: result))
                     KeyCap(symbol: "return")
+                }
+            }
+            .buttonStyle(.launcher)
+            Divider()
+                .frame(height: 16)
+            Button {
+                model.onShowActions()
+            } label: {
+                HStack(spacing: 4) {
+                    Text("Actions")
+                        .padding(.trailing, 4)
+                    KeyCap(symbol: "command")
+                    KeyCap("K")
                 }
             }
             .buttonStyle(.launcher)

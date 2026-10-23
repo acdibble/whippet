@@ -77,6 +77,13 @@ final class CloudSync {
         updatePendingChanges()
     }
 
+    /// Queues the deletion of a record removed on this Mac.
+    func recordDeleted(_ recordName: String) {
+        guard let engine else { return }
+        engine.state.add(pendingRecordZoneChanges: [.deleteRecord(Self.recordID(recordName))])
+        updatePendingChanges()
+    }
+
     func syncNow() async {
         guard let engine else { return }
         status = .syncing
