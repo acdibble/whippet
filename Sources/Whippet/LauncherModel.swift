@@ -17,6 +17,8 @@ enum LauncherResult: Identifiable, Hashable {
     case decaffeinate(until: String)
     case caffeinateMenuBar(isShown: Bool)
     case system(SystemCommand)
+    case quicklink(Quicklink)
+    case createQuicklink
     case app(AppEntry)
     case clipboard(ClipboardItem)
 
@@ -37,6 +39,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .decaffeinate: "command:decaffeinate"
         case .caffeinateMenuBar: "command:caffeinate-menu-bar"
         case .system(let command): "command:system.\(command.rawValue)"
+        case .quicklink(let quicklink): "quicklink:\(quicklink.uuid)"
+        case .createQuicklink: "command:create-quicklink"
         case .app(let app): "app:\(app.url.path)"
         case .clipboard(let item): "clipboard:\(item.id)"
         }
@@ -53,6 +57,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .readFeedback: String(localized: "Read Feedback")
         case .changelog: String(localized: "Changelog")
         case .system(let command): command.title
+        case .quicklink(let quicklink): quicklink.name
+        case .createQuicklink: String(localized: "Create Quicklink")
         case .quit: String(localized: "Quit Whippet")
         case .clipboardHistory: String(localized: "Clipboard History")
         case .caffeinate: String(localized: "Caffeinate")
@@ -72,7 +78,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog, .quit:
             String(localized: "Command")
         case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
-        case .caffeinateMenuBar, .system: String(localized: "Command")
+        case .caffeinateMenuBar, .system, .createQuicklink: String(localized: "Command")
+        case .quicklink: String(localized: "Quicklink")
         case .decaffeinate(let until): until
         case .app: String(localized: "Application")
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
@@ -108,6 +115,12 @@ enum LauncherResult: Identifiable, Hashable {
         }
     }
 
+    /// What search matches: a quicklink's keyword as well as its name, otherwise the title.
+    var searchText: String {
+        if case .quicklink(let quicklink) = self { return quicklink.searchText }
+        return title
+    }
+
     /// The key launches are recorded under: an app's bundle identifier, or a command's identifier. Calculations,
     /// clipboard items and Quit aren't recorded.
     var launchKey: String? {
@@ -127,6 +140,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .caffeinateFor: String(localized: "Choose Duration")
         case .changelog: String(localized: "Open in Browser")
         case .system: String(localized: "Run Command")
+        case .quicklink(let quicklink): quicklink.takesArgument ? String(localized: "Enter Text") : String(localized: "Open Quicklink")
+        case .createQuicklink: String(localized: "Open Command")
         case .quit: String(localized: "Quit")
         case .app: String(localized: "Open Application")
         case .clipboard: String(localized: "Copy to Clipboard")
@@ -228,6 +243,11 @@ final class LauncherModel {
     @ObservationIgnored var onShowActions: () -> Void = {}
     /// Opens the floating calculator, with the given expression in its input.
     @ObservationIgnored var onPopOutCalculator: (String?) -> Void = { _ in }
+    @ObservationIgnored var onCreateQuicklink: () -> Void = {}
+
+    /// The quicklink whose text is being typed after Tab, shown as a label in front of the search bar.
+    private(set) var argumentQuicklink: Quicklink?
+    var quicklinkArgument = ""
 
     private static let calculatorColumnLength = 10
     private static let changelogURL = URL(string: "https://github.com/acdibble/whippet/blob/main/CHANGELOG.md")!
@@ -245,6 +265,7 @@ final class LauncherModel {
         let showsCaffeineInMenuBar: Bool
         let isShowingAll: Bool
         let launchRevision: Int
+        let quicklinks: [Quicklink]
         /// Compared cheaply, since an unchanged array shares its storage.
         let apps: [AppEntry]
     }
@@ -255,6 +276,7 @@ final class LauncherModel {
 
     private let appIndex: AppIndex
     private let history: LaunchHistory
+    private let quicklinks: Quicklinks
     /// How many of the results lead the empty search's Suggestions section; set with the results.
     @ObservationIgnored private var suggestionCount = 0
     private static let suggestionLimit = 5
@@ -266,11 +288,12 @@ final class LauncherModel {
     /// Hours, minutes and seconds as typed into those fields.
     var durationFields = ["", "", ""]
 
-    init(appIndex: AppIndex, clipboard: ClipboardHistory, caffeine: Caffeine, history: LaunchHistory) {
+    init(appIndex: AppIndex, clipboard: ClipboardHistory, caffeine: Caffeine, history: LaunchHistory, quicklinks: Quicklinks) {
         self.caffeine = caffeine
         self.appIndex = appIndex
         self.clipboard = clipboard
         self.history = history
+        self.quicklinks = quicklinks
     }
 
     /// True after ↓ in the empty search field, which shows Suggestions, then every command and app.
@@ -298,7 +321,23 @@ final class LauncherModel {
     }
 
     var isExpanded: Bool {
-        mode != .root || isShowingAll || (!query.isEmpty && !isCalculatingInline)
+        guard argumentQuicklink == nil else { return false }
+        return mode != .root || isShowingAll || (!query.isEmpty && !isCalculatingInline)
+    }
+
+    /// Switches the search bar to typing the text for a quicklink.
+    func beginArgument(for quicklink: Quicklink) {
+        quicklinkArgument = ""
+        argumentQuicklink = quicklink
+    }
+
+    /// Tab on a quicklink that takes text starts typing it; returns false so Tab does its usual job otherwise.
+    func beginArgumentForSelection() -> Bool {
+        guard argumentQuicklink == nil, case .quicklink(let quicklink)? = selectedResult, quicklink.takesArgument else {
+            return false
+        }
+        beginArgument(for: quicklink)
+        return true
     }
 
     var results: [LauncherResult] {
@@ -313,6 +352,7 @@ final class LauncherModel {
             showsCaffeineInMenuBar: caffeine.showsInMenuBar,
             isShowingAll: isShowingAll,
             launchRevision: history.revision,
+            quicklinks: quicklinks.items,
             apps: appIndex.apps
         )
         if let cachedResults, cachedResults.key == key {
@@ -339,10 +379,11 @@ final class LauncherModel {
                 + (caffeine.isActive ? [.decaffeinate(until: caffeine.untilDescription)] : [])
                 + [.caffeinateMenuBar(isShown: caffeine.showsInMenuBar)]
                 + SystemCommand.allCases.map(LauncherResult.system)
-            let candidates = commands + appIndex.apps.map(LauncherResult.app)
+                + [.createQuicklink]
+            let candidates = commands + quicklinks.items.map(LauncherResult.quicklink) + appIndex.apps.map(LauncherResult.app)
             guard query.isEmpty else {
                 suggestionCount = 0
-                return Ranking.rank(candidates, query: query, title: \.title, frecency: frecency(of:))
+                return Ranking.rank(candidates, query: query, title: \.searchText, frecency: frecency(of:))
             }
             let suggestions = Ranking.suggestions(candidates, limit: Self.suggestionLimit, frecency: frecency(of:))
             let suggestedIDs = Set(suggestions.map(\.id))
@@ -473,6 +514,7 @@ final class LauncherModel {
         clipboardKind = nil
         isEnteringDuration = false
         isShowingAll = false
+        argumentQuicklink = nil
         resetSelection()
     }
 
@@ -489,6 +531,14 @@ final class LauncherModel {
     func activate(copyOnly: Bool = false) {
         if isEnteringDuration {
             startTimedCaffeinate()
+            return
+        }
+        if let quicklink = argumentQuicklink {
+            guard Quicklinks.open(quicklink, argument: quicklinkArgument) else {
+                NSSound.beep()
+                return
+            }
+            onDismiss()
             return
         }
         // An unfinished calculation in the search bar has nothing to copy yet.
@@ -544,6 +594,18 @@ final class LauncherModel {
         case .decaffeinate:
             caffeine.stop()
             onDismiss()
+        case .quicklink(let quicklink):
+            if quicklink.takesArgument {
+                beginArgument(for: quicklink)
+                return
+            }
+            guard Quicklinks.open(quicklink) else {
+                NSSound.beep()
+                return
+            }
+            onDismiss()
+        case .createQuicklink:
+            onCreateQuicklink()
         case .system(let command):
             onDismiss()
             // After the panel has gone, so neither a confirmation nor the system's own response is hidden behind it.
@@ -602,6 +664,10 @@ final class LauncherModel {
             isEnteringDuration = false
             return
         }
+        if argumentQuicklink != nil {
+            argumentQuicklink = nil
+            return
+        }
         if mode != .root {
             reset()
             return
@@ -646,7 +712,11 @@ final class LauncherModel {
         if case .clipboard = results[index] { return String(localized: "Clipboard History") }
         guard mode == .root, query.isEmpty else { return String(localized: "Results") }
         if index < suggestionCount { return String(localized: "Suggestions") }
-        return results[index].isApp ? String(localized: "Applications") : String(localized: "Commands")
+        switch results[index] {
+        case .app: return String(localized: "Applications")
+        case .quicklink: return String(localized: "Quicklinks")
+        default: return String(localized: "Commands")
+        }
     }
 }
 

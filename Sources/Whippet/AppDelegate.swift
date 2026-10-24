@@ -18,6 +18,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let caffeine = Caffeine()
     let feedbackStore = FeedbackStore()
     let settingsNavigation = SettingsNavigation()
+    let quicklinks: Quicklinks
+    private var registeredQuicklinkHotkeys: Set<String> = []
     private lazy var floatingCalculator = FloatingCalculator(clipboard: clipboard)
     /// Created with the delegate, as Sparkle recommends, so its scheduled checks start at launch.
     let updater = Updater()
@@ -30,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         clipboard = ClipboardHistory()
         cloudSync = CloudSync(store: clipboard.store)
         appIndex = AppIndex(history: launchHistory)
+        quicklinks = Quicklinks(store: clipboard.store)
         super.init()
     }
 
@@ -39,15 +42,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         clipboard.onLocalChange = { [weak self] in self?.cloudSync.recordChanged($0) }
         clipboard.onLocalDelete = { [weak self] in self?.cloudSync.recordDeleted($0) }
-        cloudSync.onRemoteChanges = { [weak self] in self?.clipboard.didMergeRemoteChanges() }
+        quicklinks.onLocalChange = { [weak self] in self?.cloudSync.recordChanged($0) }
+        quicklinks.onLocalDelete = { [weak self] in self?.cloudSync.recordDeleted($0) }
+        quicklinks.onListChange = { [weak self] in self?.registerQuicklinkHotkeys() }
+        cloudSync.onRemoteChanges = { [weak self] in
+            self?.clipboard.didMergeRemoteChanges()
+            self?.quicklinks.reload()
+        }
 
-        model = LauncherModel(appIndex: appIndex, clipboard: clipboard, caffeine: caffeine, history: launchHistory)
+        model = LauncherModel(appIndex: appIndex, clipboard: clipboard, caffeine: caffeine, history: launchHistory, quicklinks: quicklinks)
         model.onDismiss = { [weak self] in self?.dismissPanel() }
         model.onOpenSettings = { [weak self] in self?.showSettings() }
         model.onSendFeedback = { [weak self] in self?.showFeedback() }
         model.onReadFeedback = { [weak self] in self?.showSettings(pane: .feedback) }
         Task { model.isFeedbackAdmin = await feedbackStore.isAdmin }
         model.onShowActions = { [weak self] in self?.showActions() }
+        model.onCreateQuicklink = { [weak self] in
+            self?.settingsNavigation.isCreatingQuicklink = true
+            self?.showSettings(pane: .quicklinks)
+        }
         model.onPopOutCalculator = { [weak self] expression in
             guard let self else { return }
             dismissPanel()
@@ -66,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         }
         registerAppHotkeys()
+        registerQuicklinkHotkeys()
         appIndex.onChange = { [weak self] in self?.registerAppHotkeys() }
         appIndex.startWatching()
         caffeineStatusItem = CaffeineStatusItem(caffeine: caffeine)
@@ -81,6 +95,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let isPlainArrow = modifiers.isEmpty
             switch Int(event.keyCode) {
             case kVK_Escape: model.back()
+            case kVK_Tab where modifiers.isEmpty:
+                guard model.beginArgumentForSelection() else { return event }
             case kVK_UpArrow: model.moveSelection(by: -1)
             case kVK_DownArrow: model.moveSelection(by: 1)
             case kVK_Return where modifiers == [.command], kVK_ANSI_KeypadEnter where modifiers == [.command]:
@@ -175,6 +191,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             KeyboardShortcuts.onKeyDown(for: name) { [weak self] in
                 guard let self, let app = appIndex.apps.first(where: { $0.shortcutName == name }) else { return }
                 appIndex.open(app)
+            }
+        }
+    }
+
+    /// Like app hotkeys, looked up when pressed. A quicklink that takes text opens the panel ready for it.
+    private func registerQuicklinkHotkeys() {
+        for quicklink in quicklinks.items where !registeredQuicklinkHotkeys.contains(quicklink.uuid) {
+            registeredQuicklinkHotkeys.insert(quicklink.uuid)
+            let uuid = quicklink.uuid
+            KeyboardShortcuts.onKeyDown(for: quicklink.shortcutName) { [weak self] in
+                guard let self, let quicklink = quicklinks.items.first(where: { $0.uuid == uuid }) else { return }
+                launchHistory.record("quicklink:\(uuid)")
+                guard quicklink.takesArgument else {
+                    Quicklinks.open(quicklink)
+                    return
+                }
+                showPanel()
+                model.beginArgument(for: quicklink)
             }
         }
     }

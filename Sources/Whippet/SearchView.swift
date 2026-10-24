@@ -10,6 +10,7 @@ struct SearchView: View {
     private enum Field: Hashable {
         case search
         case duration(Int)
+        case argument
     }
 
     var body: some View {
@@ -24,12 +25,28 @@ struct SearchView: View {
                     .launcherButtonStyle()
                 }
 
-                TextField(placeholder, text: $model.query)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 20))
-                    .focused($focus, equals: .search)
-                    .fixedSize(horizontal: model.isEnteringDuration, vertical: false)
-                    .onSubmit { model.activate() }
+                if let quicklink = model.argumentQuicklink {
+                    Text("\(quicklink.name) ›")
+                        .font(.system(size: 15, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
+                        .fixedSize()
+                    TextField("Type and press Return", text: $model.quicklinkArgument)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 20))
+                        .focused($focus, equals: .argument)
+                        .onSubmit { model.activate() }
+                        // The field is new in this update, so focusing it waits until it's in the window.
+                        .onAppear { DispatchQueue.main.async { focus = .argument } }
+                } else {
+                    TextField(placeholder, text: $model.query)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 20))
+                        .focused($focus, equals: .search)
+                        .fixedSize(horizontal: model.isEnteringDuration, vertical: false)
+                        .onSubmit { model.activate() }
+                }
 
                 if model.isEnteringDuration {
                     ForEach(Array(Self.durationPlaceholders.enumerated()), id: \.offset) { index, placeholder in
@@ -78,6 +95,10 @@ struct SearchView: View {
         .onAppear { focus = .search }
         .onChange(of: model.isEnteringDuration) { _, isEntering in
             focus = isEntering ? .duration(0) : .search
+        }
+        .onChange(of: model.argumentQuicklink) { _, quicklink in
+            guard quicklink == nil else { return }
+            DispatchQueue.main.async { focus = .search }
         }
     }
 
@@ -214,6 +235,9 @@ struct ResultRow: View {
         case .readFeedback: Image(systemName: "tray.full")
         case .changelog: Image(systemName: "list.bullet.rectangle")
         case .system(let command): Image(systemName: command.symbol)
+        case .quicklink(let quicklink):
+            if let icon = Quicklinks.icon(for: quicklink) { Image(nsImage: icon) } else { Image(systemName: "link") }
+        case .createQuicklink: Image(systemName: "link.badge.plus")
         case .quit: Image(systemName: "power")
         case .caffeinate, .caffeinateFor: Image(systemName: "cup.and.heat.waves.fill")
         case .caffeinateMenuBar: Image(systemName: "menubar.rectangle")

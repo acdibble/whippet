@@ -6,7 +6,7 @@ Dev, and deployed to Production in the [CloudKit Console](https://icloud.develop
 
 ## Private database: clipboard sync
 
-Everything lives in the zone `Whippet`. Record names are `clip-` or `calc-` followed by an HMAC of the content under the
+Everything lives in the zone `Whippet`. Record names are `clip-`, `calc-` or `link-` followed by an HMAC under the
 zone's key, so they reveal nothing.
 
 | Record type | Fields | Notes |
@@ -14,6 +14,7 @@ zone's key, so they reveal nothing.
 | `Clip` | encrypted: `contentHash`, `kind`, `text`, `ocrText`, `copiedAt`, `updatedAt`, `timesCopied`, `pinnedAt`, `sourceBundleID`, `imageWidth`, `imageHeight`, `imageBytes`; asset: `image` | The image asset is encrypted with AES-GCM before upload. |
 | `Calc` | encrypted: `expression`, `answer`, `mode`, `calculatedAt`, `updatedAt` | |
 | `SyncKey` | encrypted: `secret` | One record, `sync-key`, holding the key for record names and images. |
+| `Link` | encrypted: `uuid`, `name`, `keyword`, `template`, `appBundleID`, `createdAt`, `updatedAt` | Quicklinks, from 0.8.0. Record names are `link-` and an HMAC of the UUID. |
 | `ClipboardItem`, `Calculation` | | Used before 0.3.0 and no longer read or written. Production can't delete them. |
 
 The private database ignores security roles, but every type above must still have **no access for any role**, so
@@ -32,7 +33,7 @@ The roles below are still the first line of defence, and the only one for feedba
 | Record type | `_world` | `_icloud` | `_creator` | `Admin` |
 |---|---|---|---|---|
 | `Feedback` | none | Create | Read | Read, Write |
-| `Clip`, `Calc`, `SyncKey`, `ClipboardItem`, `Calculation`, `Users` | none | none | none | none |
+| `Clip`, `Calc`, `Link`, `SyncKey`, `ClipboardItem`, `Calculation`, `Users` | none | none | none | none |
 
 CloudKit gives a new record type `_world` Read, `_icloud` Create and `_creator` Write by default, so every new type needs
 its roles set by hand.

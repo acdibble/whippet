@@ -61,6 +61,16 @@
         }
       }
     },
+    "%@ ›" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ›"
+          }
+        }
+      }
+    },
     "About" : {
       "localizations" : {
         "fa" : {
@@ -101,6 +111,16 @@
         }
       }
     },
+    "Add Quicklink…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزودن پیوند سریع…"
+          }
+        }
+      }
+    },
     "Admin" : {
       "localizations" : {
         "fa" : {
@@ -137,6 +157,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اجازه دادن…"
+          }
+        }
+      }
+    },
+    "Another quicklink already uses this keyword." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوند سریع دیگری از این کلیدواژه استفاده می‌کند."
           }
         }
       }
@@ -401,6 +431,16 @@
         }
       }
     },
+    "Choose…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتخاب…"
+          }
+        }
+      }
+    },
     "Clear All Items" : {
       "localizations" : {
         "fa" : {
@@ -631,6 +671,16 @@
         }
       }
     },
+    "Create Quicklink" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ساختن پیوند سریع"
+          }
+        }
+      }
+    },
     "Data Folder" : {
       "localizations" : {
         "fa" : {
@@ -667,6 +717,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بیدار نگه داشتن پایان یافت"
+          }
+        }
+      }
+    },
+    "Default App" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برنامهٔ پیش‌فرض"
           }
         }
       }
@@ -721,6 +781,16 @@
         }
       }
     },
+    "Delete this quicklink?" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این پیوند سریع حذف شود؟"
+          }
+        }
+      }
+    },
     "Delete…" : {
       "localizations" : {
         "fa" : {
@@ -771,6 +841,16 @@
         }
       }
     },
+    "Edit…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ویرایش…"
+          }
+        }
+      }
+    },
     "Email" : {
       "localizations" : {
         "fa" : {
@@ -797,6 +877,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "سطل زباله خالی شود؟"
+          }
+        }
+      }
+    },
+    "Enter Text" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن متن"
           }
         }
       }
@@ -897,6 +987,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "عمومی"
+          }
+        }
+      }
+    },
+    "Give the quicklink a name." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای پیوند سریع نامی بگذارید."
           }
         }
       }
@@ -1061,6 +1161,16 @@
         }
       }
     },
+    "It's also removed from your other Macs when iCloud sync is on." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اگر همگام‌سازی iCloud روشن باشد، از Macهای دیگر شما هم حذف می‌شود."
+          }
+        }
+      }
+    },
     "Items" : {
       "localizations" : {
         "fa" : {
@@ -1107,6 +1217,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "این Mac را بیدار نگه دار"
+          }
+        }
+      }
+    },
+    "Keyword" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلیدواژه"
           }
         }
       }
@@ -1207,6 +1327,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "دقیقه"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نام"
           }
         }
       }
@@ -1401,12 +1531,32 @@
         }
       }
     },
+    "Open Quicklink" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن پیوند سریع"
+          }
+        }
+      }
+    },
     "Open Whippet" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "باز کردن Whippet"
+          }
+        }
+      }
+    },
+    "Open With" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن با"
           }
         }
       }
@@ -1437,6 +1587,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اختیاری، اگر پاسخ می‌خواهید"
+          }
+        }
+      }
+    },
+    "Optional, such as gh" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختیاری، مثلاً gh"
           }
         }
       }
@@ -1557,6 +1717,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "کلید عمومی"
+          }
+        }
+      }
+    },
+    "Put {query} where the text you type should go. It's encoded for a link; {query:raw} inserts it as typed." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{query} را جایی بگذارید که متن تایپ‌شده باید قرار بگیرد. این متن برای پیوند رمزگذاری می‌شود؛ {query:raw} آن را همان‌طور که تایپ شده وارد می‌کند."
+          }
+        }
+      }
+    },
+    "Quicklink" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوند سریع"
+          }
+        }
+      }
+    },
+    "Quicklinks" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوندهای سریع"
           }
         }
       }
@@ -1731,6 +1921,26 @@
         }
       }
     },
+    "Save" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ذخیره"
+          }
+        }
+      }
+    },
+    "Search GitHub" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search GitHub"
+          }
+        }
+      }
+    },
     "Search applications" : {
       "localizations" : {
         "fa" : {
@@ -1747,6 +1957,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جست‌وجوی برنامه‌ها و فرمان‌ها"
+          }
+        }
+      }
+    },
+    "Search for a quicklink in Whippet and press Tab to type the text that replaces {query} in its link." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در Whippet پیوند سریع را جست‌وجو کنید و Tab را بزنید تا متنی را تایپ کنید که جای {query} در پیوند آن را می‌گیرد."
           }
         }
       }
@@ -2061,6 +2281,26 @@
         }
       }
     },
+    "The keyword can't contain spaces." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلیدواژه نمی‌تواند فاصله داشته باشد."
+          }
+        }
+      }
+    },
+    "The link needs to be a full URL, such as https://example.com/?q={query}." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوند باید یک نشانی کامل باشد، مانند https://example.com/?q={query}."
+          }
+        }
+      }
+    },
     "This feedback is encrypted, and this Mac doesn't have the feedback key." : {
       "localizations" : {
         "fa" : {
@@ -2161,6 +2401,16 @@
         }
       }
     },
+    "Type and press Return" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایپ کنید و Return را بزنید"
+          }
+        }
+      }
+    },
     "Type to filter entries…" : {
       "localizations" : {
         "fa" : {
@@ -2241,6 +2491,16 @@
         }
       }
     },
+    "Use Default" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استفاده از پیش‌فرض"
+          }
+        }
+      }
+    },
     "Version" : {
       "localizations" : {
         "fa" : {
@@ -2317,6 +2577,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بازخورد شما دربارهٔ Whippet"
+          }
+        }
+      }
+    },
+    "https://github.com/search?q={query}" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://github.com/search?q={query}"
           }
         }
       }

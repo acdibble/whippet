@@ -379,7 +379,12 @@ final class ClipboardStore: Sendable {
                 db,
                 sql: "SELECT syncKey FROM calculation WHERE syncedAt IS NULL OR updatedAt > syncedAt"
             )
+            let quicklinks = try String.fetchAll(
+                db,
+                sql: "SELECT uuid FROM quicklink WHERE syncedAt IS NULL OR updatedAt > syncedAt"
+            )
             return hashes.map { .clipboard(contentHash: $0) } + keys.map { .calculation(key: $0) }
+                + quicklinks.map { .quicklink(uuid: $0) }
         }
     }
 
@@ -409,6 +414,7 @@ final class ClipboardStore: Sendable {
         try database.write { db in
             try db.execute(sql: "UPDATE clipboard SET recordName = NULL, syncedAt = NULL, cloudSystemFields = NULL")
             try db.execute(sql: "UPDATE calculation SET recordName = NULL, syncedAt = NULL, cloudSystemFields = NULL")
+            try db.execute(sql: "UPDATE quicklink SET recordName = NULL, syncedAt = NULL, cloudSystemFields = NULL")
             try db.execute(sql: "DELETE FROM deletedRecord")
         }
     }
@@ -433,6 +439,98 @@ final class ClipboardStore: Sendable {
     /// deletion reaches iCloud, since sync may be off or still starting.
     func delete(contentHash: String) throws -> String? {
         try delete(SyncTarget(.clipboard(contentHash: contentHash)), remembersDeletion: true)
+    }
+
+    // MARK: - Quicklinks
+
+    func quicklinks() throws -> [Quicklink] {
+        try database.read { db in
+            try Quicklink.order(sql: "name COLLATE NOCASE").fetchAll(db)
+        }
+    }
+
+    /// Adds a quicklink, or updates the one with the same UUID, and returns it for syncing.
+    @discardableResult
+    func saveQuicklink(_ quicklink: Quicklink) throws -> SyncItem {
+        try database.write { db in
+            try db.execute(
+                sql: """
+                    INSERT INTO quicklink (uuid, name, keyword, template, appBundleID, createdAt, updatedAt)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(uuid) DO UPDATE SET
+                        name = excluded.name,
+                        keyword = excluded.keyword,
+                        template = excluded.template,
+                        appBundleID = excluded.appBundleID,
+                        updatedAt = excluded.updatedAt
+                    """,
+                arguments: [
+                    quicklink.uuid, quicklink.name, quicklink.keyword, quicklink.template, quicklink.appBundleID,
+                    Date.now, Date.now,
+                ]
+            )
+        }
+        return .quicklink(uuid: quicklink.uuid)
+    }
+
+    /// Adds a quicklink unless one with its UUID already exists, such as a starter that synced from another Mac.
+    /// Returns it for syncing when it was added.
+    func addQuicklinkIfMissing(_ quicklink: Quicklink) throws -> SyncItem? {
+        let added = try database.write { db in
+            try db.execute(
+                sql: """
+                    INSERT OR IGNORE INTO quicklink (uuid, name, keyword, template, appBundleID, createdAt, updatedAt)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                arguments: [
+                    quicklink.uuid, quicklink.name, quicklink.keyword, quicklink.template, quicklink.appBundleID,
+                    Date.now, Date.now,
+                ]
+            )
+            return db.changesCount > 0
+        }
+        return added ? .quicklink(uuid: quicklink.uuid) : nil
+    }
+
+    /// Deletes a quicklink and returns its iCloud record name, or nil when it never synced.
+    func deleteQuicklink(uuid: String) throws -> String? {
+        try delete(SyncTarget(.quicklink(uuid: uuid)), remembersDeletion: true)
+    }
+
+    /// Merges a quicklink from another Mac; the most recently changed side wins. Returns true when this Mac's copy is
+    /// newer and should be uploaded.
+    func mergeRemote(_ quicklink: RemoteQuicklink) throws -> Bool {
+        try database.write { db in
+            let localUpdatedAt = try Date.fetchOne(
+                db,
+                sql: "SELECT updatedAt FROM quicklink WHERE uuid = ?",
+                arguments: [quicklink.uuid]
+            )
+            try db.execute(
+                sql: """
+                    INSERT INTO quicklink (
+                        uuid, name, keyword, template, appBundleID, createdAt, updatedAt, recordName, syncedAt,
+                        cloudSystemFields
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(uuid) DO UPDATE SET
+                        name = CASE WHEN excluded.updatedAt > updatedAt THEN excluded.name ELSE name END,
+                        keyword = CASE WHEN excluded.updatedAt > updatedAt THEN excluded.keyword ELSE keyword END,
+                        template = CASE WHEN excluded.updatedAt > updatedAt THEN excluded.template ELSE template END,
+                        appBundleID = CASE WHEN excluded.updatedAt > updatedAt THEN excluded.appBundleID ELSE appBundleID END,
+                        updatedAt = MAX(updatedAt, excluded.updatedAt),
+                        recordName = excluded.recordName,
+                        syncedAt = excluded.syncedAt,
+                        cloudSystemFields = excluded.cloudSystemFields
+                    """,
+                arguments: [
+                    quicklink.uuid, quicklink.name, quicklink.keyword, quicklink.template, quicklink.appBundleID,
+                    quicklink.createdAt, quicklink.updatedAt, quicklink.recordName, Date.now, quicklink.systemFields,
+                ]
+            )
+            guard let localUpdatedAt else { return false }
+            return localUpdatedAt > quicklink.updatedAt
+        }
     }
 
     /// Deletes items copied before `cutoff`, or all of them when it's nil, keeping pinned items unless `includingPinned`.
@@ -570,7 +668,8 @@ final class ClipboardStore: Sendable {
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
-    private static var migrator: DatabaseMigrator {
+    /// Migrations that shipped in a release must never change; add new ones after them.
+    static var migrator: DatabaseMigrator {
         var migrator = DatabaseMigrator()
         migrator.registerMigration("createSchema") { db in
             try db.create(table: "clipboard") { table in
@@ -618,6 +717,22 @@ final class ClipboardStore: Sendable {
                 table.primaryKey("recordName", .text)
             }
         }
+        // Added after 0.7.0.
+        migrator.registerMigration("addQuicklinks") { db in
+            try db.create(table: "quicklink") { table in
+                table.autoIncrementedPrimaryKey("id")
+                table.column("uuid", .text).notNull().unique()
+                table.column("name", .text).notNull()
+                table.column("keyword", .text)
+                table.column("template", .text).notNull()
+                table.column("appBundleID", .text)
+                table.column("createdAt", .datetime).notNull()
+                table.column("updatedAt", .datetime).notNull()
+                table.column("recordName", .text).unique()
+                table.column("syncedAt", .datetime)
+                table.column("cloudSystemFields", .blob)
+            }
+        }
         return migrator
     }
 }
@@ -653,14 +768,29 @@ struct RemoteCalculation {
     let systemFields: Data
 }
 
+/// A quicklink as it arrived from another Mac, ready to merge.
+struct RemoteQuicklink {
+    let uuid: String
+    let name: String
+    let keyword: String?
+    let template: String
+    let appBundleID: String?
+    let createdAt: Date
+    let updatedAt: Date
+    let recordName: String
+    let systemFields: Data
+}
+
 /// A row that syncs to iCloud, identified by its content on this Mac. Its iCloud record name is a keyed hash of this,
 /// so the name doesn't reveal the content.
 enum SyncItem: Hashable, Sendable {
     case clipboard(contentHash: String)
     case calculation(key: String)
+    case quicklink(uuid: String)
 
     static let clipboardPrefix = "clip-"
     static let calculationPrefix = "calc-"
+    static let quicklinkPrefix = "link-"
 }
 
 /// The table and row a sync item or iCloud record name refers to.
@@ -673,16 +803,18 @@ private struct SyncTarget {
         switch item {
         case .clipboard(let contentHash): self.init(table: "clipboard", keyColumn: "contentHash", key: contentHash)
         case .calculation(let key): self.init(table: "calculation", keyColumn: "syncKey", key: key)
+        case .quicklink(let uuid): self.init(table: "quicklink", keyColumn: "uuid", key: uuid)
         }
     }
 
     init?(recordName: String) {
-        if recordName.hasPrefix(SyncItem.clipboardPrefix) {
-            self.init(table: "clipboard", keyColumn: "recordName", key: recordName)
-            return
-        }
-        guard recordName.hasPrefix(SyncItem.calculationPrefix) else { return nil }
-        self.init(table: "calculation", keyColumn: "recordName", key: recordName)
+        let tables = [
+            SyncItem.clipboardPrefix: "clipboard",
+            SyncItem.calculationPrefix: "calculation",
+            SyncItem.quicklinkPrefix: "quicklink",
+        ]
+        guard let table = tables.first(where: { recordName.hasPrefix($0.key) })?.value else { return nil }
+        self.init(table: table, keyColumn: "recordName", key: recordName)
     }
 
     private init(table: String, keyColumn: String, key: String) {

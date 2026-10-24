@@ -9,12 +9,15 @@ import SwiftUI
 @Observable
 final class SettingsNavigation {
     var pane: SettingsPane? = .general
+    /// Set by the Create Quicklink command, so the Quicklinks pane opens its editor.
+    var isCreatingQuicklink = false
 }
 
 enum SettingsPane: String, CaseIterable, Identifiable {
     case general
     case shortcuts
     case clipboard
+    case quicklinks
     case cloudSync
     case usage
     case feedback
@@ -28,6 +31,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .general: "General"
         case .shortcuts: "Shortcuts"
         case .clipboard: "Clipboard History"
+        case .quicklinks: "Quicklinks"
         case .cloudSync: "Cloud Sync"
         case .usage: "Usage"
         case .feedback: "Feedback"
@@ -41,6 +45,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .general: "gearshape.fill"
         case .shortcuts: "command"
         case .clipboard: "list.clipboard.fill"
+        case .quicklinks: "link"
         case .cloudSync: "icloud.fill"
         case .usage: "chart.bar.fill"
         case .feedback: "tray.full.fill"
@@ -54,6 +59,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .general: .gray
         case .shortcuts: .purple
         case .clipboard: .teal
+        case .quicklinks: .indigo
         case .cloudSync: .blue
         case .usage: .green
         case .feedback: .orange
@@ -73,6 +79,7 @@ struct SettingsView: View {
     let feedbackStore: FeedbackStore
     @Bindable var navigation: SettingsNavigation
     let updater: Updater
+    let quicklinks: Quicklinks
     /// The Developer pane is for accounts with the CloudKit Admin role, and always shows in development builds; the
     /// Feedback pane also needs the feedback key on this Mac.
     @State private var hasAdminRole = false
@@ -99,7 +106,8 @@ struct SettingsView: View {
             Group {
                 switch navigation.pane ?? .general {
                 case .general: GeneralPane(caffeine: caffeine, updater: updater)
-                case .shortcuts: ShortcutsPane(appIndex: appIndex)
+                case .shortcuts: ShortcutsPane(appIndex: appIndex, quicklinks: quicklinks)
+                case .quicklinks: QuicklinksPane(quicklinks: quicklinks, navigation: navigation)
                 case .cloudSync: CloudSyncPane(cloudSync: cloudSync)
                 case .clipboard: ClipboardPane(clipboard: clipboard)
                 case .usage: UsagePane(clipboard: clipboard)
@@ -228,6 +236,7 @@ private struct GeneralPane: View {
 /// A hotkey recorder for each command and installed application; recorded hotkeys are live immediately.
 private struct ShortcutsPane: View {
     let appIndex: AppIndex
+    let quicklinks: Quicklinks
     @State private var search = ""
 
     var body: some View {
@@ -236,6 +245,15 @@ private struct ShortcutsPane: View {
                 ForEach(CommandShortcut.allCases) { command in
                     KeyboardShortcuts.Recorder(for: command.name) {
                         Label(command.title, systemImage: command.symbol)
+                    }
+                }
+            }
+            if !quicklinks.items.isEmpty {
+                Section("Quicklinks") {
+                    ForEach(quicklinks.items) { quicklink in
+                        KeyboardShortcuts.Recorder(for: quicklink.shortcutName) {
+                            Label(quicklink.name, systemImage: "link")
+                        }
                     }
                 }
             }

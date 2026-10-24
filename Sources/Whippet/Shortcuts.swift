@@ -39,6 +39,13 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
     }
 }
 
+extension Quicklink {
+    /// Keyed by UUID, so a hotkey survives renaming the quicklink.
+    var shortcutName: KeyboardShortcuts.Name {
+        KeyboardShortcuts.Name("quicklink.\(uuid)")
+    }
+}
+
 extension AppEntry {
     /// Keyed by bundle identifier so a hotkey survives the app moving folders.
     var shortcutName: KeyboardShortcuts.Name {
@@ -56,6 +63,7 @@ extension LauncherResult {
         case .clipboardHistory: CommandShortcut.clipboardHistory.name
         case .settings: CommandShortcut.settings.name
         case .caffeinate: CommandShortcut.caffeinate.name
+        case .quicklink(let quicklink): quicklink.shortcutName
         default: nil
         }
         return name.flatMap { KeyboardShortcuts.getShortcut(for: $0) }

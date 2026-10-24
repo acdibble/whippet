@@ -59,6 +59,7 @@ final class CloudSync {
     private static let zoneID = CKRecordZone.ID(zoneName: "Whippet")
     private static let clipboardType = "Clip"
     private static let calculationType = "Calc"
+    private static let quicklinkType = "Link"
     private static let keyType = "SyncKey"
     private static let keyRecordID = CKRecord.ID(recordName: "sync-key", zoneID: zoneID)
 
@@ -346,6 +347,17 @@ final class CloudSync {
         if recordID.recordName.hasPrefix(SyncItem.clipboardPrefix) {
             return clipboardRecord(from: row, id: recordID, keys: keys, store: store)
         }
+        if recordID.recordName.hasPrefix(SyncItem.quicklinkPrefix) {
+            let record = Self.makeRecord(type: Self.quicklinkType, id: recordID, systemFields: row["cloudSystemFields"])
+            record.encryptedValues["uuid"] = row["uuid"] as String
+            record.encryptedValues["name"] = row["name"] as String
+            record.encryptedValues["keyword"] = row["keyword"] as String?
+            record.encryptedValues["template"] = row["template"] as String
+            record.encryptedValues["appBundleID"] = row["appBundleID"] as String?
+            record.encryptedValues["createdAt"] = row["createdAt"] as Date
+            record.encryptedValues["updatedAt"] = row["updatedAt"] as Date
+            return record
+        }
         let record = Self.makeRecord(type: Self.calculationType, id: recordID, systemFields: row["cloudSystemFields"])
         record.encryptedValues["expression"] = row["expression"] as String
         record.encryptedValues["answer"] = row["answer"] as String
@@ -442,6 +454,26 @@ final class CloudSync {
                     answer: answer,
                     mode: mode,
                     calculatedAt: values["calculatedAt"] as? Date ?? .now,
+                    updatedAt: values["updatedAt"] as? Date ?? .distantPast,
+                    recordName: name,
+                    systemFields: systemFields
+                )
+            )
+        case Self.quicklinkType:
+            guard
+                let uuid = values["uuid"] as? String,
+                let linkName = values["name"] as? String,
+                let template = values["template"] as? String
+            else { return }
+            item = .quicklink(uuid: uuid)
+            isLocalAhead = try? store.mergeRemote(
+                RemoteQuicklink(
+                    uuid: uuid,
+                    name: linkName,
+                    keyword: values["keyword"] as? String,
+                    template: template,
+                    appBundleID: values["appBundleID"] as? String,
+                    createdAt: values["createdAt"] as? Date ?? .now,
                     updatedAt: values["updatedAt"] as? Date ?? .distantPast,
                     recordName: name,
                     systemFields: systemFields
@@ -604,6 +636,7 @@ private struct SyncKeys {
         switch item {
         case .clipboard(let contentHash): SyncItem.clipboardPrefix + code(for: contentHash)
         case .calculation(let key): SyncItem.calculationPrefix + code(for: key)
+        case .quicklink(let uuid): SyncItem.quicklinkPrefix + code(for: uuid)
         }
     }
 

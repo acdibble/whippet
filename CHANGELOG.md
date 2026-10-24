@@ -5,6 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Quicklinks: saved links that take what you type, such as Search GitHub. Select one and press Tab to type the text,
+  then Return to open it. Manage them in Settings › Quicklinks, or with the Create Quicklink command. They sync through
+  iCloud, can have hotkeys, and come with Google, GitHub, Wikipedia and Maps to start.
+
 ## [0.7.0] - 2026-10-24
 
 ### Added
