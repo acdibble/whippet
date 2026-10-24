@@ -8,6 +8,7 @@ enum LauncherResult: Identifiable, Hashable {
     case settings
     case sendFeedback
     case readFeedback
+    case changelog
     case quit
     case clipboardHistory
     case caffeinate
@@ -25,6 +26,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .settings: "command:settings"
         case .sendFeedback: "command:send-feedback"
         case .readFeedback: "command:read-feedback"
+        case .changelog: "command:changelog"
         case .quit: "command:quit"
         case .clipboardHistory: "command:clipboard-history"
         case .caffeinate: "command:caffeinate"
@@ -44,6 +46,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .settings: String(localized: "Settings")
         case .sendFeedback: String(localized: "Send Feedback")
         case .readFeedback: String(localized: "Read Feedback")
+        case .changelog: String(localized: "Changelog")
         case .quit: String(localized: "Quit Whippet")
         case .clipboardHistory: String(localized: "Clipboard History")
         case .caffeinate: String(localized: "Caffeinate")
@@ -60,7 +63,7 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
-        case .calculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .quit: String(localized: "Command")
+        case .calculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog, .quit: String(localized: "Command")
         case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
         case .caffeinateMenuBar: String(localized: "Command")
         case .decaffeinate(let until): until
@@ -104,6 +107,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback: String(localized: "Open Command")
         case .caffeinate, .decaffeinate, .caffeinateMenuBar: String(localized: "Run Command")
         case .caffeinateFor: String(localized: "Choose Duration")
+        case .changelog: String(localized: "Open in Browser")
         case .quit: String(localized: "Quit")
         case .app: String(localized: "Open Application")
         case .clipboard: String(localized: "Copy to Clipboard")
@@ -197,6 +201,7 @@ final class LauncherModel {
     @ObservationIgnored var onShowActions: () -> Void = {}
 
     private static let calculatorColumnLength = 10
+    private static let changelogURL = URL(string: "https://github.com/acdibble/whippet/blob/main/CHANGELOG.md")!
 
     /// The inputs `results` depends on. Reading them registers each with Observation, and comparing them tells whether
     /// the cached results still apply, so a keystroke computes them once however often views and key handling ask.
@@ -262,7 +267,7 @@ final class LauncherModel {
             if let calculation = Calculator.evaluate(query) {
                 return calculatorResults(calculation)
             }
-            let commands: [LauncherResult] = [.calculator, .clipboardHistory, .settings, .sendFeedback, .quit]
+            let commands: [LauncherResult] = [.calculator, .clipboardHistory, .settings, .sendFeedback, .changelog, .quit]
                 + (isFeedbackAdmin ? [.readFeedback] : [])
                 + [.caffeinate, .caffeinateFor]
                 + (caffeine.isActive ? [.decaffeinate(until: caffeine.untilDescription)] : [])
@@ -424,6 +429,9 @@ final class LauncherModel {
             onSendFeedback()
         case .readFeedback:
             onReadFeedback()
+        case .changelog:
+            NSWorkspace.shared.open(Self.changelogURL)
+            onDismiss()
         case .caffeinate:
             caffeine.start(seconds: nil)
             onDismiss()

@@ -291,6 +291,16 @@
         }
       }
     },
+    "Changelog" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فهرست تغییرات"
+          }
+        }
+      }
+    },
     "Characters" : {
       "localizations" : {
         "fa" : {
@@ -997,6 +1007,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "باز شدن هنگام ورود"
+          }
+        }
+      }
+    },
+    "Open in Browser" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن در مرورگر"
           }
         }
       }
