@@ -13,11 +13,27 @@ final class ClipboardHistory {
     @ObservationIgnored var onLocalChange: (SyncItem) -> Void = { _ in }
     /// Called with the iCloud record name of every synced item deleted on this Mac.
     @ObservationIgnored var onLocalDelete: (String) -> Void = { _ in }
+    /// How long unpinned items are kept; shortening it removes older items right away.
+    var retention = ClipboardRetention(rawValue: UserDefaults.standard.string(forKey: "clipboardRetention") ?? "") ?? .forever {
+        didSet {
+            UserDefaults.standard.set(retention.rawValue, forKey: "clipboardRetention")
+            pruneExpiredItems()
+        }
+    }
+    /// Bundle identifiers of apps whose copies are never saved.
+    var ignoredApps = UserDefaults.standard.stringArray(forKey: "clipboardIgnoredApps") ?? [] {
+        didSet { UserDefaults.standard.set(ignoredApps, forKey: "clipboardIgnoredApps") }
+    }
+
     @ObservationIgnored private var lastChangeCount = NSPasteboard.general.changeCount
+    /// Hashing, PNG encoding and database writes run here, in copy order, so the main thread never waits on them.
+    @ObservationIgnored private let recordingQueue = DispatchQueue(label: "codes.dibble.whippet.clipboard", qos: .userInitiated)
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var isRecognizing = false
 
     private static let resultLimit = 100
+    /// Larger text copies aren't saved: they're slow to show, and too big for an iCloud record.
+    static let maximumTextBytes = 500_000
 
     /// Password managers mark secrets with these types (see nspasteboard.org), so they never enter history.
     private static let skippedTypes: Set<NSPasteboard.PasteboardType> = [
@@ -40,6 +56,7 @@ final class ClipboardHistory {
             MainActor.assumeIsolated { self?.poll() }
         }
         recognizePendingImages()
+        pruneExpiredItems()
     }
 
     func search(_ query: String, kind: ClipboardKind?) -> [ClipboardItem] {
@@ -77,9 +94,36 @@ final class ClipboardHistory {
         }
     }
 
-    /// Refreshes views after another Mac's changes were merged into the store.
+    /// Refreshes views after another Mac's changes were merged into the store, which may include items past retention.
     func didMergeRemoteChanges() {
         revision += 1
+        pruneExpiredItems()
+    }
+
+    /// Deletes unpinned items, or every item with `includingPinned`, here and from iCloud.
+    func clear(includingPinned: Bool) {
+        deleteItems { try $0.deleteItems(copiedBefore: nil, includingPinned: includingPinned) }
+    }
+
+    private func pruneExpiredItems() {
+        guard let cutoff = retention.cutoff(from: .now) else { return }
+        deleteItems { try $0.deleteItems(copiedBefore: cutoff) }
+    }
+
+    private func deleteItems(_ delete: @escaping @Sendable (ClipboardStore) throws -> [String]) {
+        guard let store else { return }
+        recordingQueue.async {
+            do {
+                let recordNames = try delete(store)
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    recordNames.forEach(onLocalDelete)
+                    revision += 1
+                }
+            } catch {
+                NSLog("Failed to delete clipboard items: \(error)")
+            }
+        }
     }
 
     /// Puts the item on the pasteboard, or leaves the pasteboard alone and returns false when an image's file is
@@ -125,25 +169,45 @@ final class ClipboardHistory {
         lastChangeCount = pasteboard.changeCount
 
         if let types = pasteboard.types, !Self.skippedTypes.isDisjoint(with: types) { return }
-        guard let store else { return }
         let source = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        if let source, ignoredApps.contains(source) { return }
 
-        do {
-            if let text = pasteboard.string(forType: .string), !text.isEmpty {
-                onLocalChange(try store.recordText(text, sourceBundleID: source))
-                revision += 1
-                return
-            }
+        // The pasteboard is read here; the slow work happens on the recording queue.
+        if let text = pasteboard.string(forType: .string), !text.isEmpty {
+            guard text.utf8.count <= Self.maximumTextBytes else { return }
+            record { try $0.recordText(text, sourceBundleID: source) }
+            return
+        }
+        guard let data = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff) else { return }
+        record(recognizesText: true) { store in
             guard
-                let data = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff),
                 let bitmap = NSBitmapImageRep(data: data),
                 let png = bitmap.representation(using: .png, properties: [:])
-            else { return }
-            onLocalChange(try store.recordImage(png: png, width: bitmap.pixelsWide, height: bitmap.pixelsHigh, sourceBundleID: source))
-            revision += 1
-            recognizePendingImages()
-        } catch {
-            NSLog("Failed to record clipboard item: \(error)")
+            else { return nil }
+            return try store.recordImage(png: png, width: bitmap.pixelsWide, height: bitmap.pixelsHigh, sourceBundleID: source)
+        }
+    }
+
+    private func record(recognizesText: Bool = false, _ save: @escaping @Sendable (ClipboardStore) throws -> SyncItem?) {
+        guard let store else { return }
+        let cutoff = retention.cutoff(from: .now)
+        recordingQueue.async {
+            do {
+                guard let item = try save(store) else { return }
+                // Each copy is a chance to remove what has expired since, without a timer.
+                let expired = try cutoff.map { try store.deleteItems(copiedBefore: $0) } ?? []
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    onLocalChange(item)
+                    expired.forEach(onLocalDelete)
+                    revision += 1
+                    if recognizesText {
+                        recognizePendingImages()
+                    }
+                }
+            } catch {
+                NSLog("Failed to record clipboard item: \(error)")
+            }
         }
     }
 

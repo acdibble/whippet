@@ -73,8 +73,45 @@ struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, TableRec
         if kind == .image {
             return String(localized: "Image (\(imageWidth ?? 0)×\(imageHeight ?? 0))")
         }
-        let trimmed = (text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.split(whereSeparator: \.isNewline).first.map(String.init) ?? trimmed
+        // Only the first line is read, since splitting a long copy on every render is slow.
+        let firstLine = (text ?? "").drop(while: \.isWhitespace).prefix(while: { !$0.isNewline }).prefix(500)
+        return String(firstLine).trimmingCharacters(in: .whitespaces)
+    }
+}
+
+/// How long unpinned clipboard history is kept.
+enum ClipboardRetention: String, CaseIterable, Identifiable {
+    case day
+    case week
+    case month
+    case threeMonths
+    case year
+    case forever
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .day: String(localized: "One Day")
+        case .week: String(localized: "One Week")
+        case .month: String(localized: "One Month")
+        case .threeMonths: String(localized: "Three Months")
+        case .year: String(localized: "One Year")
+        case .forever: String(localized: "Forever")
+        }
+    }
+
+    /// Items copied before this date are removed, or none when nil.
+    func cutoff(from now: Date) -> Date? {
+        let calendar = Calendar.current
+        switch self {
+        case .day: return calendar.date(byAdding: .day, value: -1, to: now)
+        case .week: return calendar.date(byAdding: .day, value: -7, to: now)
+        case .month: return calendar.date(byAdding: .month, value: -1, to: now)
+        case .threeMonths: return calendar.date(byAdding: .month, value: -3, to: now)
+        case .year: return calendar.date(byAdding: .year, value: -1, to: now)
+        case .forever: return nil
+        }
     }
 }
 
@@ -377,6 +414,34 @@ final class ClipboardStore: Sendable {
     /// deletion reaches iCloud, since sync may be off or still starting.
     func delete(contentHash: String) throws -> String? {
         try delete(SyncTarget(.clipboard(contentHash: contentHash)), remembersDeletion: true)
+    }
+
+    /// Deletes items copied before `cutoff`, or all of them when it's nil, keeping pinned items unless `includingPinned`.
+    /// Returns the iCloud record names of the deleted items that had synced, which are kept until the deletions reach
+    /// iCloud, like single deletions.
+    func deleteItems(copiedBefore cutoff: Date?, includingPinned: Bool = false) throws -> [String] {
+        var conditions: [String] = []
+        var arguments: StatementArguments = []
+        if let cutoff {
+            conditions.append("copiedAt < ?")
+            arguments += [cutoff]
+        }
+        if !includingPinned {
+            conditions.append("pinnedAt IS NULL")
+        }
+        let filter = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
+        let rows = try database.write { db in
+            let rows = try Row.fetchAll(db, sql: "SELECT recordName, imageFile FROM clipboard \(filter)", arguments: arguments)
+            try db.execute(sql: "DELETE FROM clipboard \(filter)", arguments: arguments)
+            for case let recordName? in rows.map({ $0["recordName"] as String? }) {
+                try db.execute(sql: "INSERT OR IGNORE INTO deletedRecord (recordName) VALUES (?)", arguments: [recordName])
+            }
+            return rows
+        }
+        for case let imageFile? in rows.map({ $0["imageFile"] as String? }) {
+            try? FileManager.default.removeItem(at: imagesDirectory.appending(path: imageFile))
+        }
+        return rows.compactMap { $0["recordName"] }
     }
 
     /// Deletes the item behind a record that was deleted on another Mac.

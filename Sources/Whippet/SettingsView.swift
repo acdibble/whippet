@@ -13,6 +13,7 @@ final class SettingsNavigation {
 enum SettingsPane: String, CaseIterable, Identifiable {
     case general
     case shortcuts
+    case clipboard
     case cloudSync
     case usage
     case feedback
@@ -25,6 +26,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         switch self {
         case .general: "General"
         case .shortcuts: "Shortcuts"
+        case .clipboard: "Clipboard History"
         case .cloudSync: "Cloud Sync"
         case .usage: "Usage"
         case .feedback: "Feedback"
@@ -37,6 +39,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         switch self {
         case .general: "gearshape.fill"
         case .shortcuts: "command"
+        case .clipboard: "list.clipboard.fill"
         case .cloudSync: "icloud.fill"
         case .usage: "chart.bar.fill"
         case .feedback: "tray.full.fill"
@@ -49,6 +52,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         switch self {
         case .general: .gray
         case .shortcuts: .purple
+        case .clipboard: .teal
         case .cloudSync: .blue
         case .usage: .green
         case .feedback: .orange
@@ -94,6 +98,7 @@ struct SettingsView: View {
                 case .general: GeneralPane(caffeine: caffeine, updater: updater)
                 case .shortcuts: ShortcutsPane(appIndex: appIndex)
                 case .cloudSync: CloudSyncPane(cloudSync: cloudSync)
+                case .clipboard: ClipboardPane(clipboard: clipboard)
                 case .usage: UsagePane(clipboard: clipboard)
                 case .feedback: FeedbackAdminPane(store: feedbackStore)
                 case .developer: DeveloperPane(cloudSync: cloudSync)

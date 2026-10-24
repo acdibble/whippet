@@ -185,6 +185,47 @@ final class ClipboardStoreTests {
         #expect(try store.pendingDeletions().isEmpty)
     }
 
+    @Test func deletingOldItemsKeepsPinnedAndRecentOnes() async throws {
+        let old = try store.recordText("old", sourceBundleID: nil)
+        let oldImage = try store.recordImage(png: Data([1, 2, 3]), width: 1, height: 1, sourceBundleID: nil)
+        try store.recordText("old but pinned", sourceBundleID: nil)
+        try await pause()
+        let cutoff = Date.now
+        try await pause()
+        try store.recordText("recent", sourceBundleID: nil)
+        try store.assignRecordNames([old: "clip-old", oldImage: "clip-old-image"])
+        let pinned = try #require(try items().first { $0.text == "old but pinned" })
+        try store.setPinned(true, id: pinned.id)
+        let image = try #require(try items(kind: .image).first)
+        let imageFile = try #require(store.imageURL(for: image))
+
+        let deleted = try store.deleteItems(copiedBefore: cutoff)
+
+        #expect(Set(deleted) == ["clip-old", "clip-old-image"])
+        #expect(Set(try items().compactMap(\.text)) == ["old but pinned", "recent"])
+        #expect(Set(try store.pendingDeletions()) == ["clip-old", "clip-old-image"])
+        #expect(!FileManager.default.fileExists(atPath: imageFile.path))
+    }
+
+    @Test func clearingCanIncludePinnedItems() throws {
+        try store.recordText("plain", sourceBundleID: nil)
+        try store.recordText("pinned", sourceBundleID: nil)
+        try store.setPinned(true, id: try #require(try items().first { $0.text == "pinned" }).id)
+
+        _ = try store.deleteItems(copiedBefore: nil)
+        #expect(try items().compactMap(\.text) == ["pinned"])
+
+        _ = try store.deleteItems(copiedBefore: nil, includingPinned: true)
+        #expect(try items().isEmpty)
+    }
+
+    @Test func titlesAreTheFirstLine() throws {
+        try store.recordText("  \n  first line  \nsecond line", sourceBundleID: nil)
+        try store.recordText(String(repeating: "x", count: 2000), sourceBundleID: nil)
+        let titles = Set(try items().map(\.title))
+        #expect(titles == ["first line", String(repeating: "x", count: 500)])
+    }
+
     @Test func deletingARecordFromAnotherMacRemovesTheImage() throws {
         let item = try store.recordImage(png: Data([1, 2, 3]), width: 1, height: 1, sourceBundleID: nil)
         try store.assignRecordNames([item: "clip-image"])

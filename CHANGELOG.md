@@ -10,6 +10,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Whippet checks for updates and installs them, with Check for Updates… in the menu bar menu and Settings › General.
   Earlier versions need this one downloaded by hand.
 - Apps and commands show their hotkey in search results.
+- A Clipboard History pane in Settings, with how long to keep items, apps whose copies are never saved, item counts and
+  Clear History.
+
+### Changed
+
+- Copying no longer makes Whippet pause, since saving to history happens in the background.
+- Text copies larger than 500 KB aren't saved to history.
 
 ### Fixed
 

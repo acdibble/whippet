@@ -91,6 +91,16 @@
         }
       }
     },
+    "Add App…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزودن برنامه…"
+          }
+        }
+      }
+    },
     "Admin" : {
       "localizations" : {
         "fa" : {
@@ -371,6 +381,56 @@
         }
       }
     },
+    "Clear All Items" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پاک کردن همهٔ موارد"
+          }
+        }
+      }
+    },
+    "Clear History" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پاک کردن تاریخچه"
+          }
+        }
+      }
+    },
+    "Clear History…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پاک کردن تاریخچه…"
+          }
+        }
+      }
+    },
+    "Clear Unpinned Items" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پاک کردن موارد سنجاق‌نشده"
+          }
+        }
+      }
+    },
+    "Clear clipboard history?" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخچهٔ کلیپ‌بورد پاک شود؟"
+          }
+        }
+      }
+    },
     "Clipboard History" : {
       "localizations" : {
         "fa" : {
@@ -457,6 +517,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "در کلیپ‌بورد کپی شد"
+          }
+        }
+      }
+    },
+    "Copies made in these apps aren't saved. Copies that password managers mark as concealed are always skipped." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی‌هایی که در این برنامه‌ها انجام شوند ذخیره نمی‌شوند. کپی‌هایی که مدیران گذرواژه پنهان علامت می‌زنند همیشه نادیده گرفته می‌شوند."
           }
         }
       }
@@ -701,6 +771,16 @@
         }
       }
     },
+    "Forever" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای همیشه"
+          }
+        }
+      }
+    },
     "From" : {
       "localizations" : {
         "fa" : {
@@ -757,6 +837,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ساعت"
+          }
+        }
+      }
+    },
+    "Ignore" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نادیده گرفتن"
+          }
+        }
+      }
+    },
+    "Ignored Apps" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برنامه‌های نادیده‌گرفته‌شده"
           }
         }
       }
@@ -837,6 +937,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "موارد"
+          }
+        }
+      }
+    },
+    "Items are removed from this Mac, and from your other Macs when iCloud sync is on. Calculations are kept." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موارد از این Mac، و اگر همگام‌سازی iCloud روشن باشد از Macهای دیگر شما، حذف می‌شوند. محاسبات نگه داشته می‌شوند."
+          }
+        }
+      }
+    },
+    "Keep Items" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نگه‌داشتن موارد"
           }
         }
       }
@@ -1001,6 +1121,46 @@
         }
       }
     },
+    "One Day" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک روز"
+          }
+        }
+      }
+    },
+    "One Month" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک ماه"
+          }
+        }
+      }
+    },
+    "One Week" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک هفته"
+          }
+        }
+      }
+    },
+    "One Year" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک سال"
+          }
+        }
+      }
+    },
     "Open Application" : {
       "localizations" : {
         "fa" : {
@@ -1107,6 +1267,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "سنجاق‌شده"
+          }
+        }
+      }
+    },
+    "Pinned items are always kept. With iCloud sync on, removed items are also removed from your other Macs." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موارد سنجاق‌شده همیشه نگه داشته می‌شوند. اگر همگام‌سازی iCloud روشن باشد، موارد حذف‌شده از Macهای دیگر شما هم حذف می‌شوند."
           }
         }
       }
@@ -1227,6 +1397,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "باقی‌مانده"
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف"
           }
         }
       }
@@ -1511,6 +1691,16 @@
         }
       }
     },
+    "Text copies larger than %@ aren't saved." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی‌های متنی بزرگ‌تر از %@ ذخیره نمی‌شوند."
+          }
+        }
+      }
+    },
     "Thanks for the feedback" : {
       "localizations" : {
         "fa" : {
@@ -1547,6 +1737,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "این کار نسخهٔ موجود در iCloud را حذف و همگام‌سازی را خاموش می‌کند. تاریخچهٔ این Mac حفظ می‌شود."
+          }
+        }
+      }
+    },
+    "Three Months" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سه ماه"
           }
         }
       }

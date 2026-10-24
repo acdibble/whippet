@@ -184,13 +184,20 @@ private struct ItemDetail: View {
                 .frame(maxWidth: .infinity)
         } else {
             ScrollView {
-                Text(item.text ?? "")
+                Text(Self.previewText(item.text ?? ""))
                     .font(.system(size: 12, design: .monospaced))
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)
             }
         }
+    }
+
+    /// Laying out a very long copy in full is slow, so the preview shows the start of it.
+    private static func previewText(_ text: String) -> String {
+        let limit = 20_000
+        guard text.utf8.count > limit else { return text }
+        return String(text.prefix(limit)) + "\n…"
     }
 
     private var information: [InformationRow] {

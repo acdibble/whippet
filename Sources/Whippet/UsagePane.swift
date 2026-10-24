@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Disk, history and memory figures, read fresh each time the pane appears.
+/// Disk and memory figures, read fresh each time the pane appears. Item counts are in the Clipboard History pane.
 struct UsagePane: View {
     let clipboard: ClipboardHistory
     @State private var usage: ClipboardUsage?
@@ -16,15 +16,6 @@ struct UsagePane: View {
                         value: String(localized: "\(Self.bytes(usage.imageBytes)) in \(usage.imageFiles) files")
                     )
                     LabeledContent("Total", value: Self.bytes(usage.databaseBytes + usage.imageBytes))
-                }
-
-                Section("Clipboard History") {
-                    LabeledContent("Items", value: usage.counts.values.reduce(0, +).formatted())
-                    ForEach(ClipboardKind.allCases) { kind in
-                        LabeledContent(kind.pluralTitle, value: (usage.counts[kind] ?? 0).formatted())
-                    }
-                    LabeledContent("Images Awaiting Text Recognition", value: usage.imagesAwaitingRecognition.formatted())
-                    LabeledContent("Calculations", value: usage.calculations.formatted())
                 }
 
                 Section("App") {
