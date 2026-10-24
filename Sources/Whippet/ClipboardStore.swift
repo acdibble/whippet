@@ -109,7 +109,6 @@ final class ClipboardStore: Sendable {
     private let database: DatabaseQueue
 
     init() throws {
-        Self.moveLegacyDirectory()
         directory = Self.defaultDirectory
         imagesDirectory = directory.appending(path: "Images")
         try FileManager.default.createDirectory(at: imagesDirectory, withIntermediateDirectories: true)
@@ -189,9 +188,10 @@ final class ClipboardStore: Sendable {
         return Self.clipboardRecordName(hash)
     }
 
-    /// Records a calculation, moving an expression already in history to the top with its latest answer.
-    /// Calculator history stays on this Mac and is not synced.
-    func recordCalculation(expression: String, answer: String, mode: String) throws {
+    /// Records a calculation, moving an expression already in history to the top with its latest answer,
+    /// and returns its sync record name.
+    @discardableResult
+    func recordCalculation(expression: String, answer: String, mode: String) throws -> String {
         let key = Self.calculationKey(expression: expression, mode: mode)
         try database.write { db in
             try db.execute(
@@ -205,6 +205,7 @@ final class ClipboardStore: Sendable {
                 arguments: [expression, answer, mode, Date.now, key, Date.now]
             )
         }
+        return Self.calculationRecordName(key)
     }
 
     func recentCalculations(limit: Int) throws -> [CalculationRecord] {
@@ -288,6 +289,10 @@ final class ClipboardStore: Sendable {
         "clip-\(hash)"
     }
 
+    static func calculationRecordName(_ key: String) -> String {
+        "calc-\(key)"
+    }
+
     static func calculationKey(expression: String, mode: String) -> String {
         hash(Data("\(mode)\n\(expression)".utf8))
     }
@@ -295,6 +300,12 @@ final class ClipboardStore: Sendable {
     func clipboardSyncRow(hash: String) throws -> Row? {
         try database.read { db in
             try Row.fetchOne(db, sql: "SELECT * FROM clipboard WHERE contentHash = ?", arguments: [hash])
+        }
+    }
+
+    func calculationSyncRow(key: String) throws -> Row? {
+        try database.read { db in
+            try Row.fetchOne(db, sql: "SELECT * FROM calculation WHERE syncKey = ?", arguments: [key])
         }
     }
 
@@ -306,7 +317,11 @@ final class ClipboardStore: Sendable {
                 sql: "SELECT contentHash FROM clipboard WHERE (syncedAt IS NULL OR updatedAt > syncedAt) AND (? OR kind != ?)",
                 arguments: [includeImages, ClipboardKind.image.rawValue]
             )
-            return hashes.map(Self.clipboardRecordName)
+            let keys = try String.fetchAll(
+                db,
+                sql: "SELECT syncKey FROM calculation WHERE syncedAt IS NULL OR updatedAt > syncedAt"
+            )
+            return hashes.map(Self.clipboardRecordName) + keys.map(Self.calculationRecordName)
         }
     }
 
@@ -334,6 +349,7 @@ final class ClipboardStore: Sendable {
     func forgetAllSyncState() throws {
         try database.write { db in
             try db.execute(sql: "UPDATE clipboard SET syncedAt = NULL, cloudSystemFields = NULL")
+            try db.execute(sql: "UPDATE calculation SET syncedAt = NULL, cloudSystemFields = NULL")
         }
     }
 
@@ -392,15 +408,33 @@ final class ClipboardStore: Sendable {
         }
     }
 
-    /// Moves data saved under the app's previous names, Fetch and before that Launcher, so history survives the renames.
-    private static func moveLegacyDirectory() {
-        let fileManager = FileManager.default
-        guard !fileManager.fileExists(atPath: defaultDirectory.path) else { return }
-        let legacy = ["Fetch", "Launcher"]
-            .map { URL.applicationSupportDirectory.appending(path: $0) }
-            .first { fileManager.fileExists(atPath: $0.path) }
-        guard let legacy else { return }
-        try? fileManager.moveItem(at: legacy, to: defaultDirectory)
+    /// Merges a calculation from another Mac, keeping the most recent answer. Returns true when this Mac's copy is newer.
+    func mergeRemote(_ calculation: RemoteCalculation) throws -> Bool {
+        try database.write { db in
+            let localCalculatedAt = try Date.fetchOne(
+                db,
+                sql: "SELECT calculatedAt FROM calculation WHERE syncKey = ?",
+                arguments: [calculation.key]
+            )
+            try db.execute(
+                sql: """
+                    INSERT INTO calculation (expression, answer, mode, calculatedAt, syncKey, updatedAt, syncedAt, cloudSystemFields)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(expression, mode) DO UPDATE SET
+                        answer = CASE WHEN excluded.calculatedAt > calculatedAt THEN excluded.answer ELSE answer END,
+                        calculatedAt = MAX(calculatedAt, excluded.calculatedAt),
+                        updatedAt = MAX(updatedAt, excluded.updatedAt),
+                        syncedAt = excluded.syncedAt,
+                        cloudSystemFields = excluded.cloudSystemFields
+                    """,
+                arguments: [
+                    calculation.expression, calculation.answer, calculation.mode, calculation.calculatedAt,
+                    calculation.key, calculation.updatedAt, Date.now, calculation.systemFields,
+                ]
+            )
+            guard let localCalculatedAt else { return false }
+            return localCalculatedAt > calculation.calculatedAt
+        }
     }
 
     private static func allocatedSize(of files: [URL]) -> Int {
@@ -416,35 +450,8 @@ final class ClipboardStore: Sendable {
 
     private static var migrator: DatabaseMigrator {
         var migrator = DatabaseMigrator()
-        migrator.registerMigration("createClipboard") { db in
+        migrator.registerMigration("createSchema") { db in
             try db.create(table: "clipboard") { table in
-                table.autoIncrementedPrimaryKey("id")
-                table.column("text", .text).notNull().unique()
-                table.column("copiedAt", .datetime).notNull().indexed()
-            }
-            try db.create(virtualTable: "clipboardFts", using: FTS5()) { table in
-                table.synchronize(withTable: "clipboard")
-                table.tokenizer = .unicode61()
-                table.column("text")
-            }
-        }
-        migrator.registerMigration("addClipboardMetadata") { db in
-            try db.alter(table: "clipboard") { table in
-                table.add(column: "kind", .text).notNull().defaults(to: ClipboardKind.text.rawValue)
-                table.add(column: "sourceBundleID", .text)
-                table.add(column: "timesCopied", .integer).notNull().defaults(to: 1)
-            }
-            for item in try Row.fetchAll(db, sql: "SELECT id, text FROM clipboard") {
-                let text: String = item["text"]
-                try db.execute(
-                    sql: "UPDATE clipboard SET kind = ? WHERE id = ?",
-                    arguments: [ClipboardKind.classify(text).rawValue, item["id"]]
-                )
-            }
-        }
-        // SQLite cannot drop the NOT NULL on `text`, so the table is rebuilt with images deduplicated by content hash.
-        migrator.registerMigration("supportImages") { db in
-            try db.create(table: "clipboardNew") { table in
                 table.autoIncrementedPrimaryKey("id")
                 table.column("contentHash", .text).notNull().unique()
                 table.column("kind", .text).notNull()
@@ -454,79 +461,33 @@ final class ClipboardStore: Sendable {
                 table.column("imageHeight", .integer)
                 table.column("imageBytes", .integer)
                 table.column("ocrText", .text)
-                table.column("copiedAt", .datetime).notNull()
+                table.column("copiedAt", .datetime).notNull().indexed()
                 table.column("sourceBundleID", .text)
                 table.column("timesCopied", .integer).notNull().defaults(to: 1)
+                table.column("pinnedAt", .datetime)
+                table.column("updatedAt", .datetime).notNull()
+                table.column("syncedAt", .datetime)
+                table.column("cloudSystemFields", .blob)
             }
-            for row in try Row.fetchAll(db, sql: "SELECT * FROM clipboard") {
-                let text: String = row["text"]
-                let kind: String = row["kind"]
-                let copiedAt: Date = row["copiedAt"]
-                let sourceBundleID: String? = row["sourceBundleID"]
-                let timesCopied: Int = row["timesCopied"]
-                try db.execute(
-                    sql: """
-                        INSERT INTO clipboardNew (contentHash, kind, text, copiedAt, sourceBundleID, timesCopied)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        """,
-                    arguments: [hash(Data(text.utf8)), kind, text, copiedAt, sourceBundleID, timesCopied]
-                )
-            }
-            try db.drop(table: "clipboardFts")
-            try db.drop(table: "clipboard")
-            try db.rename(table: "clipboardNew", to: "clipboard")
-            try db.create(indexOn: "clipboard", columns: ["copiedAt"])
             try db.create(virtualTable: "clipboardFts", using: FTS5()) { table in
                 table.synchronize(withTable: "clipboard")
                 table.tokenizer = .unicode61()
                 table.column("text")
                 table.column("ocrText")
             }
-        }
-        migrator.registerMigration("addPinning") { db in
-            try db.alter(table: "clipboard") { table in
-                table.add(column: "pinnedAt", .datetime)
-            }
-        }
-        migrator.registerMigration("addCalculations") { db in
             try db.create(table: "calculation") { table in
                 table.autoIncrementedPrimaryKey("id")
                 table.column("expression", .text).notNull()
                 table.column("answer", .text).notNull()
                 table.column("mode", .text).notNull()
                 table.column("calculatedAt", .datetime).notNull().indexed()
+                table.column("syncKey", .text)
+                table.column("updatedAt", .datetime)
+                table.column("syncedAt", .datetime)
+                table.column("cloudSystemFields", .blob)
                 table.uniqueKey(["expression", "mode"])
             }
-        }
-        migrator.registerMigration("classifyNumbers") { db in
-            let rows = try Row.fetchAll(db, sql: "SELECT id, text FROM clipboard WHERE kind = ?", arguments: [ClipboardKind.text.rawValue])
-            for row in rows {
-                let text: String = row["text"]
-                guard Calculator.parseNumber(text) != nil else { continue }
-                try db.execute(sql: "UPDATE clipboard SET kind = ? WHERE id = ?", arguments: [ClipboardKind.number.rawValue, row["id"]])
-            }
-        }
-        migrator.registerMigration("addSync") { db in
-            for table in ["clipboard", "calculation"] {
-                try db.alter(table: table) { table in
-                    table.add(column: "updatedAt", .datetime)
-                    table.add(column: "syncedAt", .datetime)
-                    table.add(column: "cloudSystemFields", .blob)
-                }
-            }
-            try db.execute(sql: "UPDATE clipboard SET updatedAt = copiedAt")
-            try db.alter(table: "calculation") { table in
-                table.add(column: "syncKey", .text)
-            }
-            for row in try Row.fetchAll(db, sql: "SELECT id, expression, mode FROM calculation") {
-                let expression: String = row["expression"]
-                let mode: String = row["mode"]
-                try db.execute(
-                    sql: "UPDATE calculation SET syncKey = ?, updatedAt = calculatedAt WHERE id = ?",
-                    arguments: [calculationKey(expression: expression, mode: mode), row["id"]]
-                )
-            }
-            try db.create(index: "calculation_on_syncKey", on: "calculation", columns: ["syncKey"], unique: true)
+            try db.create(indexOn: "calculation", columns: ["syncKey"], options: .unique)
         }
         return migrator
     }
@@ -550,6 +511,17 @@ struct RemoteClipboardItem {
     let systemFields: Data
 }
 
+/// A calculation as it arrived from another Mac, ready to merge.
+struct RemoteCalculation {
+    let key: String
+    let expression: String
+    let answer: String
+    let mode: String
+    let calculatedAt: Date
+    let updatedAt: Date
+    let systemFields: Data
+}
+
 /// The table and row a sync record name refers to.
 private struct SyncTarget {
     let table: String
@@ -557,8 +529,12 @@ private struct SyncTarget {
     let key: String
 
     init?(recordName: String) {
-        guard recordName.hasPrefix("clip-") else { return nil }
-        self.init(table: "clipboard", keyColumn: "contentHash", key: String(recordName.dropFirst(5)))
+        if recordName.hasPrefix("clip-") {
+            self.init(table: "clipboard", keyColumn: "contentHash", key: String(recordName.dropFirst(5)))
+            return
+        }
+        guard recordName.hasPrefix("calc-") else { return nil }
+        self.init(table: "calculation", keyColumn: "syncKey", key: String(recordName.dropFirst(5)))
     }
 
     private init(table: String, keyColumn: String, key: String) {

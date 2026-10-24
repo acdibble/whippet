@@ -22,9 +22,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var caffeineStatusItem: CaffeineStatusItem?
 
     override init() {
-        LegacySettings.migrate()
-        // A debugging trace shipped in 0.2.0 kept appending stack traces under this key; clear what it wrote.
-        UserDefaults.standard.removeObject(forKey: "DEBUGTRACE")
         clipboard = ClipboardHistory()
         cloudSync = CloudSync(store: clipboard.store)
         super.init()
@@ -203,27 +200,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private var isSettingsOpen: Bool {
         NSApp.windows.contains { $0.identifier?.rawValue.hasPrefix(SettingsView.windowID) == true && $0.isVisible }
-    }
-}
-
-/// Copies settings saved under the app's previous bundle identifier, once, so moving to codes.dibble.whippet keeps
-/// hotkeys, launch counts and preferences. The last-synced time and CloudKit's own caches belong to the old app and container,
-/// so they are left out.
-private enum LegacySettings {
-    private static let legacyDomain = "com.acdibble.whippet"
-    private static let migratedKey = "migratedSettingsFromComAcdibble"
-    private static let skippedKeys: Set<String> = ["cloudLastSyncedAt"]
-    private static let skippedPrefixes = ["CK", "CloudKit"]
-
-    static func migrate() {
-        let defaults = UserDefaults.standard
-        guard !defaults.bool(forKey: migratedKey) else { return }
-        defaults.set(true, forKey: migratedKey)
-        guard let legacy = defaults.persistentDomain(forName: legacyDomain) else { return }
-        for (key, value) in legacy where defaults.object(forKey: key) == nil {
-            if skippedKeys.contains(key) || skippedPrefixes.contains(where: key.hasPrefix) { continue }
-            defaults.set(value, forKey: key)
-        }
     }
 }
 

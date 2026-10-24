@@ -48,6 +48,7 @@ final class CloudSync {
 
     private static let zoneID = CKRecordZone.ID(zoneName: "Whippet")
     private static let clipboardType = "ClipboardItem"
+    private static let calculationType = "Calculation"
 
     init(store: ClipboardStore?) {
         self.store = store
@@ -214,8 +215,23 @@ final class CloudSync {
     private func record(for recordID: CKRecord.ID) -> CKRecord? {
         guard let store else { return nil }
         let name = recordID.recordName
-        guard name.hasPrefix("clip-"), let row = try? store.clipboardSyncRow(hash: String(name.dropFirst(5))) else { return nil }
-        return clipboardRecord(from: row, id: recordID, store: store)
+        if name.hasPrefix("clip-") {
+            guard let row = try? store.clipboardSyncRow(hash: String(name.dropFirst(5))) else { return nil }
+            return clipboardRecord(from: row, id: recordID, store: store)
+        }
+        guard name.hasPrefix("calc-"), let row = try? store.calculationSyncRow(key: String(name.dropFirst(5))) else {
+            return nil
+        }
+        let record = Self.makeRecord(type: Self.calculationType, id: recordID, systemFields: row["cloudSystemFields"])
+        let calculatedAt: Date = row["calculatedAt"]
+        let updatedAt: Date = row["updatedAt"]
+        let mode: String = row["mode"]
+        record["mode"] = mode
+        record["calculatedAt"] = calculatedAt
+        record["updatedAt"] = updatedAt
+        record.encryptedValues["expression"] = row["expression"] as String
+        record.encryptedValues["answer"] = row["answer"] as String
+        return record
     }
 
     private func clipboardRecord(from row: Row, id: CKRecord.ID, store: ClipboardStore) -> CKRecord? {
@@ -278,6 +294,22 @@ final class CloudSync {
                     sourceBundleID: record["sourceBundleID"] as? String,
                     timesCopied: record["timesCopied"] as? Int ?? 1,
                     pinnedAt: record["pinnedAt"] as? Date,
+                    updatedAt: record["updatedAt"] as? Date ?? .distantPast,
+                    systemFields: systemFields
+                )
+            )
+        case Self.calculationType:
+            guard
+                let expression = record.encryptedValues["expression"] as? String,
+                let answer = record.encryptedValues["answer"] as? String
+            else { return }
+            isLocalAhead = try? store.mergeRemote(
+                RemoteCalculation(
+                    key: String(name.dropFirst(5)),
+                    expression: expression,
+                    answer: answer,
+                    mode: record["mode"] as? String ?? "standard",
+                    calculatedAt: record["calculatedAt"] as? Date ?? .now,
                     updatedAt: record["updatedAt"] as? Date ?? .distantPast,
                     systemFields: systemFields
                 )

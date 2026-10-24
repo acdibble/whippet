@@ -7,7 +7,7 @@ A fast, keyboard-driven launcher for macOS, in the spirit of Raycast. Free and o
 - **Calculator** that understands standard and RPN input, thousands separators and hex, octal and binary, with a history of answers
 - **Hotkeys** for opening Whippet, any app or any command
 - **Caffeinate** to keep your Mac awake until you turn it off or for a set time, with an optional menu bar item
-- **iCloud sync** of clipboard history and pins across your Macs, end-to-end encrypted for text
+- **iCloud sync** of clipboard history, pins and calculator history across your Macs, end-to-end encrypted for text
 
 ## Install
 

@@ -231,7 +231,7 @@ private struct CloudSyncPane: View {
             Section {
                 Toggle(isOn: $cloudSync.isEnabled) {
                     Text("Sync with iCloud")
-                    Text("Clipboard history and pins, across your Macs")
+                    Text("Clipboard history, pins and calculations, across your Macs")
                 }
                 Toggle(isOn: $cloudSync.includesImages) {
                     Text("Include Images")
@@ -239,7 +239,7 @@ private struct CloudSyncPane: View {
                 }
                 .disabled(!cloudSync.isEnabled)
             } footer: {
-                Text("Clipboard text is end-to-end encrypted. Images are stored like other iCloud data, and are end-to-end encrypted only with Advanced Data Protection. Calculator history stays on this Mac.")
+                Text("Clipboard text and calculations are end-to-end encrypted. Images are stored like other iCloud data, and are end-to-end encrypted only with Advanced Data Protection.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
