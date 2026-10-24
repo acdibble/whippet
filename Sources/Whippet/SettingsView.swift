@@ -243,7 +243,7 @@ private struct CloudSyncPane: View {
                 }
                 .disabled(!cloudSync.isEnabled)
             } footer: {
-                Text("Clipboard text and calculations are end-to-end encrypted. Images are stored like other iCloud data, and are end-to-end encrypted only with Advanced Data Protection.")
+                Text("Everything that syncs is end-to-end encrypted, images included. Apple can see only how many items there are, their sizes and when they changed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

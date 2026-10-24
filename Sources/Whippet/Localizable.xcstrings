@@ -341,16 +341,6 @@
         }
       }
     },
-    "Clipboard text and calculations are end-to-end encrypted. Images are stored like other iCloud data, and are end-to-end encrypted only with Advanced Data Protection." : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "متن کلیپ‌بورد و محاسبات به‌صورت سرتاسری رمزگذاری می‌شوند. تصاویر مانند سایر داده‌های iCloud ذخیره می‌شوند و فقط با «محافظت پیشرفته از داده‌ها» به‌صورت سرتاسری رمزگذاری می‌شوند."
-          }
-        }
-      }
-    },
     "Close Window" : {
       "localizations" : {
         "fa" : {
@@ -627,6 +617,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ایمیل"
+          }
+        }
+      }
+    },
+    "Everything that syncs is end-to-end encrypted, images included. Apple can see only how many items there are, their sizes and when they changed." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "همهٔ داده‌هایی که همگام‌سازی می‌شوند، از جمله تصاویر، به‌صورت سرتاسری رمزگذاری می‌شوند. Apple فقط تعداد موارد، اندازهٔ آن‌ها و زمان تغییرشان را می‌بیند."
           }
         }
       }
@@ -1467,6 +1467,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "رکورد کاربر CloudKit برای حساب Apple که در این Mac وارد iCloud شده است. در CloudKit Console به آن نقشی مانند Admin بدهید."
+          }
+        }
+      }
+    },
+    "The key for iCloud sync is missing or damaged." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلید همگام‌سازی iCloud وجود ندارد یا آسیب دیده است."
           }
         }
       }

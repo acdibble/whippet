@@ -1,8 +1,11 @@
 import CloudKit
+import CryptoKit
 import GRDB
 
 /// Syncs clipboard and calculator history through the user's private CloudKit database with `CKSyncEngine`.
-/// Records are named by content, so the same text copied on two Macs becomes one record.
+/// Records are named by a keyed hash of their content, so the same text copied on two Macs becomes one record without
+/// the name revealing it. Every field is in `encryptedValues`, and images are encrypted before upload, so iCloud holds
+/// nothing readable without the key, which is itself end-to-end encrypted in the zone.
 @MainActor
 @Observable
 final class CloudSync {
@@ -44,11 +47,14 @@ final class CloudSync {
 
     @ObservationIgnored private let store: ClipboardStore?
     @ObservationIgnored private var engine: CKSyncEngine?
+    @ObservationIgnored private var keys: SyncKeys?
     @ObservationIgnored private let container = CKContainer(identifier: "iCloud.codes.dibble.whippet")
 
     private static let zoneID = CKRecordZone.ID(zoneName: "Whippet")
-    private static let clipboardType = "ClipboardItem"
-    private static let calculationType = "Calculation"
+    private static let clipboardType = "Clip"
+    private static let calculationType = "Calc"
+    private static let keyType = "SyncKey"
+    private static let keyRecordID = CKRecord.ID(recordName: "sync-key", zoneID: zoneID)
 
     init(store: ClipboardStore?) {
         self.store = store
@@ -76,11 +82,9 @@ final class CloudSync {
         try? await container.userRecordID().recordName
     }
 
-    /// Queues a record changed on this Mac for upload.
-    func recordChanged(_ recordName: String) {
-        guard let engine else { return }
-        engine.state.add(pendingRecordZoneChanges: [.saveRecord(Self.recordID(recordName))])
-        updatePendingChanges()
+    /// Queues an item changed on this Mac for upload.
+    func recordChanged(_ item: SyncItem) {
+        enqueue([item])
     }
 
     /// Queues the deletion of a record removed on this Mac.
@@ -137,6 +141,16 @@ final class CloudSync {
                 return
             }
 
+            let keys: SyncKeys
+            do {
+                keys = SyncKeys(secret: try await loadSecret())
+            } catch {
+                status = .failed(error.localizedDescription)
+                return
+            }
+            guard isEnabled else { return }
+            self.keys = keys
+
             let savedState = loadSavedState()
             let configuration = CKSyncEngine.Configuration(
                 database: container.privateCloudDatabase,
@@ -150,25 +164,40 @@ final class CloudSync {
                 try? store.forgetAllSyncState()
                 engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: Self.zoneID))])
             }
-            enqueueUnsyncedRecords(in: store)
+            enqueueUnsyncedRecords()
             await syncNow()
         }
     }
 
     private func stop() {
         engine = nil
+        keys = nil
         status = .off
         pendingChanges = 0
     }
 
-    private func enqueueUnsyncedRecords() {
-        guard let store else { return }
-        enqueueUnsyncedRecords(in: store)
+    /// Forgets everything about the zone and starts over, for when the zone, and so its key, is gone or belongs to another account.
+    private func restart() {
+        try? store?.forgetAllSyncState()
+        deleteSavedState()
+        lastSyncedAt = nil
+        stop()
+        if isEnabled {
+            start()
+        }
     }
 
-    private func enqueueUnsyncedRecords(in store: ClipboardStore) {
-        guard let engine, let names = try? store.unsyncedRecordNames(includeImages: includesImages) else { return }
-        engine.state.add(pendingRecordZoneChanges: names.map { .saveRecord(Self.recordID($0)) })
+    private func enqueueUnsyncedRecords() {
+        guard let items = try? store?.unsyncedItems(includeImages: includesImages) else { return }
+        enqueue(items)
+    }
+
+    /// Names the items with the key and queues them for upload.
+    private func enqueue(_ items: [SyncItem]) {
+        guard let engine, let keys, let store, !items.isEmpty else { return }
+        let names = Dictionary(items.map { ($0, keys.recordName(for: $0)) }, uniquingKeysWith: { first, _ in first })
+        guard (try? store.assignRecordNames(names)) != nil else { return }
+        engine.state.add(pendingRecordZoneChanges: names.values.map { .saveRecord(Self.recordID($0)) })
         updatePendingChanges()
     }
 
@@ -183,6 +212,54 @@ final class CloudSync {
         case .temporarilyUnavailable: String(localized: "iCloud is temporarily unavailable.")
         default: String(localized: "Couldn't check the iCloud account.")
         }
+    }
+
+    // MARK: - Key
+
+    /// The secret that names records and encrypts images. The first Mac to sync creates it in the zone, where it is
+    /// end-to-end encrypted, and every Mac caches it beside the history it protects.
+    private func loadSecret() async throws -> Data {
+        if let secret = try? Data(contentsOf: keyURL), secret.count == SyncKeys.secretSize {
+            return secret
+        }
+        let database = container.privateCloudDatabase
+        let (zoneResults, _) = try await database.modifyRecordZones(saving: [CKRecordZone(zoneID: Self.zoneID)], deleting: [])
+        _ = try zoneResults[Self.zoneID]?.get()
+
+        let secret: Data
+        do {
+            secret = try Self.secret(in: try await database.record(for: Self.keyRecordID))
+        } catch let error as CKError where error.code == .unknownItem {
+            secret = try await createSecret(in: database)
+        }
+        try secret.write(to: keyURL, options: .atomic)
+        return secret
+    }
+
+    private func createSecret(in database: CKDatabase) async throws -> Data {
+        let secret = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
+        let record = CKRecord(recordType: Self.keyType, recordID: Self.keyRecordID)
+        record.encryptedValues["secret"] = secret
+        let (saveResults, _) = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .ifServerRecordUnchanged)
+        do {
+            _ = try saveResults[Self.keyRecordID]?.get()
+            return secret
+        } catch let error as CKError where error.code == .serverRecordChanged {
+            // Another Mac created the key first.
+            guard let serverRecord = error.serverRecord else { throw error }
+            return try Self.secret(in: serverRecord)
+        }
+    }
+
+    private static func secret(in record: CKRecord) throws -> Data {
+        guard let secret = record.encryptedValues["secret"] as? Data, secret.count == SyncKeys.secretSize else {
+            throw MissingKeyError()
+        }
+        return secret
+    }
+
+    private var keyURL: URL {
+        ClipboardStore.defaultDirectory.appending(path: "cloud-sync-key-\(container.containerIdentifier ?? "default")")
     }
 
     // MARK: - Saved engine state
@@ -201,8 +278,10 @@ final class CloudSync {
         try? data.write(to: stateURL, options: .atomic)
     }
 
+    /// Forgets the engine state and the cached key, which both belong to one account's zone.
     private func deleteSavedState() {
         try? FileManager.default.removeItem(at: stateURL)
+        try? FileManager.default.removeItem(at: keyURL)
     }
 
     // MARK: - Records
@@ -213,48 +292,40 @@ final class CloudSync {
 
     /// Builds the record to upload, reusing the server's system fields so CloudKit sees an update rather than a conflict.
     private func record(for recordID: CKRecord.ID) -> CKRecord? {
-        guard let store else { return nil }
-        let name = recordID.recordName
-        if name.hasPrefix("clip-") {
-            guard let row = try? store.clipboardSyncRow(hash: String(name.dropFirst(5))) else { return nil }
-            return clipboardRecord(from: row, id: recordID, store: store)
-        }
-        guard name.hasPrefix("calc-"), let row = try? store.calculationSyncRow(key: String(name.dropFirst(5))) else {
-            return nil
+        guard let store, let keys, let row = try? store.syncRow(recordName: recordID.recordName) else { return nil }
+        if recordID.recordName.hasPrefix(SyncItem.clipboardPrefix) {
+            return clipboardRecord(from: row, id: recordID, keys: keys, store: store)
         }
         let record = Self.makeRecord(type: Self.calculationType, id: recordID, systemFields: row["cloudSystemFields"])
-        let calculatedAt: Date = row["calculatedAt"]
-        let updatedAt: Date = row["updatedAt"]
-        let mode: String = row["mode"]
-        record["mode"] = mode
-        record["calculatedAt"] = calculatedAt
-        record["updatedAt"] = updatedAt
         record.encryptedValues["expression"] = row["expression"] as String
         record.encryptedValues["answer"] = row["answer"] as String
+        record.encryptedValues["mode"] = row["mode"] as String
+        record.encryptedValues["calculatedAt"] = row["calculatedAt"] as Date
+        record.encryptedValues["updatedAt"] = row["updatedAt"] as Date?
         return record
     }
 
-    private func clipboardRecord(from row: Row, id: CKRecord.ID, store: ClipboardStore) -> CKRecord? {
+    private func clipboardRecord(from row: Row, id: CKRecord.ID, keys: SyncKeys, store: ClipboardStore) -> CKRecord? {
         let kind: String = row["kind"]
         if kind == ClipboardKind.image.rawValue, !includesImages { return nil }
 
         let record = Self.makeRecord(type: Self.clipboardType, id: id, systemFields: row["cloudSystemFields"])
-        let copiedAt: Date = row["copiedAt"]
-        let updatedAt: Date = row["updatedAt"]
-        let timesCopied: Int = row["timesCopied"]
-        record["kind"] = kind
-        record["copiedAt"] = copiedAt
-        record["updatedAt"] = updatedAt
-        record["timesCopied"] = timesCopied
-        record["pinnedAt"] = row["pinnedAt"] as Date?
-        record["sourceBundleID"] = row["sourceBundleID"] as String?
-        record["imageWidth"] = row["imageWidth"] as Int?
-        record["imageHeight"] = row["imageHeight"] as Int?
-        record["imageBytes"] = row["imageBytes"] as Int?
+        record.encryptedValues["contentHash"] = row["contentHash"] as String
+        record.encryptedValues["kind"] = kind
+        record.encryptedValues["copiedAt"] = row["copiedAt"] as Date
+        record.encryptedValues["updatedAt"] = row["updatedAt"] as Date
+        record.encryptedValues["timesCopied"] = row["timesCopied"] as Int
+        record.encryptedValues["pinnedAt"] = row["pinnedAt"] as Date?
+        record.encryptedValues["sourceBundleID"] = row["sourceBundleID"] as String?
+        record.encryptedValues["imageWidth"] = row["imageWidth"] as Int?
+        record.encryptedValues["imageHeight"] = row["imageHeight"] as Int?
+        record.encryptedValues["imageBytes"] = row["imageBytes"] as Int?
         record.encryptedValues["text"] = row["text"] as String?
         record.encryptedValues["ocrText"] = row["ocrText"] as String?
         if let imageFile = row["imageFile"] as String? {
-            record["image"] = CKAsset(fileURL: store.imagesDirectory.appending(path: imageFile))
+            let source = store.imagesDirectory.appending(path: imageFile)
+            guard let upload = encryptImage(at: source, recordName: id.recordName, key: keys.images) else { return nil }
+            record["image"] = CKAsset(fileURL: upload)
         }
         return record
     }
@@ -270,47 +341,56 @@ final class CloudSync {
 
     /// Merges a record from iCloud into the local store, and queues it for upload when this Mac's copy is ahead.
     private func merge(_ record: CKRecord) {
-        guard let store else { return }
+        guard let store, let keys else { return }
         let name = record.recordID.recordName
         let systemFields = record.encodedSystemFields
+        let values = record.encryptedValues
+        let item: SyncItem
         let isLocalAhead: Bool?
 
         switch record.recordType {
         case Self.clipboardType:
-            let kind = (record["kind"] as? String).flatMap(ClipboardKind.init(rawValue:)) ?? .text
+            // The hash names the image file, so anything else is rejected.
+            guard let hash = values["contentHash"] as? String, hash.count == 64, hash.allSatisfy(\.isHexDigit) else { return }
+            let kind = (values["kind"] as? String).flatMap(ClipboardKind.init(rawValue:)) ?? .text
             if kind == .image, !includesImages { return }
-            let hash = String(name.dropFirst(5))
+            item = .clipboard(contentHash: hash)
             isLocalAhead = try? store.mergeRemote(
                 RemoteClipboardItem(
                     hash: hash,
                     kind: kind,
-                    text: record.encryptedValues["text"] as? String,
-                    ocrText: record.encryptedValues["ocrText"] as? String,
-                    imageFile: kind == .image ? saveImage(record["image"] as? CKAsset, hash: hash, store: store) : nil,
-                    imageWidth: record["imageWidth"] as? Int,
-                    imageHeight: record["imageHeight"] as? Int,
-                    imageBytes: record["imageBytes"] as? Int,
-                    copiedAt: record["copiedAt"] as? Date ?? .now,
-                    sourceBundleID: record["sourceBundleID"] as? String,
-                    timesCopied: record["timesCopied"] as? Int ?? 1,
-                    pinnedAt: record["pinnedAt"] as? Date,
-                    updatedAt: record["updatedAt"] as? Date ?? .distantPast,
+                    text: values["text"] as? String,
+                    ocrText: values["ocrText"] as? String,
+                    imageFile: kind == .image ? saveImage(record["image"] as? CKAsset, hash: hash, key: keys.images, store: store) : nil,
+                    imageWidth: values["imageWidth"] as? Int,
+                    imageHeight: values["imageHeight"] as? Int,
+                    imageBytes: values["imageBytes"] as? Int,
+                    copiedAt: values["copiedAt"] as? Date ?? .now,
+                    sourceBundleID: values["sourceBundleID"] as? String,
+                    timesCopied: values["timesCopied"] as? Int ?? 1,
+                    pinnedAt: values["pinnedAt"] as? Date,
+                    updatedAt: values["updatedAt"] as? Date ?? .distantPast,
+                    recordName: name,
                     systemFields: systemFields
                 )
             )
         case Self.calculationType:
             guard
-                let expression = record.encryptedValues["expression"] as? String,
-                let answer = record.encryptedValues["answer"] as? String
+                let expression = values["expression"] as? String,
+                let answer = values["answer"] as? String
             else { return }
+            let mode = values["mode"] as? String ?? "standard"
+            let key = ClipboardStore.calculationKey(expression: expression, mode: mode)
+            item = .calculation(key: key)
             isLocalAhead = try? store.mergeRemote(
                 RemoteCalculation(
-                    key: String(name.dropFirst(5)),
+                    key: key,
                     expression: expression,
                     answer: answer,
-                    mode: record["mode"] as? String ?? "standard",
-                    calculatedAt: record["calculatedAt"] as? Date ?? .now,
-                    updatedAt: record["updatedAt"] as? Date ?? .distantPast,
+                    mode: mode,
+                    calculatedAt: values["calculatedAt"] as? Date ?? .now,
+                    updatedAt: values["updatedAt"] as? Date ?? .distantPast,
+                    recordName: name,
                     systemFields: systemFields
                 )
             )
@@ -319,18 +399,44 @@ final class CloudSync {
         }
 
         if isLocalAhead == true {
-            recordChanged(name)
+            recordChanged(item)
         }
     }
 
-    /// Copies a downloaded image into the images folder under its content hash and returns the file name.
-    private func saveImage(_ asset: CKAsset?, hash: String, store: ClipboardStore) -> String? {
-        guard let source = asset?.fileURL else { return nil }
+    // MARK: - Images
+
+    /// Images go up as assets, which `encryptedValues` can't hold, so they are encrypted into a temporary file first.
+    private func encryptImage(at source: URL, recordName: String, key: SymmetricKey) -> URL? {
+        guard
+            let png = try? Data(contentsOf: source),
+            let sealed = try? AES.GCM.seal(png, using: key).combined,
+            (try? FileManager.default.createDirectory(at: Self.uploadsDirectory, withIntermediateDirectories: true)) != nil
+        else { return nil }
+        let upload = Self.uploadsDirectory.appending(path: recordName)
+        guard (try? sealed.write(to: upload, options: .atomic)) != nil else { return nil }
+        return upload
+    }
+
+    private static func removeUpload(for recordID: CKRecord.ID) {
+        try? FileManager.default.removeItem(at: uploadsDirectory.appending(path: recordID.recordName))
+    }
+
+    private static let uploadsDirectory = FileManager.default.temporaryDirectory.appending(path: "Whippet Uploads")
+
+    /// Decrypts a downloaded image into the images folder under its content hash and returns the file name.
+    private func saveImage(_ asset: CKAsset?, hash: String, key: SymmetricKey, store: ClipboardStore) -> String? {
         let fileName = "\(hash).png"
         let destination = store.imagesDirectory.appending(path: fileName)
-        if !FileManager.default.fileExists(atPath: destination.path) {
-            guard (try? FileManager.default.copyItem(at: source, to: destination)) != nil else { return nil }
+        if FileManager.default.fileExists(atPath: destination.path) {
+            return fileName
         }
+        guard
+            let source = asset?.fileURL,
+            let sealed = try? Data(contentsOf: source),
+            let box = try? AES.GCM.SealedBox(combined: sealed),
+            let png = try? AES.GCM.open(box, using: key),
+            (try? png.write(to: destination, options: .atomic)) != nil
+        else { return nil }
         return fileName
     }
 
@@ -342,10 +448,10 @@ final class CloudSync {
             merge(serverRecord)
             engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
         case .zoneNotFound:
-            // The zone was removed, for example by resetting the development environment, so every record must go up again.
-            try? store?.forgetAllSyncState()
-            engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: Self.zoneID))])
-            enqueueUnsyncedRecords()
+            // The zone was removed, for example by resetting the development environment, and its key with it, so sync
+            // starts over with a new key. Only the first failure restarts; the rest belong to the stopped engine.
+            guard self.engine === engine else { return }
+            restart()
         case .unknownItem:
             try? store?.forgetSyncState(recordName: recordID.recordName)
             engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
@@ -361,13 +467,7 @@ final class CloudSync {
         case .signIn:
             enqueueUnsyncedRecords()
         case .signOut, .switchAccounts:
-            try? store?.forgetAllSyncState()
-            deleteSavedState()
-            lastSyncedAt = nil
-            stop()
-            if isEnabled {
-                start()
-            }
+            restart()
         @unknown default:
             break
         }
@@ -394,7 +494,9 @@ extension CloudSync: CKSyncEngineDelegate {
         case .sentRecordZoneChanges(let sent):
             for record in sent.savedRecords {
                 try? store?.markSynced(recordName: record.recordID.recordName, systemFields: record.encodedSystemFields)
+                Self.removeUpload(for: record.recordID)
             }
+            sent.failedRecordSaves.forEach { Self.removeUpload(for: $0.record.recordID) }
             sent.failedRecordSaves.forEach { handleFailedSave($0, engine: syncEngine) }
             updatePendingChanges()
         case .willFetchChanges, .willSendChanges:
@@ -425,5 +527,37 @@ private extension CKRecord {
         encodeSystemFields(with: coder)
         coder.finishEncoding()
         return coder.encodedData
+    }
+}
+
+/// Keys derived from the secret in the zone, one for naming records and one for encrypting images, so neither key does
+/// both jobs.
+private struct SyncKeys {
+    static let secretSize = 32
+
+    let images: SymmetricKey
+    private let names: SymmetricKey
+
+    init(secret: Data) {
+        let secret = SymmetricKey(data: secret)
+        names = HKDF<SHA256>.deriveKey(inputKeyMaterial: secret, info: Data("record names".utf8), outputByteCount: 32)
+        images = HKDF<SHA256>.deriveKey(inputKeyMaterial: secret, info: Data("images".utf8), outputByteCount: 32)
+    }
+
+    func recordName(for item: SyncItem) -> String {
+        switch item {
+        case .clipboard(let contentHash): SyncItem.clipboardPrefix + code(for: contentHash)
+        case .calculation(let key): SyncItem.calculationPrefix + code(for: key)
+        }
+    }
+
+    private func code(for value: String) -> String {
+        HMAC<SHA256>.authenticationCode(for: Data(value.utf8), using: names).map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+private struct MissingKeyError: LocalizedError {
+    var errorDescription: String? {
+        String(localized: "The key for iCloud sync is missing or damaged.")
     }
 }

@@ -9,9 +9,9 @@ final class ClipboardHistory {
     private(set) var revision = 0
 
     @ObservationIgnored let store: ClipboardStore?
-    /// Called with the sync record name of every item changed on this Mac.
-    @ObservationIgnored var onLocalChange: (String) -> Void = { _ in }
-    /// Called with the sync record name of every item deleted on this Mac.
+    /// Called with every item changed on this Mac.
+    @ObservationIgnored var onLocalChange: (SyncItem) -> Void = { _ in }
+    /// Called with the iCloud record name of every synced item deleted on this Mac.
     @ObservationIgnored var onLocalDelete: (String) -> Void = { _ in }
     @ObservationIgnored private var lastChangeCount = NSPasteboard.general.changeCount
     @ObservationIgnored private var timer: Timer?
@@ -57,8 +57,8 @@ final class ClipboardHistory {
 
     func setPinned(_ pinned: Bool, item: ClipboardItem) {
         do {
-            if let recordName = try store?.setPinned(pinned, id: item.id) {
-                onLocalChange(recordName)
+            if let syncItem = try store?.setPinned(pinned, id: item.id) {
+                onLocalChange(syncItem)
             }
             revision += 1
         } catch {
@@ -67,10 +67,10 @@ final class ClipboardHistory {
     }
 
     func delete(_ item: ClipboardItem) {
-        let recordName = ClipboardStore.clipboardRecordName(item.contentHash)
         do {
-            try store?.deleteRecord(named: recordName)
-            onLocalDelete(recordName)
+            if let recordName = try store?.delete(contentHash: item.contentHash) {
+                onLocalDelete(recordName)
+            }
             revision += 1
         } catch {
             NSLog("Failed to delete clipboard item: \(error)")
@@ -94,8 +94,8 @@ final class ClipboardHistory {
 
     func recordCalculation(expression: String, answer: String, isRPN: Bool) {
         do {
-            if let recordName = try store?.recordCalculation(expression: expression, answer: answer, mode: isRPN ? "rpn" : "standard") {
-                onLocalChange(recordName)
+            if let syncItem = try store?.recordCalculation(expression: expression, answer: answer, mode: isRPN ? "rpn" : "standard") {
+                onLocalChange(syncItem)
             }
             revision += 1
         } catch {
@@ -148,8 +148,8 @@ final class ClipboardHistory {
         Task {
             while let pending = try? store.nextImageAwaitingRecognition() {
                 let text = await Task.detached(priority: .utility) { Self.recognizeText(in: pending.file) }.value
-                guard let recordName = try? store.setRecognizedText(text, hash: pending.hash) else { break }
-                onLocalChange(recordName)
+                guard let syncItem = try? store.setRecognizedText(text, hash: pending.hash) else { break }
+                onLocalChange(syncItem)
                 revision += 1
             }
             isRecognizing = false
