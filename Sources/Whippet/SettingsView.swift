@@ -1,4 +1,5 @@
 import AppKit
+import CryptoKit
 import ServiceManagement
 import KeyboardShortcuts
 import SwiftUI
@@ -72,16 +73,18 @@ struct SettingsView: View {
     let feedbackStore: FeedbackStore
     @Bindable var navigation: SettingsNavigation
     let updater: Updater
-    /// Only accounts with the CloudKit Admin role can read feedback, so the Feedback pane only appears for them.
-    @State private var isAdmin = false
+    /// The Developer pane is for accounts with the CloudKit Admin role, and always shows in development builds; the
+    /// Feedback pane also needs the feedback key on this Mac.
+    @State private var hasAdminRole = false
+    @State private var canReadFeedback = false
 
     var body: some View {
         NavigationSplitView {
-            List(SettingsPane.allCases.filter { $0 != .feedback || isAdmin }, selection: $navigation.pane) { pane in
+            List(SettingsPane.allCases.filter(isShown), selection: $navigation.pane) { pane in
                 Label {
                     HStack {
                         Text(pane.title)
-                        if pane == .feedback {
+                        if pane == .feedback || pane == .developer {
                             Spacer()
                             AdminBadge()
                         }
@@ -111,7 +114,25 @@ struct SettingsView: View {
         .frame(minWidth: 680, minHeight: 440)
         .onAppear { DockIcon.update() }
         .onDisappear { DockIcon.update() }
-        .task { isAdmin = await feedbackStore.isAdmin }
+        .task {
+            hasAdminRole = await feedbackStore.hasAdminRole
+            canReadFeedback = hasAdminRole && FeedbackKey.matchingPrivateKey != nil
+        }
+    }
+
+    private func isShown(_ pane: SettingsPane) -> Bool {
+        switch pane {
+        case .feedback:
+            return canReadFeedback
+        case .developer:
+            #if DEBUG
+            return true
+            #else
+            return hasAdminRole
+            #endif
+        default:
+            return true
+        }
     }
 }
 
@@ -318,8 +339,102 @@ private struct DeveloperPane: View {
                     .foregroundStyle(.secondary)
             }
 
+            FeedbackKeySection()
         }
         .task { userRecordName = await cloudSync.userRecordName() }
+    }
+}
+
+/// Creates, backs up and restores the admin key that feedback is sealed to.
+private struct FeedbackKeySection: View {
+    @State private var storedKey = FeedbackKey.storedPrivateKey
+    @State private var isConfirmingCreate = false
+    @State private var isImporting = false
+    @State private var importedKey = ""
+
+    var body: some View {
+        Section {
+            LabeledContent("Feedback Key", value: status)
+            if let storedKey {
+                LabeledContent("Public Key") {
+                    HStack {
+                        Text(storedKey.publicKey.rawRepresentation.base64EncodedString())
+                            .font(.callout.monospaced())
+                            .textSelection(.enabled)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Button("Copy") { copy(storedKey.publicKey.rawRepresentation.base64EncodedString(), concealed: false) }
+                    }
+                }
+            }
+            HStack {
+                Button("Create Key…") {
+                    if storedKey == nil { create() } else { isConfirmingCreate = true }
+                }
+                Button("Import Key…") { isImporting = true }
+                Spacer()
+                if let storedKey {
+                    Button("Copy Private Key") { copy(storedKey.rawRepresentation.base64EncodedString(), concealed: true) }
+                }
+            }
+        } header: {
+            Text("Feedback")
+        } footer: {
+            Text("Feedback is sealed to this key. Its public key goes in WhippetFeedbackPublicKey in project.yml. The private key syncs through iCloud Keychain; back it up too, since feedback sealed to a lost key can't be read.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .confirmationDialog("Replace the feedback key?", isPresented: $isConfirmingCreate) {
+            Button("Replace Key", role: .destructive, action: create)
+        } message: {
+            Text("Feedback sealed to the current key can't be read without it.")
+        }
+        .alert("Import Feedback Key", isPresented: $isImporting) {
+            SecureField("Private key", text: $importedKey)
+            Button("Import", action: importKey)
+            Button("Cancel", role: .cancel) { importedKey = "" }
+        } message: {
+            Text("Paste the private key from your backup.")
+        }
+    }
+
+    private var status: String {
+        guard storedKey != nil else { return String(localized: "Not on this Mac") }
+        return FeedbackKey.matchingPrivateKey == nil
+            ? String(localized: "On this Mac, but this version uses a different key")
+            : String(localized: "On this Mac")
+    }
+
+    private func create() {
+        do {
+            storedKey = try FeedbackKey.create()
+        } catch {
+            NSAlert(error: error).runModal()
+        }
+    }
+
+    private func importKey() {
+        defer { importedKey = "" }
+        do {
+            guard let data = Data(base64Encoded: importedKey.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+                throw CocoaError(.coderInvalidValue)
+            }
+            let key = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: data)
+            try FeedbackKey.store(key)
+            storedKey = key
+        } catch {
+            NSAlert(error: error).runModal()
+        }
+    }
+
+    /// The private key is marked concealed, so clipboard managers, Whippet's own history included, don't keep it.
+    private func copy(_ text: String, concealed: Bool) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        if concealed {
+            pasteboard.setString("", forType: NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType"))
+        }
+        pasteboard.setString(text, forType: .string)
     }
 }
 

@@ -56,13 +56,15 @@ targets:
         # Required by Sparkle alongside a signed feed: the update's signature is checked before it's opened.
         SUVerifyUpdateBeforeExtraction: true
         SUEnableAutomaticChecks: true
+        # Feedback is sealed to this key; the private half is in the admin's iCloud Keychain (Settings › Developer).
+        WhippetFeedbackPublicKey: 5W6U3iN7bTVu2QR5VGOByySsY05wViUPVM4EZnXAMSY=
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: Resources/Whippet.entitlements
         PRODUCT_BUNDLE_IDENTIFIER: codes.dibble.whippet
         PRODUCT_NAME: Whippet
         # The version being worked on. The release workflow checks that its tag matches.
-        MARKETING_VERSION: 0.5.1
+        MARKETING_VERSION: 0.6.0
         CURRENT_PROJECT_VERSION: 1
         DEVELOPMENT_TEAM: 5G59X57VMZ
         CODE_SIGN_STYLE: Automatic
@@ -89,6 +91,7 @@ targets:
       - Sources/Whippet/CaffeineDuration.swift
       - Sources/Whippet/Calculator.swift
       - Sources/Whippet/ClipboardStore.swift
+      - Sources/Whippet/FeedbackKey.swift
       - Sources/Whippet/FuzzyMatch.swift
       - Sources/Whippet/Thumbnail.swift
     dependencies:

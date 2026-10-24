@@ -41,6 +41,10 @@ jobs:
             echo "::error::SUPublicEDKey in project.yml is still a placeholder, so the release couldn't update itself."
             exit 1
           fi
+          if grep -q FEEDBACK_PUBLIC_KEY_PLACEHOLDER project.yml; then
+            echo "::error::WhippetFeedbackPublicKey in project.yml is still a placeholder, so feedback wouldn't be sealed."
+            exit 1
+          fi
           notes="$RUNNER_TEMP/release-notes.md"
           awk -v heading="## [$version]" 'index($0, heading) == 1 { found = 1; next } found && /^## \[/ { exit } found { print }' \
             CHANGELOG.md > "$notes"

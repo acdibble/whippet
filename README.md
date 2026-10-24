@@ -35,6 +35,8 @@ Debug builds are a separate app, Whippet Dev (`codes.dibble.whippet.dev`), with 
 settings and data in `~/Library/Application Support/Whippet Dev`, and CloudKit's Development environment, so it runs
 beside an installed release.
 
+The CloudKit schema and the security roles it needs are described in [docs/cloudkit.md](docs/cloudkit.md).
+
 Releases are built, signed, notarized and published by `.github/workflows/release.yml` when a `v*` tag is pushed.
 To cut one, rename the Unreleased section of [CHANGELOG.md](CHANGELOG.md) to the new version, make sure
 `MARKETING_VERSION` in `project.yml` matches it, and tag that commit. The workflow refuses a tag that doesn't match,

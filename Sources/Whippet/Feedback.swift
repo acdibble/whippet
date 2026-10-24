@@ -1,22 +1,49 @@
 import AppKit
 import CloudKit
+import CryptoKit
 
 /// Feedback sent from the app, stored in the iCloud container's public database so no server is needed.
-/// The Feedback record type's security roles let signed-in users create records, and only the Admin role read,
-/// change and delete them, so reading is enforced by CloudKit rather than by this code.
+/// The Feedback record type's security roles let signed-in users create records and only the Admin role read, change
+/// and delete them (see docs/cloudkit.md). The message, email and details are also sealed to the admin's key, so they
+/// stay unreadable even if those roles are ever wrong.
 @MainActor
 final class FeedbackStore {
     struct Entry: Identifiable, Hashable {
         let record: CKRecord
+        /// Nil when the feedback is sealed and this Mac doesn't have the admin key.
+        let content: FeedbackContent?
         var id: CKRecord.ID { record.recordID }
-        var message: String { record["message"] as? String ?? "" }
-        var email: String? { (record["email"] as? String).flatMap { $0.isEmpty ? nil : $0 } }
-        var details: String { record["details"] as? String ?? "" }
+        var message: String { content?.message ?? String(localized: "This feedback is encrypted, and this Mac doesn't have the feedback key.") }
+        var email: String? { content.flatMap { $0.email.isEmpty ? nil : $0.email } }
+        var details: String { content?.details ?? "" }
         var sentAt: Date { record.creationDate ?? .distantPast }
         var isHandled: Bool { (record["handled"] as? Int64 ?? 0) != 0 }
+
+        /// Reads sealed feedback with the admin key, or the plain fields that versions before 0.6 sent.
+        init(record: CKRecord, privateKey: Curve25519.KeyAgreement.PrivateKey?) {
+            self.record = record
+            if let encapsulatedKey = record["sealedKey"] as? Data, let ciphertext = record["sealed"] as? Data {
+                content = privateKey.flatMap {
+                    try? SealedFeedback.open(encapsulatedKey: encapsulatedKey, ciphertext: ciphertext, with: $0)
+                }
+            } else {
+                content = FeedbackContent(
+                    message: record["message"] as? String ?? "",
+                    email: record["email"] as? String ?? "",
+                    details: record["details"] as? String ?? ""
+                )
+            }
+        }
+    }
+
+    struct Page {
+        let entries: [Entry]
+        /// Where the next page starts, or nil after the last one.
+        let cursor: CKQueryOperation.Cursor?
     }
 
     private static let recordType = "Feedback"
+    private static let pageSize = 50
     private let database = CKContainer(identifier: "iCloud.codes.dibble.whippet").publicCloudDatabase
 
     var canSend: Bool {
@@ -24,34 +51,67 @@ final class FeedbackStore {
     }
 
     func send(message: String, email: String) async throws {
+        let content = FeedbackContent(
+            message: message,
+            email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+            details: SystemDetails.summary
+        )
         let record = CKRecord(recordType: Self.recordType)
-        record["message"] = message
-        record["email"] = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        record["details"] = SystemDetails.summary
+        if let publicKey = FeedbackKey.publicKey {
+            let sealed = try SealedFeedback.seal(content, to: publicKey)
+            record["sealedKey"] = sealed.encapsulatedKey
+            record["sealed"] = sealed.ciphertext
+        } else {
+            // Only builds without a feedback key, such as other people's, send plain fields.
+            record["message"] = content.message
+            record["email"] = content.email
+            record["details"] = content.details
+        }
         record["handled"] = Int64(0)
         _ = try await database.save(record)
     }
 
     // MARK: - Admin
 
-    /// Newest first. Throws a permission error for anyone without the Admin role, which is how the admin pane hides itself.
-    func fetchAll() async throws -> [Entry] {
-        let query = CKQuery(recordType: Self.recordType, predicate: NSPredicate(value: true))
-        query.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        let (results, _) = try await database.records(matching: query, resultsLimit: 200)
-        return results.compactMap { try? $0.1.get() }.map(Entry.init)
+    /// True when CloudKit lets this account read feedback, which only the Admin role can. Fetches at most one record,
+    /// with no fields.
+    var hasAdminRole: Bool {
+        get async {
+            let query = CKQuery(recordType: Self.recordType, predicate: NSPredicate(value: true))
+            return (try? await database.records(matching: query, desiredKeys: [], resultsLimit: 1)) != nil
+        }
     }
 
+    /// The Admin role and, on this Mac, the key that opens feedback. Needing both keeps feedback hidden from everyone
+    /// else even if the roles were ever wrong.
     var isAdmin: Bool {
-        get async { (try? await fetchAll()) != nil }
+        get async {
+            guard FeedbackKey.matchingPrivateKey != nil else { return false }
+            return await hasAdminRole
+        }
+    }
+
+    /// Newest first, a page at a time.
+    func fetchPage(after cursor: CKQueryOperation.Cursor? = nil) async throws -> Page {
+        let privateKey = FeedbackKey.matchingPrivateKey
+        let (results, nextCursor): ([(CKRecord.ID, Result<CKRecord, Error>)], CKQueryOperation.Cursor?)
+        if let cursor {
+            (results, nextCursor) = try await database.records(continuingMatchFrom: cursor, resultsLimit: Self.pageSize)
+        } else {
+            let query = CKQuery(recordType: Self.recordType, predicate: NSPredicate(value: true))
+            query.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            (results, nextCursor) = try await database.records(matching: query, resultsLimit: Self.pageSize)
+        }
+        let entries = results.compactMap { try? $0.1.get() }.map { Entry(record: $0, privateKey: privateKey) }
+        return Page(entries: entries, cursor: nextCursor)
     }
 
     func delete(_ entry: Entry) async throws {
         try await database.deleteRecord(withID: entry.id)
     }
 
-    func markHandled(_ entry: Entry) async throws {
-        entry.record["handled"] = Int64(1)
+    func setHandled(_ isHandled: Bool, for entry: Entry) async throws {
+        entry.record["handled"] = Int64(isHandled ? 1 : 0)
         _ = try await database.modifyRecords(saving: [entry.record], deleting: [], savePolicy: .changedKeys)
     }
 }

@@ -34,5 +34,7 @@
 	<true/>
 	<key>SUVerifyUpdateBeforeExtraction</key>
 	<true/>
+	<key>WhippetFeedbackPublicKey</key>
+	<string>5W6U3iN7bTVu2QR5VGOByySsY05wViUPVM4EZnXAMSY=</string>
 </dict>
 </plist>

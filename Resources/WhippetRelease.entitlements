@@ -14,6 +14,10 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)codes.dibble.whippet.shared</string>
+	</array>
 	<key>com.apple.security.app-sandbox</key>
 	<false/>
 </dict>

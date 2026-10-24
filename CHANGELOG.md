@@ -7,6 +7,7 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Feedback is encrypted so only Whippet's developer can read it, including the email address and system details.
 - Clipboard history with many screenshots scrolls smoothly, since images are shown from small copies kept in memory.
 
 ## [0.5.1] - 2026-10-24

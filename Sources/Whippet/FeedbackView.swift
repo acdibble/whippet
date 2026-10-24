@@ -1,4 +1,5 @@
 import AppKit
+import CloudKit
 import SwiftUI
 
 /// The window for sending feedback, opened from the menu bar menu, the Send Feedback command and Settings › About.
@@ -83,10 +84,12 @@ struct FeedbackView: View {
     }
 }
 
-/// The admin-only Settings pane for reading feedback. CloudKit only returns feedback to accounts with the Admin role.
+/// The admin-only Settings pane for reading feedback, a page at a time. CloudKit only returns feedback to accounts with
+/// the Admin role, and only the admin's key opens it.
 struct FeedbackAdminPane: View {
     let store: FeedbackStore
     @State private var entries: [FeedbackStore.Entry] = []
+    @State private var cursor: CKQueryOperation.Cursor?
     @State private var isLoading = false
     @State private var error: String?
     @State private var pendingDeletion: FeedbackStore.Entry?
@@ -116,7 +119,7 @@ struct FeedbackAdminPane: View {
                         .foregroundStyle(.secondary)
                     HStack {
                         if entry.isHandled {
-                            Label("Issue created", systemImage: "checkmark.circle.fill")
+                            Label("Handled", systemImage: "checkmark.circle.fill")
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -124,14 +127,25 @@ struct FeedbackAdminPane: View {
                             Button("Reply…") { reply(to: email, about: entry) }
                         }
                         Button("Create Issue…") { createIssue(from: entry) }
+                        Button(entry.isHandled ? "Mark as Not Handled" : "Mark as Handled") {
+                            perform { try await store.setHandled(!entry.isHandled, for: entry) }
+                        }
                         Button("Delete…", role: .destructive) { pendingDeletion = entry }
                     }
+                }
+            }
+            if cursor != nil {
+                Section {
+                    Button("Load More") {
+                        Task { await loadNextPage() }
+                    }
+                    .disabled(isLoading)
                 }
             }
         }
         .toolbar {
             Button {
-                Task { await load() }
+                Task { await reload() }
             } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
@@ -145,13 +159,24 @@ struct FeedbackAdminPane: View {
                 perform { try await store.delete(entry) }
             }
         }
-        .task { await load() }
+        .task { await reload() }
     }
 
-    private func load() async {
+    private func reload() async {
+        await load { try await store.fetchPage() }
+    }
+
+    private func loadNextPage() async {
+        guard let cursor else { return }
+        await load(appending: true) { try await store.fetchPage(after: cursor) }
+    }
+
+    private func load(appending: Bool = false, _ fetch: () async throws -> FeedbackStore.Page) async {
         isLoading = true
         do {
-            entries = try await store.fetchAll()
+            let page = try await fetch()
+            entries = appending ? entries + page.entries : page.entries
+            cursor = page.cursor
             error = nil
         } catch {
             self.error = error.localizedDescription
@@ -159,11 +184,11 @@ struct FeedbackAdminPane: View {
         isLoading = false
     }
 
-    /// The reply email stays out of the issue, since issues are public.
+    /// The reply email stays out of the issue, since issues are public. Opening the issue page doesn't mean it was
+    /// submitted, so marking the feedback handled is a separate step.
     private func createIssue(from entry: FeedbackStore.Entry) {
         let title = entry.message.split(whereSeparator: \.isNewline).first.map { String($0.prefix(80)) } ?? ""
         GitHubIssue.open(title: title, body: "\(entry.message)\n\n---\nFrom in-app feedback\n\(entry.details)")
-        perform { try await store.markHandled(entry) }
     }
 
     private func reply(to email: String, about entry: FeedbackStore.Entry) {
@@ -179,6 +204,7 @@ struct FeedbackAdminPane: View {
         NSWorkspace.shared.open(url)
     }
 
+    /// Runs a change, then reloads from the first page so the list matches CloudKit.
     private func perform(_ change: @escaping () async throws -> Void) {
         Task {
             do {
@@ -186,7 +212,7 @@ struct FeedbackAdminPane: View {
             } catch {
                 self.error = error.localizedDescription
             }
-            await load()
+            await reload()
         }
     }
 }
