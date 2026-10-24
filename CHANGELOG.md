@@ -5,6 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Check for Updates in 0.4.0 couldn't start. Install this version by hand once, and updates work from then on.
+
 ## [0.4.0] - 2026-10-24
 
 ### Added

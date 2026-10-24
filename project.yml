@@ -53,6 +53,8 @@ targets:
         SUFeedURL: https://github.com/acdibble/whippet/releases/latest/download/appcast.xml
         SUPublicEDKey: fxFcVkqFr2VW2S+wv8Su55gTeYhKo0fDl6OvGh3YG5I=
         SURequireSignedFeed: true
+        # Required by Sparkle alongside a signed feed: the update's signature is checked before it's opened.
+        SUVerifyUpdateBeforeExtraction: true
         SUEnableAutomaticChecks: true
     settings:
       base:
