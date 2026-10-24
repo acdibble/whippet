@@ -27,10 +27,26 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Read version from tag
+      # project.yml holds the version, so the tag must match it, and CHANGELOG.md must have notes for it, which
+      # become the release notes.
+      - name: Check the version and read its release notes
         run: |
-          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          version="${GITHUB_REF_NAME#v}"
+          project_version="$(awk '/MARKETING_VERSION:/ { print $2 }' project.yml)"
+          if [ "$project_version" != "$version" ]; then
+            echo "::error::The tag is $GITHUB_REF_NAME, but project.yml has MARKETING_VERSION $project_version."
+            exit 1
+          fi
+          notes="$RUNNER_TEMP/release-notes.md"
+          awk -v heading="## [$version]" 'index($0, heading) == 1 { found = 1; next } found && /^## \[/ { exit } found { print }' \
+            CHANGELOG.md > "$notes"
+          if ! grep -q '[^[:space:]]' "$notes"; then
+            echo "::error::CHANGELOG.md has no section for $version."
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
           echo "BUILD_NUMBER=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          echo "RELEASE_NOTES=$notes" >> "$GITHUB_ENV"
 
       # The generated project is what xcodebuild runs with the Developer ID keychain unlocked, so XcodeGen is a
       # pinned release, checked against its SHA-256 before it runs, rather than whatever Homebrew has.
@@ -85,7 +101,6 @@ jobs:
             -scheme Whippet \
             -configuration Release \
             -archivePath "$RUNNER_TEMP/Whippet.xcarchive" \
-            MARKETING_VERSION="$VERSION" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN"
 
@@ -153,7 +168,7 @@ jobs:
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "$DMG" --title "Whippet $VERSION" --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" "$DMG" --title "Whippet $VERSION" --notes-file "$RELEASE_NOTES"
 
       - name: Remove signing material
         if: always()

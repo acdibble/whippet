@@ -32,6 +32,9 @@ The project signs with the Dibble Codes team and its iCloud container. To build 
 `Resources/*.entitlements` and `Sources/Whippet/CloudSync.swift`.
 
 Releases are built, signed, notarized and published by `.github/workflows/release.yml` when a `v*` tag is pushed.
+To cut one, rename the Unreleased section of [CHANGELOG.md](CHANGELOG.md) to the new version, make sure
+`MARKETING_VERSION` in `project.yml` matches it, and tag that commit. The workflow refuses a tag that doesn't match,
+and publishes the changelog section as the release notes. Afterwards, set `MARKETING_VERSION` to the next version.
 
 ## License
 
