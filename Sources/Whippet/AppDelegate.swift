@@ -12,7 +12,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var openSettingsWindow: () -> Void = {}
     var openFeedbackWindow: () -> Void = {}
 
-    let appIndex = AppIndex()
+    /// Launches from the panel and from hotkeys, which rank results and fill the Suggestions section.
+    let launchHistory = LaunchHistory()
+    let appIndex: AppIndex
     let caffeine = Caffeine()
     let feedbackStore = FeedbackStore()
     let settingsNavigation = SettingsNavigation()
@@ -26,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     override init() {
         clipboard = ClipboardHistory()
         cloudSync = CloudSync(store: clipboard.store)
+        appIndex = AppIndex(history: launchHistory)
         super.init()
     }
 
@@ -37,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         clipboard.onLocalDelete = { [weak self] in self?.cloudSync.recordDeleted($0) }
         cloudSync.onRemoteChanges = { [weak self] in self?.clipboard.didMergeRemoteChanges() }
 
-        model = LauncherModel(appIndex: appIndex, clipboard: clipboard, caffeine: caffeine)
+        model = LauncherModel(appIndex: appIndex, clipboard: clipboard, caffeine: caffeine, history: launchHistory)
         model.onDismiss = { [weak self] in self?.dismissPanel() }
         model.onOpenSettings = { [weak self] in self?.showSettings() }
         model.onSendFeedback = { [weak self] in self?.showFeedback() }

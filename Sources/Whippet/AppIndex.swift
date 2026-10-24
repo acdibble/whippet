@@ -21,9 +21,13 @@ final class AppIndex {
     /// Called after a rescan triggered by an application folder changing.
     @ObservationIgnored var onChange: () -> Void = {}
 
-    @ObservationIgnored private var launchCounts = UserDefaults.standard.dictionary(forKey: "appLaunchCounts") as? [String: Int] ?? [:]
+    @ObservationIgnored private let history: LaunchHistory
     @ObservationIgnored private var watchers: [DispatchSourceFileSystemObject] = []
     @ObservationIgnored private var pendingRefresh: Task<Void, Never>?
+
+    init(history: LaunchHistory) {
+        self.history = history
+    }
 
     private static let searchDirectories = [
         "/Applications",
@@ -78,10 +82,6 @@ final class AppIndex {
         }
     }
 
-    func launchCount(of app: AppEntry) -> Int {
-        launchCounts[app.stableID] ?? 0
-    }
-
     private func scheduleRefresh() {
         pendingRefresh?.cancel()
         pendingRefresh = Task {
@@ -101,7 +101,6 @@ final class AppIndex {
 
     func open(_ app: AppEntry) {
         NSWorkspace.shared.openApplication(at: app.url, configuration: NSWorkspace.OpenConfiguration())
-        launchCounts[app.stableID, default: 0] += 1
-        UserDefaults.standard.set(launchCounts, forKey: "appLaunchCounts")
+        history.record(app.stableID)
     }
 }

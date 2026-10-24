@@ -140,7 +140,7 @@ private struct RootResults: View {
     private func sections(of results: [LauncherResult]) -> [(title: String, rows: [(index: Int, result: LauncherResult)])] {
         var sections: [(title: String, rows: [(index: Int, result: LauncherResult)])] = []
         for (index, result) in results.enumerated() {
-            let title = Self.sectionTitle(for: result)
+            let title = model.sectionTitle(at: index)
             if sections.last?.title == title {
                 sections[sections.count - 1].rows.append((index, result))
                 continue
@@ -148,13 +148,6 @@ private struct RootResults: View {
             sections.append((title, [(index, result)]))
         }
         return sections
-    }
-
-    private static func sectionTitle(for result: LauncherResult) -> String {
-        switch result {
-        case .clipboard: String(localized: "Clipboard History")
-        default: String(localized: "Results")
-        }
     }
 }
 

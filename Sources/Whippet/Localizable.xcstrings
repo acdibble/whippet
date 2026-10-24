@@ -1631,6 +1631,16 @@
         }
       }
     },
+    "Suggestions" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیشنهادها"
+          }
+        }
+      }
+    },
     "Sum" : {
       "localizations" : {
         "fa" : {

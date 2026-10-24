@@ -93,6 +93,7 @@ targets:
       - Sources/Whippet/ClipboardStore.swift
       - Sources/Whippet/FeedbackKey.swift
       - Sources/Whippet/FuzzyMatch.swift
+      - Sources/Whippet/Ranking.swift
       - Sources/Whippet/Thumbnail.swift
     dependencies:
       - package: GRDB

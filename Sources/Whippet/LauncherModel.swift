@@ -101,6 +101,16 @@ enum LauncherResult: Identifiable, Hashable {
         }
     }
 
+    /// The key launches are recorded under: an app's bundle identifier, or a command's identifier. Calculations,
+    /// clipboard items and Quit aren't recorded.
+    var launchKey: String? {
+        switch self {
+        case .app(let app): app.stableID
+        case .calculation, .pastCalculation, .clipboard, .quit: nil
+        default: id
+        }
+    }
+
     var actionTitle: String {
         switch self {
         case .calculation, .pastCalculation: String(localized: "Copy Answer")
@@ -214,6 +224,8 @@ final class LauncherModel {
         let isCaffeinated: Bool
         let caffeinatedUntil: Date?
         let showsCaffeineInMenuBar: Bool
+        let isShowingAll: Bool
+        let launchRevision: Int
         /// Compared cheaply, since an unchanged array shares its storage.
         let apps: [AppEntry]
     }
@@ -223,6 +235,10 @@ final class LauncherModel {
     @ObservationIgnored private var cachedCalculatorColumns: (revision: Int, results: [LauncherResult])?
 
     private let appIndex: AppIndex
+    private let history: LaunchHistory
+    /// How many of the results lead the empty search's Suggestions section; set with the results.
+    @ObservationIgnored private var suggestionCount = 0
+    private static let suggestionLimit = 5
     private let clipboard: ClipboardHistory
     private let caffeine: Caffeine
 
@@ -231,14 +247,18 @@ final class LauncherModel {
     /// Hours, minutes and seconds as typed into those fields.
     var durationFields = ["", "", ""]
 
-    init(appIndex: AppIndex, clipboard: ClipboardHistory, caffeine: Caffeine) {
+    init(appIndex: AppIndex, clipboard: ClipboardHistory, caffeine: Caffeine, history: LaunchHistory) {
         self.caffeine = caffeine
         self.appIndex = appIndex
         self.clipboard = clipboard
+        self.history = history
     }
 
+    /// True after ↓ in the empty search field, which shows Suggestions, then every command and app.
+    private(set) var isShowingAll = false
+
     var isExpanded: Bool {
-        mode != .root || !query.isEmpty
+        mode != .root || !query.isEmpty || isShowingAll
     }
 
     var results: [LauncherResult] {
@@ -251,6 +271,8 @@ final class LauncherModel {
             isCaffeinated: caffeine.isActive,
             caffeinatedUntil: caffeine.endsAt,
             showsCaffeineInMenuBar: caffeine.showsInMenuBar,
+            isShowingAll: isShowingAll,
+            launchRevision: history.revision,
             apps: appIndex.apps
         )
         if let cachedResults, cachedResults.key == key {
@@ -272,7 +294,15 @@ final class LauncherModel {
                 + [.caffeinate, .caffeinateFor]
                 + (caffeine.isActive ? [.decaffeinate(until: caffeine.untilDescription)] : [])
                 + [.caffeinateMenuBar(isShown: caffeine.showsInMenuBar)]
-            return ranked(commands + appIndex.apps.map(LauncherResult.app))
+            let candidates = commands + appIndex.apps.map(LauncherResult.app)
+            guard query.isEmpty else {
+                suggestionCount = 0
+                return Ranking.rank(candidates, query: query, title: \.title, frecency: frecency(of:))
+            }
+            let suggestions = Ranking.suggestions(candidates, limit: Self.suggestionLimit, frecency: frecency(of:))
+            let suggestedIDs = Set(suggestions.map(\.id))
+            suggestionCount = suggestions.count
+            return suggestions + candidates.filter { !suggestedIDs.contains($0.id) }
         case .calculator:
             return calculatorResults(Calculator.evaluate(query))
         case .clipboard:
@@ -316,6 +346,11 @@ final class LauncherModel {
     }
 
     func moveSelection(by offset: Int) {
+        if !isExpanded, offset > 0 {
+            isShowingAll = true
+            selection = 0
+            return
+        }
         let results = results
         if let layout = calculatorLayout(results) {
             selection = layout.verticalMove(from: selection, by: offset)
@@ -382,12 +417,11 @@ final class LauncherModel {
 
     /// Switches view with an empty search and the default selection for that view.
     private func open(_ newMode: Mode) {
-        // App launch counts, which rank results, aren't observed, so each view starts from fresh results.
-        cachedResults = nil
         mode = newMode
         query = ""
         clipboardKind = nil
         isEnteringDuration = false
+        isShowingAll = false
         resetSelection()
     }
 
@@ -408,6 +442,10 @@ final class LauncherModel {
         }
         let results = results
         guard results.indices.contains(selection) else { return }
+        // Apps are recorded by AppIndex.open, which their hotkeys use too.
+        if !results[selection].isApp, let key = results[selection].launchKey {
+            history.record(key)
+        }
 
         switch results[selection] {
         case .calculation(let calculation):
@@ -506,24 +544,26 @@ final class LauncherModel {
             reset()
             return
         }
+        if isShowingAll, query.isEmpty {
+            isShowingAll = false
+            selection = 0
+            return
+        }
         onDismiss()
     }
 
-    private func ranked(_ candidates: [LauncherResult]) -> [LauncherResult] {
-        if query.isEmpty { return candidates }
-        return candidates
-            .compactMap { result in FuzzyMatch.score(query, in: result.title).map { (result: result, score: $0) } }
-            .sorted { lhs, rhs in
-                if lhs.score != rhs.score { return lhs.score > rhs.score }
-                return launchCount(of: lhs.result) > launchCount(of: rhs.result)
-            }
-            .map(\.result)
+    private func frecency(of result: LauncherResult) -> Double {
+        result.launchKey.map { history.frecency(of: $0) } ?? 0
     }
 
-    /// Breaks ties between equally good matches in favour of apps opened more often.
-    private func launchCount(of result: LauncherResult) -> Int {
-        guard case .app(let app) = result else { return 0 }
-        return appIndex.launchCount(of: app)
+    /// With an empty search, the most used apps and commands come first under Suggestions, then the rest by kind.
+    func sectionTitle(at index: Int) -> String {
+        let results = results
+        guard results.indices.contains(index) else { return "" }
+        if case .clipboard = results[index] { return String(localized: "Clipboard History") }
+        guard mode == .root, query.isEmpty else { return String(localized: "Results") }
+        if index < suggestionCount { return String(localized: "Suggestions") }
+        return results[index].isApp ? String(localized: "Applications") : String(localized: "Commands")
     }
 }
 

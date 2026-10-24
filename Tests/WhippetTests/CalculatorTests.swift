@@ -145,6 +145,24 @@ struct FuzzyMatchTests {
         #expect(FuzzyMatch.score("SAF", in: "safari") == FuzzyMatch.score("saf", in: "Safari"))
     }
 
+    @Test func findsTheBestAlignmentNotTheFirst() throws {
+        // A first-match scan takes the "sc" inside "Disc"; the best alignment is the start of "Scanner".
+        let wordStart = try #require(FuzzyMatch.score("sc", in: "Disc Scanner"))
+        let midWord = try #require(FuzzyMatch.score("sc", in: "Discs"))
+        #expect(wordStart > midWord)
+
+        let initials = try #require(FuzzyMatch.score("vsc", in: "Visual Studio Code"))
+        let scattered = try #require(FuzzyMatch.score("vsc", in: "Viscous Code"))
+        #expect(initials > scattered)
+    }
+
+    @Test func camelCaseAndPunctuationStartWords() throws {
+        let camel = try #require(FuzzyMatch.score("tp", in: "TablePlus"))
+        let plain = try #require(FuzzyMatch.score("tp", in: "Tableplus"))
+        #expect(camel > plain)
+        #expect(FuzzyMatch.score("gs", in: "git-sync") ?? 0 > FuzzyMatch.score("gs", in: "gitsync") ?? 0)
+    }
+
     @Test func prefersPrefixesWordStartsAndShortNames() throws {
         let prefix = try #require(FuzzyMatch.score("cal", in: "Calendar"))
         let scattered = try #require(FuzzyMatch.score("cal", in: "Chemical"))
