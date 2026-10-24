@@ -16,6 +16,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     case cloudSync
     case usage
     case feedback
+    case developer
     case about
 
     var id: Self { self }
@@ -27,6 +28,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .cloudSync: "Cloud Sync"
         case .usage: "Usage"
         case .feedback: "Feedback"
+        case .developer: "Developer"
         case .about: "About"
         }
     }
@@ -38,6 +40,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .cloudSync: "icloud.fill"
         case .usage: "chart.bar.fill"
         case .feedback: "tray.full.fill"
+        case .developer: "hammer.fill"
         case .about: "info.circle.fill"
         }
     }
@@ -49,6 +52,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .cloudSync: .blue
         case .usage: .green
         case .feedback: .orange
+        case .developer: .gray
         case .about: .gray
         }
     }
@@ -91,6 +95,7 @@ struct SettingsView: View {
                 case .cloudSync: CloudSyncPane(cloudSync: cloudSync)
                 case .usage: UsagePane(clipboard: clipboard)
                 case .feedback: FeedbackAdminPane(store: feedbackStore)
+                case .developer: DeveloperPane(cloudSync: cloudSync)
                 case .about: AboutPane()
                 }
             }
@@ -224,7 +229,6 @@ private struct ShortcutsPane: View {
 private struct CloudSyncPane: View {
     @Bindable var cloudSync: CloudSync
     @State private var isConfirmingDelete = false
-    @State private var userRecordName: String?
 
     var body: some View {
         Form {
@@ -244,6 +248,39 @@ private struct CloudSyncPane: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Status") {
+                LabeledContent("Status", value: cloudSync.statusDescription)
+                LabeledContent("Waiting to Upload", value: cloudSync.pendingChanges.formatted())
+                HStack {
+                    Button("Sync Now") {
+                        Task { await cloudSync.syncNow() }
+                    }
+                    Spacer()
+                    Button("Delete iCloud Data…", role: .destructive) {
+                        isConfirmingDelete = true
+                    }
+                }
+                .disabled(!cloudSync.isEnabled)
+            }
+        }
+        .toggleStyle(.switch)
+        .confirmationDialog("Delete Whippet data from iCloud?", isPresented: $isConfirmingDelete) {
+            Button("Delete iCloud Data", role: .destructive) {
+                Task { await cloudSync.deleteCloudData() }
+            }
+        } message: {
+            Text("This removes the copy in iCloud and turns sync off. History on this Mac is kept.")
+        }
+    }
+}
+
+/// Details for developing and administering Whippet, such as the CloudKit user record to give the Admin role.
+private struct DeveloperPane: View {
+    let cloudSync: CloudSync
+    @State private var userRecordName: String?
+
+    var body: some View {
+        Form {
             Section {
                 LabeledContent("iCloud User") {
                     HStack {
@@ -266,30 +303,8 @@ private struct CloudSyncPane: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Status") {
-                LabeledContent("Status", value: cloudSync.statusDescription)
-                LabeledContent("Waiting to Upload", value: cloudSync.pendingChanges.formatted())
-                HStack {
-                    Button("Sync Now") {
-                        Task { await cloudSync.syncNow() }
-                    }
-                    Spacer()
-                    Button("Delete iCloud Data…", role: .destructive) {
-                        isConfirmingDelete = true
-                    }
-                }
-                .disabled(!cloudSync.isEnabled)
-            }
         }
-        .toggleStyle(.switch)
         .task { userRecordName = await cloudSync.userRecordName() }
-        .confirmationDialog("Delete Whippet data from iCloud?", isPresented: $isConfirmingDelete) {
-            Button("Delete iCloud Data", role: .destructive) {
-                Task { await cloudSync.deleteCloudData() }
-            }
-        } message: {
-            Text("This removes the copy in iCloud and turns sync off. History on this Mac is kept.")
-        }
     }
 }
 
