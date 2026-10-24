@@ -63,8 +63,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // and focus can sit outside the search field.
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, event.window === panel else { return event }
-            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            let isPlainArrow = modifiers.isDisjoint(with: [.shift, .command, .option, .control])
+            // While an input method is composing, arrows, Return and Escape pick and confirm its candidates.
+            if let editor = panel.firstResponder as? NSTextView, editor.hasMarkedText() { return event }
+            // Only these four, so Caps Lock and the keypad's own flag don't stop a shortcut matching.
+            let modifiers = event.modifierFlags.intersection([.shift, .control, .option, .command])
+            let isPlainArrow = modifiers.isEmpty
             switch Int(event.keyCode) {
             case kVK_Escape: model.back()
             case kVK_UpArrow: model.moveSelection(by: -1)
@@ -75,17 +78,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 // Columns swap sides in right-to-left languages, so the arrow keys follow the screen rather than the column order.
                 let towardStart = (Int(event.keyCode) == kVK_LeftArrow) == (NSApp.userInterfaceLayoutDirection == .leftToRight)
                 guard model.moveColumn(by: towardStart ? -1 : 1) else { return event }
-            case kVK_ANSI_P where modifiers == [.command, .shift]: model.perform(.togglePin)
-            case kVK_ANSI_C where modifiers == [.command, .shift]: model.perform(.copyPath)
-            case kVK_ANSI_X where modifiers == [.control]: model.perform(.delete)
-            case kVK_ANSI_K where modifiers == [.command]: showActions()
-            case kVK_ANSI_Q where modifiers == [.command]: NSApp.terminate(nil)
-            case kVK_ANSI_Comma where modifiers == [.command]: showSettings()
-            default: return event
+            default:
+                guard let key = Self.shortcutKey(for: event), performShortcut(key, modifiers: modifiers) else { return event }
             }
             return nil
         }
     }
+
+    /// Runs the panel shortcut for a key, returning false when there is none.
+    private func performShortcut(_ key: Character, modifiers: NSEvent.ModifierFlags) -> Bool {
+        switch (key, modifiers) {
+        case ("p", [.command, .shift]): model.perform(.togglePin)
+        case ("c", [.command, .shift]): model.perform(.copyPath)
+        case ("x", [.control]): model.perform(.delete)
+        case ("k", [.command]): showActions()
+        case ("q", [.command]): NSApp.terminate(nil)
+        case (",", [.command]): showSettings()
+        default: return false
+        }
+        return true
+    }
+
+    /// The character a shortcut names: what the key types, so ⌘K is the key labelled K on AZERTY or Dvorak. Layouts
+    /// without Latin letters fall back to the key's US position, as macOS does for menu shortcuts.
+    private static func shortcutKey(for event: NSEvent) -> Character? {
+        if let typed = event.charactersIgnoringModifiers?.lowercased(), typed.count == 1,
+           let character = typed.first, character.isASCII, !character.isWhitespace {
+            return character
+        }
+        return usKeys[Int(event.keyCode)]
+    }
+
+    private static let usKeys: [Int: Character] = [
+        kVK_ANSI_P: "p", kVK_ANSI_C: "c", kVK_ANSI_X: "x", kVK_ANSI_K: "k", kVK_ANSI_Q: "q", kVK_ANSI_Comma: ",",
+    ]
 
     /// Clicking the Dock icon, which only shows while Settings is open, brings Settings forward.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

@@ -25,6 +25,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Caffeinate for… crashed Whippet when given a huge duration. Durations are now limited to a week.
 - Turning sync off and on quickly could start it twice.
 - Items deleted while sync was off, or while it was starting, stayed in iCloud and on other Macs.
+- Launcher shortcuts didn't work with Caps Lock on, ⌘-keypad-Enter did nothing, and the arrow keys, Return and Escape
+  couldn't be used to choose Japanese or Chinese input candidates in the search field.
+- Launcher shortcuts such as ⌘K used the key in the K position of a US keyboard rather than the key labelled K, on
+  layouts like AZERTY and Dvorak.
 - Settings showed version 0.1.0 in builds made from source.
 
 ## [0.2.0] - 2026-10-24
