@@ -83,6 +83,16 @@ struct CalculatorTests {
         #expect(try #require(Calculator.evaluate(String(repeating: "-", count: 50) + "1 + 1")).value == 2)
     }
 
+    @Test(arguments: ["2", "2+", "2 + 3 *", "(3", "-4", ".5 *", "0xF", "0xff + 0b1", "0x", "1,000 /"])
+    func calculationsBeingTyped(_ input: String) {
+        #expect(Calculator.looksLikeCalculation(input))
+    }
+
+    @Test(arguments: ["", " ", "1Password", "safari", "x + 1", "2 apples", "3d", "$5 +", "0xg"])
+    func notCalculations(_ input: String) {
+        #expect(!Calculator.looksLikeCalculation(input))
+    }
+
     @Test(arguments: [
         (0.1 + 0.2, "0.3"),
         (1_000_000, "1000000"),

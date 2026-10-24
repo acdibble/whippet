@@ -5,6 +5,7 @@ enum LauncherResult: Identifiable, Hashable {
     case calculation(Calculation)
     case pastCalculation(CalculationRecord)
     case calculator
+    case floatingCalculator
     case settings
     case sendFeedback
     case readFeedback
@@ -24,6 +25,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation: "calculation"
         case .pastCalculation(let record): "calculation:\(record.id)"
         case .calculator: "command:calculator"
+        case .floatingCalculator: "command:floating-calculator"
         case .settings: "command:settings"
         case .sendFeedback: "command:send-feedback"
         case .readFeedback: "command:read-feedback"
@@ -45,6 +47,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation(let calculation): calculation.answer
         case .pastCalculation(let record): "\(record.expression) = \(record.answer)".leftToRightIsolated
         case .calculator: String(localized: "Calculator")
+        case .floatingCalculator: String(localized: "Floating Calculator")
         case .settings: String(localized: "Settings")
         case .sendFeedback: String(localized: "Send Feedback")
         case .readFeedback: String(localized: "Read Feedback")
@@ -66,7 +69,8 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
-        case .calculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog, .quit: String(localized: "Command")
+        case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog, .quit:
+            String(localized: "Command")
         case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
         case .caffeinateMenuBar, .system: String(localized: "Command")
         case .decaffeinate(let until): until
@@ -117,7 +121,8 @@ enum LauncherResult: Identifiable, Hashable {
     var actionTitle: String {
         switch self {
         case .calculation, .pastCalculation: String(localized: "Copy Answer")
-        case .calculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback: String(localized: "Open Command")
+        case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback:
+            String(localized: "Open Command")
         case .caffeinate, .decaffeinate, .caffeinateMenuBar: String(localized: "Run Command")
         case .caffeinateFor: String(localized: "Choose Duration")
         case .changelog: String(localized: "Open in Browser")
@@ -135,6 +140,7 @@ enum ResultAction: CaseIterable {
     case secondary
     case togglePin
     case copyPath
+    case popOut
     case delete
 
     func isAvailable(for result: LauncherResult) -> Bool {
@@ -143,6 +149,7 @@ enum ResultAction: CaseIterable {
         case (.secondary, .app): true
         case (.secondary, _): result.pastes
         case (.togglePin, .clipboard), (.delete, .clipboard), (.copyPath, .app): true
+        case (.popOut, .calculation), (.popOut, .pastCalculation), (.popOut, .calculator): true
         default: false
         }
     }
@@ -154,6 +161,7 @@ enum ResultAction: CaseIterable {
         case .secondary: result.isApp ? String(localized: "Show in Finder") : String(localized: "Copy")
         case .togglePin: result.isPinned ? String(localized: "Unpin") : String(localized: "Pin")
         case .copyPath: String(localized: "Copy Path")
+        case .popOut: String(localized: "Pop Out Calculator")
         case .delete: String(localized: "Delete")
         }
     }
@@ -164,6 +172,7 @@ enum ResultAction: CaseIterable {
         case .secondary: "doc.on.doc"
         case .togglePin: "pin"
         case .copyPath: "link"
+        case .popOut: "macwindow.on.rectangle"
         case .delete: "trash"
         }
     }
@@ -175,6 +184,7 @@ enum ResultAction: CaseIterable {
         case .secondary: ("\r", [.command])
         case .togglePin: ("p", [.command, .shift])
         case .copyPath: ("c", [.command, .shift])
+        case .popOut: ("o", [.command, .shift])
         case .delete: ("x", [.control])
         }
     }
@@ -193,8 +203,11 @@ final class LauncherModel {
         didSet {
             guard query != oldValue else { return }
             resetSelection()
+            rememberInlineAnswer()
         }
     }
+    /// The last complete answer in the search bar, kept while the next part of the calculation is typed.
+    private(set) var lastInlineCalculation: Calculation?
     var selection = 0
     var clipboardKind: ClipboardKind? {
         didSet {
@@ -213,6 +226,8 @@ final class LauncherModel {
     /// Set at launch when this iCloud account has the CloudKit Admin role, which shows the Read Feedback command.
     var isFeedbackAdmin = false
     @ObservationIgnored var onShowActions: () -> Void = {}
+    /// Opens the floating calculator, with the given expression in its input.
+    @ObservationIgnored var onPopOutCalculator: (String?) -> Void = { _ in }
 
     private static let calculatorColumnLength = 10
     private static let changelogURL = URL(string: "https://github.com/acdibble/whippet/blob/main/CHANGELOG.md")!
@@ -261,8 +276,29 @@ final class LauncherModel {
     /// True after ↓ in the empty search field, which shows Suggestions, then every command and app.
     private(set) var isShowingAll = false
 
+    /// True while the main search holds a calculation, finished or still being typed. The search bar then stays one
+    /// line tall, so it doesn't cover what you're reading, and ↓ opens the full calculator view.
+    var isCalculatingInline: Bool {
+        guard mode == .root, !isShowingAll, !query.isEmpty else { return false }
+        return results.first?.isCalculation == true || Calculator.looksLikeCalculation(query)
+    }
+
+    /// The answer shown in the search bar, once the calculation is complete.
+    var inlineCalculation: Calculation? {
+        guard isCalculatingInline, case .calculation(let calculation)? = results.first else { return nil }
+        return calculation
+    }
+
+    private func rememberInlineAnswer() {
+        if let inlineCalculation {
+            lastInlineCalculation = inlineCalculation
+        } else if !isCalculatingInline {
+            lastInlineCalculation = nil
+        }
+    }
+
     var isExpanded: Bool {
-        mode != .root || !query.isEmpty || isShowingAll
+        mode != .root || isShowingAll || (!query.isEmpty && !isCalculatingInline)
     }
 
     var results: [LauncherResult] {
@@ -293,7 +329,11 @@ final class LauncherModel {
             if let calculation = Calculator.evaluate(query) {
                 return calculatorResults(calculation)
             }
-            let commands: [LauncherResult] = [.calculator, .clipboardHistory, .settings, .sendFeedback, .changelog, .quit]
+            // A calculation still being typed, such as "2+", gets the calculator's history rather than search results.
+            if Calculator.looksLikeCalculation(query) {
+                return calculatorResults(nil)
+            }
+            let commands: [LauncherResult] = [.calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .changelog, .quit]
                 + (isFeedbackAdmin ? [.readFeedback] : [])
                 + [.caffeinate, .caffeinateFor]
                 + (caffeine.isActive ? [.decaffeinate(until: caffeine.untilDescription)] : [])
@@ -404,6 +444,12 @@ final class LauncherModel {
         case (.togglePin, .clipboard(let item)):
             clipboard.setPinned(item.pinnedAt == nil, item: item)
             selection = results.firstIndex { $0.id == result.id } ?? 0
+        case (.popOut, .calculation):
+            onPopOutCalculator(query.trimmingCharacters(in: .whitespaces))
+        case (.popOut, .pastCalculation(let record)):
+            onPopOutCalculator(record.expression)
+        case (.popOut, _):
+            onPopOutCalculator(nil)
         case (.copyPath, .app(let app)):
             clipboard.copy(text: app.url.path)
             onDismiss()
@@ -445,6 +491,11 @@ final class LauncherModel {
             startTimedCaffeinate()
             return
         }
+        // An unfinished calculation in the search bar has nothing to copy yet.
+        if isCalculatingInline, inlineCalculation == nil {
+            NSSound.beep()
+            return
+        }
         let results = results
         guard results.indices.contains(selection) else { return }
         // Apps are recorded by AppIndex.open, which their hotkeys use too.
@@ -466,6 +517,8 @@ final class LauncherModel {
             dismissAndPaste(copyOnly: copyOnly)
         case .calculator:
             open(.calculator)
+        case .floatingCalculator:
+            onPopOutCalculator(nil)
         case .settings:
             onOpenSettings()
         case .sendFeedback:
@@ -553,7 +606,7 @@ final class LauncherModel {
             reset()
             return
         }
-        if isShowingAll, query.isEmpty {
+        if isShowingAll {
             isShowingAll = false
             selection = 0
             return

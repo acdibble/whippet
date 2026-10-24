@@ -52,6 +52,20 @@ enum Calculator {
         return nil
     }
 
+    /// True for input that is, or is on its way to being, a calculation, such as `2+` or `(3`, so the launcher can
+    /// treat it as one while it's typed instead of switching to search results between keystrokes.
+    static func looksLikeCalculation(_ input: String) -> Bool {
+        let text = input.trimmingCharacters(in: .whitespaces)
+        guard let first = text.first, first.isASCIIDigit || "(.-+".contains(first) else { return false }
+        // Letters only belong to radix literals such as 0xFF, so those are set aside first.
+        let withoutRadixLiterals = text.replacingOccurrences(
+            of: "0[xX][0-9a-fA-F_]*|0[bB][01_]*|0[oO][0-7_]*",
+            with: "0",
+            options: .regularExpression
+        )
+        return withoutRadixLiterals.allSatisfy { $0.isASCIIDigit || $0.isWhitespace || "+-*/%^().,_".contains($0) }
+    }
+
     static func format(_ value: Double) -> String {
         value.formatted(.number.locale(Locale(identifier: "en_US_POSIX")).grouping(.never).precision(.significantDigits(1...15)))
     }

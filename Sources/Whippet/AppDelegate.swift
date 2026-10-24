@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let caffeine = Caffeine()
     let feedbackStore = FeedbackStore()
     let settingsNavigation = SettingsNavigation()
+    private lazy var floatingCalculator = FloatingCalculator(clipboard: clipboard)
     /// Created with the delegate, as Sparkle recommends, so its scheduled checks start at launch.
     let updater = Updater()
     private var model: LauncherModel!
@@ -47,6 +48,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model.onReadFeedback = { [weak self] in self?.showSettings(pane: .feedback) }
         Task { model.isFeedbackAdmin = await feedbackStore.isAdmin }
         model.onShowActions = { [weak self] in self?.showActions() }
+        model.onPopOutCalculator = { [weak self] expression in
+            guard let self else { return }
+            dismissPanel()
+            floatingCalculator.show(expression: expression)
+        }
 
         panel = LauncherPanel(rootView: SearchView(model: model))
         panel.delegate = self
@@ -96,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case ("p", [.command, .shift]): model.perform(.togglePin)
         case ("c", [.command, .shift]): model.perform(.copyPath)
         case ("x", [.control]): model.perform(.delete)
+        case ("o", [.command, .shift]): model.perform(.popOut)
         case ("k", [.command]): showActions()
         case ("q", [.command]): NSApp.terminate(nil)
         case (",", [.command]): showSettings()
@@ -177,6 +184,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case .calculator:
             showPanel()
             model.show(.calculator)
+        case .floatingCalculator:
+            floatingCalculator.toggle()
         case .clipboardHistory:
             showPanel()
             model.show(.clipboard)
@@ -223,9 +232,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Hiding Whippet hands focus back to the app the panel opened over, which is where pastes land.
     /// While Settings is open only the panel closes, so Settings is not hidden with it.
+    /// Hiding Whippet would also hide the floating calculator, so while it's open, the app the panel opened over is
+    /// brought back instead.
     private func dismissPanel() {
         panel.orderOut(nil)
         guard NSApp.isActive, !isSettingsOpen else { return }
+        if floatingCalculator.isVisible, let targetApp = model.targetApp {
+            targetApp.activate()
+            return
+        }
         NSApp.hide(nil)
     }
 

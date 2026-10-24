@@ -7,6 +7,7 @@ extension KeyboardShortcuts.Name {
 /// Commands that can have their own global hotkey in Settings › Shortcuts.
 enum CommandShortcut: String, CaseIterable, Identifiable {
     case calculator
+    case floatingCalculator
     case clipboardHistory
     case settings
     case caffeinate
@@ -20,6 +21,7 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .calculator: String(localized: "Calculator")
+        case .floatingCalculator: String(localized: "Floating Calculator")
         case .clipboardHistory: String(localized: "Clipboard History")
         case .settings: String(localized: "Settings")
         case .caffeinate: String(localized: "Caffeinate")
@@ -29,6 +31,7 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .calculator: "plus.forwardslash.minus"
+        case .floatingCalculator: "macwindow.on.rectangle"
         case .clipboardHistory: "list.clipboard"
         case .settings: "gearshape"
         case .caffeinate: "cup.and.heat.waves.fill"
@@ -49,6 +52,7 @@ extension LauncherResult {
         let name: KeyboardShortcuts.Name? = switch self {
         case .app(let app): app.shortcutName
         case .calculator: CommandShortcut.calculator.name
+        case .floatingCalculator: CommandShortcut.floatingCalculator.name
         case .clipboardHistory: CommandShortcut.clipboardHistory.name
         case .settings: CommandShortcut.settings.name
         case .caffeinate: CommandShortcut.caffeinate.name

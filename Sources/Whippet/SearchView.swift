@@ -46,6 +46,16 @@ struct SearchView: View {
                     Spacer()
                 }
 
+                // While the next part is typed, the previous answer stays, dimmed.
+                if model.isCalculatingInline, let calculation = model.inlineCalculation ?? model.lastInlineCalculation {
+                    Text("= \(calculation.answer)".leftToRightIsolated)
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(Color.launcherSecondary)
+                        .opacity(model.inlineCalculation == nil ? 0.5 : 1)
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+
                 if model.mode == .clipboard {
                     ClipboardKindMenu(model: model)
                 }
@@ -198,6 +208,7 @@ struct ResultRow: View {
         case .app(let app): Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
         case .clipboardHistory: Image(systemName: "list.clipboard")
         case .calculator: Image(systemName: "plus.forwardslash.minus")
+        case .floatingCalculator: Image(systemName: "macwindow.on.rectangle")
         case .settings: Image(systemName: "gearshape")
         case .sendFeedback: Image(systemName: "bubble.left")
         case .readFeedback: Image(systemName: "tray.full")

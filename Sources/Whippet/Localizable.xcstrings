@@ -861,6 +861,16 @@
         }
       }
     },
+    "Floating Calculator" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ماشین‌حساب شناور"
+          }
+        }
+      }
+    },
     "Forever" : {
       "localizations" : {
         "fa" : {
@@ -1487,6 +1497,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "موارد سنجاق‌شده همیشه نگه داشته می‌شوند. اگر همگام‌سازی iCloud روشن باشد، موارد حذف‌شده از Macهای دیگر شما هم حذف می‌شوند."
+          }
+        }
+      }
+    },
+    "Pop Out Calculator" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن ماشین‌حساب شناور"
           }
         }
       }

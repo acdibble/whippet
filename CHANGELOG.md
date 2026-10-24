@@ -5,6 +5,17 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A floating calculator that stays above other windows without taking focus from them, so you can do sums while
+  reading. Open it with the Floating Calculator command or its hotkey, or pop a calculation out of the launcher with
+  ⌘⇧O.
+
+### Changed
+
+- A calculation typed in the main search is answered inside the search bar, which stays one line tall. Press ↓ for
+  the full calculator view.
+
 ## [0.6.0] - 2026-10-24
 
 ### Added
