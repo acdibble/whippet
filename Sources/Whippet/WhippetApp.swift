@@ -20,7 +20,8 @@ struct WhippetApp: App {
                 appIndex: appDelegate.appIndex,
                 caffeine: appDelegate.caffeine,
                 feedbackStore: appDelegate.feedbackStore,
-                navigation: appDelegate.settingsNavigation
+                navigation: appDelegate.settingsNavigation,
+                updater: appDelegate.updater
             )
         }
         .windowToolbarStyle(.unified)
@@ -29,6 +30,8 @@ struct WhippetApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Whippet") { NSApp.showAboutPanel() }
+                Button("Check for Updates…") { appDelegate.updater.checkForUpdates() }
+                    .disabled(!appDelegate.updater.canCheckForUpdates)
             }
             CommandGroup(replacing: .appSettings) {
                 Button("Settings…") { appDelegate.showSettings() }
@@ -78,6 +81,8 @@ private struct MenuBarMenu: View {
             .keyboardShortcut(KeyboardShortcuts.getShortcut(for: .togglePanel)?.toSwiftUI)
         Divider()
         Button("About Whippet", systemImage: "info.circle") { NSApp.showAboutPanel() }
+        Button("Check for Updates…", systemImage: "arrow.down.circle") { appDelegate.updater.checkForUpdates() }
+            .disabled(!appDelegate.updater.canCheckForUpdates)
         Button("Settings…", systemImage: "gearshape") { appDelegate.showSettings() }
             .keyboardShortcut(",")
         Button("Send Feedback…", systemImage: "bubble.left") { appDelegate.showFeedback() }

@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Whippet checks for updates and installs them, with Check for Updates… in the menu bar menu and Settings › General.
+  Earlier versions need this one downloaded by hand.
+
 ## [0.3.0] - 2026-10-24
 
 ### Added

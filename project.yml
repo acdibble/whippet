@@ -22,6 +22,9 @@ packages:
   KeyboardShortcuts:
     url: https://github.com/sindresorhus/KeyboardShortcuts
     revision: 772133d9dbe800fdac0473226822994c5c162c58 # 3.1.0
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    revision: eef1a539a373c1f1a320624b1130fc5de7b2e100 # 2.10.0
 
 targets:
   Whippet:
@@ -32,6 +35,7 @@ targets:
     dependencies:
       - package: GRDB
       - package: KeyboardShortcuts
+      - package: Sparkle
     scheme:
       testTargets:
         - WhippetTests
@@ -44,6 +48,12 @@ targets:
         NSHumanReadableCopyright: "© 2026 Dibble Codes"
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # Sparkle reads the appcast attached to the newest GitHub release, and installs only updates signed with the
+        # private half of this key, which is the SPARKLE_PRIVATE_KEY repository secret.
+        SUFeedURL: https://github.com/acdibble/whippet/releases/latest/download/appcast.xml
+        SUPublicEDKey: fxFcVkqFr2VW2S+wv8Su55gTeYhKo0fDl6OvGh3YG5I=
+        SURequireSignedFeed: true
+        SUEnableAutomaticChecks: true
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: Resources/Whippet.entitlements

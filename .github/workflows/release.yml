@@ -37,6 +37,10 @@ jobs:
             echo "::error::The tag is $GITHUB_REF_NAME, but project.yml has MARKETING_VERSION $project_version."
             exit 1
           fi
+          if grep -q SPARKLE_PUBLIC_KEY_PLACEHOLDER project.yml; then
+            echo "::error::SUPublicEDKey in project.yml is still a placeholder, so the release couldn't update itself."
+            exit 1
+          fi
           notes="$RUNNER_TEMP/release-notes.md"
           awk -v heading="## [$version]" 'index($0, heading) == 1 { found = 1; next } found && /^## \[/ { exit } found { print }' \
             CHANGELOG.md > "$notes"
@@ -101,6 +105,7 @@ jobs:
             -scheme Whippet \
             -configuration Release \
             -archivePath "$RUNNER_TEMP/Whippet.xcarchive" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/packages" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN"
 
@@ -165,10 +170,44 @@ jobs:
           xcrun stapler staple "$dmg"
           echo "DMG=$dmg" >> "$GITHUB_ENV"
 
+      # Sparkle installs an update only when the DMG and the appcast are signed with the private half of the app's
+      # SUPublicEDKey. sign_update comes from the pinned Sparkle package, whose binaries Swift Package Manager checks
+      # against their checksums.
+      - name: Sign the update and write the appcast
+        env:
+          PATH: ${{ env.SYSTEM_PATH }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          sign_update="$RUNNER_TEMP/packages/artifacts/sparkle/Sparkle/bin/sign_update"
+          enclosure_signature="$(echo "$SPARKLE_PRIVATE_KEY" | "$sign_update" --ed-key-file - "$DMG")"
+          appcast="$RUNNER_TEMP/appcast.xml"
+          cat > "$appcast" <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+            <channel>
+              <title>Whippet</title>
+              <item>
+                <title>Whippet $VERSION</title>
+                <pubDate>$(date -u "+%a, %d %b %Y %H:%M:%S +0000")</pubDate>
+                <sparkle:version>$BUILD_NUMBER</sparkle:version>
+                <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+                <sparkle:fullReleaseNotesLink>https://github.com/acdibble/whippet/blob/main/CHANGELOG.md</sparkle:fullReleaseNotesLink>
+                <description sparkle:format="markdown"><![CDATA[
+          $(cat "$RELEASE_NOTES")
+          ]]></description>
+                <enclosure url="https://github.com/acdibble/whippet/releases/download/$GITHUB_REF_NAME/Whippet-$VERSION.dmg" type="application/octet-stream" $enclosure_signature />
+              </item>
+            </channel>
+          </rss>
+          EOF
+          echo "$SPARKLE_PRIVATE_KEY" | "$sign_update" --ed-key-file - "$appcast"
+          echo "APPCAST=$appcast" >> "$GITHUB_ENV"
+
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "$DMG" --title "Whippet $VERSION" --notes-file "$RELEASE_NOTES"
+        run: gh release create "$GITHUB_REF_NAME" "$DMG" "$APPCAST" --title "Whippet $VERSION" --notes-file "$RELEASE_NOTES"
 
       - name: Remove signing material
         if: always()

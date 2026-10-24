@@ -311,6 +311,46 @@
         }
       }
     },
+    "Check Now" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اکنون بررسی کن"
+          }
+        }
+      }
+    },
+    "Check for Updates" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بررسی به‌روزرسانی‌ها"
+          }
+        }
+      }
+    },
+    "Check for Updates Automatically" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بررسی خودکار به‌روزرسانی‌ها"
+          }
+        }
+      }
+    },
+    "Check for Updates…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بررسی به‌روزرسانی‌ها…"
+          }
+        }
+      }
+    },
     "Checking iCloud account…" : {
       "localizations" : {
         "fa" : {
@@ -1617,6 +1657,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "به‌روز است، آخرین همگام‌سازی %@"
+          }
+        }
+      }
+    },
+    "Updates" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به‌روزرسانی‌ها"
           }
         }
       }

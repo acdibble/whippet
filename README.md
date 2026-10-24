@@ -36,6 +36,9 @@ To cut one, rename the Unreleased section of [CHANGELOG.md](CHANGELOG.md) to the
 `MARKETING_VERSION` in `project.yml` matches it, and tag that commit. The workflow refuses a tag that doesn't match,
 and publishes the changelog section as the release notes. Afterwards, set `MARKETING_VERSION` to the next version.
 
+Each release also attaches a signed `appcast.xml`, which Sparkle in the app reads to offer the update. It's signed with
+the `SPARKLE_PRIVATE_KEY` repository secret, whose public key is `SUPublicEDKey` in `project.yml`.
+
 ## License
 
 [MIT](LICENSE) © 2026 Dibble Codes

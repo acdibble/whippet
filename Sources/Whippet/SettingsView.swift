@@ -67,6 +67,7 @@ struct SettingsView: View {
     let caffeine: Caffeine
     let feedbackStore: FeedbackStore
     @Bindable var navigation: SettingsNavigation
+    let updater: Updater
     /// Only accounts with the CloudKit Admin role can read feedback, so the Feedback pane only appears for them.
     @State private var isAdmin = false
 
@@ -90,7 +91,7 @@ struct SettingsView: View {
         } detail: {
             Group {
                 switch navigation.pane ?? .general {
-                case .general: GeneralPane(caffeine: caffeine)
+                case .general: GeneralPane(caffeine: caffeine, updater: updater)
                 case .shortcuts: ShortcutsPane(appIndex: appIndex)
                 case .cloudSync: CloudSyncPane(cloudSync: cloudSync)
                 case .usage: UsagePane(clipboard: clipboard)
@@ -125,6 +126,7 @@ private struct PaneIcon: View {
 
 private struct GeneralPane: View {
     let caffeine: Caffeine
+    @Bindable var updater: Updater
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
     @State private var canPaste = Paster.isTrusted
     @State private var language = AppLanguage.current
@@ -169,6 +171,14 @@ private struct GeneralPane: View {
                 } label: {
                     Text("Paste into Apps")
                     Text("Needs Accessibility permission to send ⌘V; without it, Return only copies")
+                }
+            }
+
+            Section("Updates") {
+                Toggle("Check for Updates Automatically", isOn: $updater.automaticallyChecksForUpdates)
+                LabeledContent("Check for Updates") {
+                    Button("Check Now") { updater.checkForUpdates() }
+                        .disabled(!updater.canCheckForUpdates)
                 }
             }
         }

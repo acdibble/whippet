@@ -24,5 +24,13 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Dibble Codes</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/acdibble/whippet/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>fxFcVkqFr2VW2S+wv8Su55gTeYhKo0fDl6OvGh3YG5I=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
 </dict>
 </plist>

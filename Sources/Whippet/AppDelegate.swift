@@ -16,6 +16,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let caffeine = Caffeine()
     let feedbackStore = FeedbackStore()
     let settingsNavigation = SettingsNavigation()
+    /// Created with the delegate, as Sparkle recommends, so its scheduled checks start at launch.
+    let updater = Updater()
     private var model: LauncherModel!
     private var panel: LauncherPanel!
     private var registeredAppHotkeys: Set<String> = []
