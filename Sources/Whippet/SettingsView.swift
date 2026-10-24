@@ -164,6 +164,7 @@ private struct GeneralPane: View {
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
     @State private var canPaste = Paster.isTrusted
     @State private var language = AppLanguage.current
+    @State private var appearance = AppAppearance.current
     @State private var needsRelaunch = false
 
     var body: some View {
@@ -175,6 +176,12 @@ private struct GeneralPane: View {
             }
 
             Section {
+                Picker("Appearance", selection: $appearance) {
+                    ForEach(AppAppearance.allCases) { appearance in
+                        Text(appearance.title).tag(appearance)
+                    }
+                }
+                .onChange(of: appearance) { _, newAppearance in newAppearance.apply() }
                 Picker("Language", selection: $language) {
                     Text("System").tag(String?.none)
                     ForEach(AppLanguage.available, id: \.self) { code in
@@ -495,6 +502,38 @@ enum LaunchAtLogin {
             return
         }
         try service.unregister()
+    }
+}
+
+/// Light or dark for every Whippet window and panel, or the system's choice.
+enum AppAppearance: String, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+
+    var id: Self { self }
+
+    static var current: AppAppearance {
+        AppAppearance(rawValue: UserDefaults.standard.string(forKey: "appearance") ?? "") ?? .system
+    }
+
+    var title: String {
+        switch self {
+        case .system: String(localized: "System")
+        case .light: String(localized: "Light")
+        case .dark: String(localized: "Dark")
+        }
+    }
+
+    /// Saves the choice and applies it to the whole app at once.
+    @MainActor
+    func apply() {
+        UserDefaults.standard.set(rawValue, forKey: "appearance")
+        NSApp.appearance = switch self {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        }
     }
 }
 

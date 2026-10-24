@@ -67,9 +67,20 @@ private struct ToastView: View {
 
 /// Liquid Glass on macOS 26, like the system's own HUDs, and a material capsule before it.
 private struct ToastBackground: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// Like the launcher panel: glass in Light mode, a dark blurred material in Dark mode, which keeps its contrast
+    /// over bright windows.
     func body(content: Content) -> some View {
-        if #available(macOS 26, *) {
-            content.glassEffect(.regular, in: Capsule())
+        if #available(macOS 26, *), colorScheme == .light {
+            content.glassEffect(.regular.tint(.launcherGlassTint), in: Capsule())
+        } else if colorScheme == .dark {
+            content.background {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .overlay(Capsule().fill(Color.black.opacity(0.4)))
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.12)))
+            }
         } else {
             content.background(.regularMaterial, in: Capsule())
         }

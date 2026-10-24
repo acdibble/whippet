@@ -5,6 +5,14 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- An Appearance setting in Settings › General to keep Whippet light or dark, or follow the system.
+
+### Fixed
+
+- In Dark mode, the launcher panel and toasts turned light over bright windows behind them.
+
 ## [0.8.0] - 2026-10-24
 
 ### Added

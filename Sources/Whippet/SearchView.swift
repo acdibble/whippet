@@ -272,6 +272,9 @@ struct ResultRow: View {
 extension Color {
     /// Hierarchical `.secondary` turns vibrant over the panel's material and washes out, so secondary text uses a fixed opacity.
     static let launcherSecondary = Color.primary.opacity(0.6)
+    /// Glass also takes on what's behind it, so over a white page it turned light even in Dark mode. A tint of the
+    /// window background keeps the panel and toasts following the appearance.
+    static let launcherGlassTint = Color(nsColor: .windowBackgroundColor).opacity(0.8)
 }
 
 /// A borderless button with a rounded highlight on hover and press.
@@ -358,10 +361,24 @@ struct ResultActions: View {
 /// mostly opaque material with a shadow.
 private struct PanelBackground: ViewModifier {
     private static let shape = RoundedRectangle(cornerRadius: 14)
+    /// Whippet's own appearance, read outside the glass.
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
-        if #available(macOS 26, *) {
-            content.glassEffect(.regular, in: Self.shape)
+        // Glass lightens toward what's behind it, so in Dark mode it turned mid grey over a bright page and light text
+        // lost its contrast. Dark mode uses a blurred material with a dark wash instead, which stays dark whatever is
+        // behind the panel; Light mode keeps the glass.
+        if #available(macOS 26, *), colorScheme == .light {
+            content.glassEffect(.regular.tint(.launcherGlassTint), in: Self.shape)
+        } else if colorScheme == .dark {
+            content
+                .background {
+                    Self.shape
+                        .fill(.ultraThinMaterial)
+                        .overlay(Self.shape.fill(Color.black.opacity(0.4)))
+                        .overlay(Self.shape.strokeBorder(Color.white.opacity(0.12)))
+                }
+                .shadow(color: .black.opacity(0.35), radius: 20, y: 8)
         } else {
             content
                 .background {

@@ -191,6 +191,16 @@
         }
       }
     },
+    "Appearance" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ظاهر"
+          }
+        }
+      }
+    },
     "Application" : {
       "localizations" : {
         "fa" : {
@@ -677,6 +687,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ساختن پیوند سریع"
+          }
+        }
+      }
+    },
+    "Dark" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تیره"
           }
         }
       }
@@ -1247,6 +1267,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "آخرین کپی"
+          }
+        }
+      }
+    },
+    "Light" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "روشن"
           }
         }
       }
