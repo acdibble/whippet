@@ -198,6 +198,25 @@ final class LauncherModel {
 
     private static let calculatorColumnLength = 10
 
+    /// The inputs `results` depends on. Reading them registers each with Observation, and comparing them tells whether
+    /// the cached results still apply, so a keystroke computes them once however often views and key handling ask.
+    private struct ResultsKey: Equatable {
+        let mode: Mode
+        let query: String
+        let clipboardKind: ClipboardKind?
+        let clipboardRevision: Int
+        let isFeedbackAdmin: Bool
+        let isCaffeinated: Bool
+        let caffeinatedUntil: Date?
+        let showsCaffeineInMenuBar: Bool
+        /// Compared cheaply, since an unchanged array shares its storage.
+        let apps: [AppEntry]
+    }
+
+    @ObservationIgnored private var cachedResults: (key: ResultsKey, results: [LauncherResult])?
+    /// The calculator's history and number columns, which don't depend on the query, keyed by the clipboard revision.
+    @ObservationIgnored private var cachedCalculatorColumns: (revision: Int, results: [LauncherResult])?
+
     private let appIndex: AppIndex
     private let clipboard: ClipboardHistory
     private let caffeine: Caffeine
@@ -218,6 +237,26 @@ final class LauncherModel {
     }
 
     var results: [LauncherResult] {
+        let key = ResultsKey(
+            mode: mode,
+            query: query,
+            clipboardKind: clipboardKind,
+            clipboardRevision: clipboard.revision,
+            isFeedbackAdmin: isFeedbackAdmin,
+            isCaffeinated: caffeine.isActive,
+            caffeinatedUntil: caffeine.endsAt,
+            showsCaffeineInMenuBar: caffeine.showsInMenuBar,
+            apps: appIndex.apps
+        )
+        if let cachedResults, cachedResults.key == key {
+            return cachedResults.results
+        }
+        let results = computeResults()
+        cachedResults = (key, results)
+        return results
+    }
+
+    private func computeResults() -> [LauncherResult] {
         switch mode {
         case .root:
             if let calculation = Calculator.evaluate(query) {
@@ -232,20 +271,30 @@ final class LauncherModel {
         case .calculator:
             return calculatorResults(Calculator.evaluate(query))
         case .clipboard:
-            return clipboardItems.map(LauncherResult.clipboard)
+            return clipboard.search(query, kind: clipboardKind).map(LauncherResult.clipboard)
         }
     }
 
     /// The current calculation, if any, followed by the calculator history and numeric clipboard items shown beside it.
     private func calculatorResults(_ calculation: Calculation?) -> [LauncherResult] {
         let current = calculation.map { [LauncherResult.calculation($0)] } ?? []
-        let history = clipboard.recentCalculations(limit: Self.calculatorColumnLength)
-        let numbers = clipboard.search("", kind: .number).prefix(Self.calculatorColumnLength)
-        return current + history.map(LauncherResult.pastCalculation) + numbers.map(LauncherResult.clipboard)
+        return current + calculatorColumns
     }
 
+    private var calculatorColumns: [LauncherResult] {
+        if let cachedCalculatorColumns, cachedCalculatorColumns.revision == clipboard.revision {
+            return cachedCalculatorColumns.results
+        }
+        let history = clipboard.recentCalculations(limit: Self.calculatorColumnLength)
+        let numbers = clipboard.search("", kind: .number).prefix(Self.calculatorColumnLength)
+        let columns = history.map(LauncherResult.pastCalculation) + numbers.map(LauncherResult.clipboard)
+        cachedCalculatorColumns = (clipboard.revision, columns)
+        return columns
+    }
+
+    /// The clipboard history view's items, taken from the cached results.
     var clipboardItems: [ClipboardItem] {
-        clipboard.search(query, kind: clipboardKind)
+        results.compactMap { if case .clipboard(let item) = $0 { item } else { nil } }
     }
 
     func imageURL(for item: ClipboardItem) -> URL? {
@@ -328,6 +377,8 @@ final class LauncherModel {
 
     /// Switches view with an empty search and the default selection for that view.
     private func open(_ newMode: Mode) {
+        // App launch counts, which rank results, aren't observed, so each view starts from fresh results.
+        cachedResults = nil
         mode = newMode
         query = ""
         clipboardKind = nil
