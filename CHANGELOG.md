@@ -22,6 +22,7 @@ versions follow [Semantic Versioning](https://semver.org/).
 - A synced image that couldn't be saved could make Whippet crash at every launch.
 - Copying an image whose file was missing emptied the clipboard.
 - Pasting deeply nested input into the calculator could crash Whippet, and long input could freeze it.
+- Caffeinate for… crashed Whippet when given a huge duration. Durations are now limited to a week.
 - Turning sync off and on quickly could start it twice.
 - Settings showed version 0.1.0 in builds made from source.
 

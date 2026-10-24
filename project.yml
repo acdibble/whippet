@@ -69,6 +69,7 @@ targets:
     platform: macOS
     sources:
       - Tests/WhippetTests
+      - Sources/Whippet/CaffeineDuration.swift
       - Sources/Whippet/Calculator.swift
       - Sources/Whippet/ClipboardStore.swift
       - Sources/Whippet/FuzzyMatch.swift

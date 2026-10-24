@@ -485,14 +485,11 @@ final class LauncherModel {
 
     /// Starts "Caffeinate for…" with the typed duration; blank fields count as zero, and a zero or invalid duration beeps.
     func startTimedCaffeinate() {
-        let parts = durationFields.map { $0.trimmingCharacters(in: .whitespaces) }
-        let values = parts.map { $0.isEmpty ? 0 : Int($0) }
-        guard values.allSatisfy({ ($0 ?? -1) >= 0 }) else {
-            NSSound.beep()
-            return
-        }
-        let seconds = zip(values.compactMap { $0 }, [3600, 60, 1]).reduce(0) { $0 + $1.0 * $1.1 }
-        guard seconds > 0 else {
+        guard let seconds = CaffeineDuration.seconds(
+            hours: durationFields[0],
+            minutes: durationFields[1],
+            seconds: durationFields[2]
+        ) else {
             NSSound.beep()
             return
         }
