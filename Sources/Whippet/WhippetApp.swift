@@ -78,7 +78,8 @@ private struct MenuBarMenu: View {
 
     var body: some View {
         Button("Open Whippet", systemImage: "magnifyingglass") { appDelegate.showPanel() }
-            .keyboardShortcut(KeyboardShortcuts.getShortcut(for: .togglePanel)?.toSwiftUI)
+            // Follows the hotkey set in Settings; the global hotkey itself opens the panel.
+            .globalKeyboardShortcut(.togglePanel)
         Divider()
         Button("About Whippet", systemImage: "info.circle") { NSApp.showAboutPanel() }
         Button("Check for Updates…", systemImage: "arrow.down.circle") { appDelegate.updater.checkForUpdates() }

@@ -360,33 +360,6 @@ enum LaunchAtLogin {
     }
 }
 
-/// The window's material over the toolbar area, fading out just below it, so content scrolled under the pane title
-/// blurs away instead of overlapping it. The system's own scroll edge effect does not appear over a material window.
-private struct ToolbarFade: View {
-    private static let fadeHeight: CGFloat = 16
-
-    var body: some View {
-        GeometryReader { proxy in
-            let inset = proxy.safeAreaInsets.top
-            Rectangle()
-                .fill(.thinMaterial)
-                .mask(
-                    LinearGradient(
-                        stops: [
-                            .init(color: .black, location: inset / (inset + Self.fadeHeight)),
-                            .init(color: .clear, location: 1),
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(height: inset + Self.fadeHeight)
-                .offset(y: -inset)
-        }
-        .allowsHitTesting(false)
-    }
-}
-
 /// The app's language, stored as the same per-app preference that System Settings › Language & Region › Applications sets.
 enum AppLanguage {
     /// The languages Whippet ships, excluding the base localization.
