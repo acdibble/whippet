@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-24
+
 ### Added
 
 - Calculator history syncs through iCloud.
@@ -53,6 +55,7 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/acdibble/whippet/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/acdibble/whippet/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/acdibble/whippet/releases/tag/v0.1.0
