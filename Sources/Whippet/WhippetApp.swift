@@ -106,15 +106,25 @@ enum WhippetIcon {
             context.setLineWidth(1.4)
             context.setLineJoin(.round)
             context.setLineCap(.round)
-            context.setStrokeColor(NSColor.black.cgColor)
+            context.setStrokeColor(color.cgColor)
             context.strokePath()
-            context.setFillColor(NSColor.black.cgColor)
+            context.setFillColor(color.cgColor)
             context.fillEllipse(in: CGRect(x: 7.1, y: 8.6, width: 1.3, height: 1.3))
             return true
         }
-        image.isTemplate = true
+        image.isTemplate = isTemplate
         return image
     }()
+
+    /// Development builds draw the whippet in construction yellow, to tell them apart from the installed release, which
+    /// uses a template image that macOS tints to match the menu bar.
+    #if DEBUG
+    private static let color = NSColor.systemYellow
+    private static let isTemplate = false
+    #else
+    private static let color = NSColor.black
+    private static let isTemplate = true
+    #endif
 
     /// Facing left in an 18-point canvas: the head and neck outline, the underside of the jaw and neck, and a rose ear.
     private static func headPath() -> CGPath {

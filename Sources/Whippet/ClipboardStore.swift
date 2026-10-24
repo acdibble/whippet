@@ -138,7 +138,12 @@ struct ClipboardUsage {
 /// Clipboard history in a SQLite database in Application Support, with an FTS5 index over copied and recognized text.
 /// Images live beside it as PNG files named by their content hash.
 final class ClipboardStore: Sendable {
+    /// Development builds keep their own history, sync state and key, which belong to CloudKit's Development environment.
+    #if DEBUG
+    static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet Dev")
+    #else
     static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet")
+    #endif
 
     let directory: URL
     let imagesDirectory: URL

@@ -43,8 +43,8 @@ targets:
       path: Resources/Info.plist
       properties:
         LSUIElement: true
-        CFBundleName: Whippet
-        CFBundleDisplayName: Whippet
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: $(PRODUCT_NAME)
         NSHumanReadableCopyright: "© 2026 Dibble Codes"
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
@@ -66,6 +66,11 @@ targets:
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
       configs:
+        # A separate app, so a development build runs beside the installed release with its own settings, hotkeys,
+        # data folder and permissions, and syncs with CloudKit's Development environment.
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: codes.dibble.whippet.dev
+          PRODUCT_NAME: Whippet Dev
         Release:
           CODE_SIGN_ENTITLEMENTS: Resources/WhippetRelease.entitlements
           CODE_SIGN_STYLE: Manual

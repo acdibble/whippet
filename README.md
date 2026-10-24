@@ -31,6 +31,10 @@ The project signs with the Dibble Codes team and its iCloud container. To build 
 `DEVELOPMENT_TEAM`, the bundle identifier and the iCloud container in `project.yml`,
 `Resources/*.entitlements` and `Sources/Whippet/CloudSync.swift`.
 
+Debug builds are a separate app, Whippet Dev (`codes.dibble.whippet.dev`), with a yellow menu bar icon, its own
+settings and data in `~/Library/Application Support/Whippet Dev`, and CloudKit's Development environment, so it runs
+beside an installed release.
+
 Releases are built, signed, notarized and published by `.github/workflows/release.yml` when a `v*` tag is pushed.
 To cut one, rename the Unreleased section of [CHANGELOG.md](CHANGELOG.md) to the new version, make sure
 `MARKETING_VERSION` in `project.yml` matches it, and tag that commit. The workflow refuses a tag that doesn't match,
