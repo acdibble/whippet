@@ -48,6 +48,9 @@ final class CloudSync {
     @ObservationIgnored private let store: ClipboardStore?
     @ObservationIgnored private var engine: CKSyncEngine?
     @ObservationIgnored private var keys: SyncKeys?
+    /// Checks the account and loads the key before creating the engine. Only the latest start may finish, so toggling
+    /// sync quickly can't leave two engines on the same state file.
+    @ObservationIgnored private var startTask: Task<Void, Never>?
     @ObservationIgnored private let container = CKContainer(identifier: "iCloud.codes.dibble.whippet")
 
     private static let zoneID = CKRecordZone.ID(zoneName: "Whippet")
@@ -100,9 +103,12 @@ final class CloudSync {
         do {
             try await engine.fetchChanges()
             try await engine.sendChanges()
+            // Sync may have stopped or restarted with a new engine meanwhile, which owns the status now.
+            guard self.engine === engine else { return }
             lastSyncedAt = .now
             status = .upToDate
         } catch {
+            guard self.engine === engine else { return }
             status = .failed(error.localizedDescription)
         }
         updatePendingChanges()
@@ -133,9 +139,10 @@ final class CloudSync {
             return
         }
         status = .checkingAccount
-        Task {
+        startTask?.cancel()
+        startTask = Task {
             let accountStatus = try? await container.accountStatus()
-            guard isEnabled else { return }
+            guard !Task.isCancelled else { return }
             guard accountStatus == .available else {
                 status = .unavailable(Self.describe(accountStatus))
                 return
@@ -145,10 +152,12 @@ final class CloudSync {
             do {
                 keys = SyncKeys(secret: try await loadSecret())
             } catch {
-                status = .failed(error.localizedDescription)
+                if !Task.isCancelled {
+                    status = .failed(error.localizedDescription)
+                }
                 return
             }
-            guard isEnabled else { return }
+            guard !Task.isCancelled else { return }
             self.keys = keys
 
             let savedState = loadSavedState()
@@ -170,6 +179,8 @@ final class CloudSync {
     }
 
     private func stop() {
+        startTask?.cancel()
+        startTask = nil
         engine = nil
         keys = nil
         status = .off
