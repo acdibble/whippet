@@ -9,7 +9,7 @@ struct Calculation: Hashable {
         Calculator.format(value)
     }
 
-    /// Names the operation when the input uses a single kind of operator, as Raycast does.
+    /// Names the operation when the input uses a single kind of operator.
     var operationName: String {
         let operations = Set(tokens.compactMap { token -> Character? in
             guard case .operation(let operation) = token else { return nil }

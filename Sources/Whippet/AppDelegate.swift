@@ -124,7 +124,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         panel.orderOut(nil)
     }
 
-    /// Activates Whippet, as Raycast does, so anything opened from the panel such as Settings can come to the front.
+    /// Activates Whippet, so anything opened from the panel such as Settings can come to the front.
     /// The hotkey is the user's own input, which is what lets macOS grant the activation.
     func showPanel() {
         model.reset()

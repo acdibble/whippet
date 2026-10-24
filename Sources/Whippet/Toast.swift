@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// A short confirmation at the bottom of the screen after a command runs, like Raycast's HUD.
+/// A short confirmation at the bottom of the screen after a command runs.
 /// It ignores the mouse and never takes focus, so it can't get in the way of the app underneath.
 @MainActor
 final class Toast {

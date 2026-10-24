@@ -39,6 +39,9 @@ final class CloudSync {
         didSet {
             UserDefaults.standard.set(includesImages, forKey: "cloudSyncIncludesImages")
             enqueueUnsyncedRecords()
+            if includesImages, !oldValue {
+                Task { await fetchSkippedImages() }
+            }
         }
     }
 
@@ -105,6 +108,36 @@ final class CloudSync {
             try await engine.sendChanges()
             // Sync may have stopped or restarted with a new engine meanwhile, which owns the status now.
             guard self.engine === engine else { return }
+            lastSyncedAt = .now
+            status = .upToDate
+        } catch {
+            guard self.engine === engine else { return }
+            status = .failed(error.localizedDescription)
+        }
+        updatePendingChanges()
+    }
+
+    /// Images that arrive while Include Images is off are dropped, and the engine's change token moves past them, so
+    /// turning it back on reads the whole zone once more for them. Their kind is encrypted, so CloudKit can't filter
+    /// them on the server.
+    private func fetchSkippedImages() async {
+        guard let engine else { return }
+        status = .syncing
+        var changeToken: CKServerChangeToken?
+        do {
+            var moreComing = true
+            while moreComing {
+                let changes = try await container.privateCloudDatabase.recordZoneChanges(inZoneWith: Self.zoneID, since: changeToken)
+                // Sync may have stopped or restarted meanwhile, which owns the status now.
+                guard self.engine === engine else { return }
+                for case .success(let modification) in changes.modificationResultsByID.values
+                where modification.record.encryptedValues["kind"] as? String == ClipboardKind.image.rawValue {
+                    merge(modification.record)
+                }
+                changeToken = changes.changeToken
+                moreComing = changes.moreComing
+            }
+            onRemoteChanges()
             lastSyncedAt = .now
             status = .upToDate
         } catch {

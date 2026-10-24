@@ -109,7 +109,7 @@ struct SettingsView: View {
     }
 }
 
-/// A white symbol on a coloured rounded square, as System Settings and Raycast draw their sidebar icons.
+/// A white symbol on a coloured rounded square, as System Settings draws its sidebar icons.
 private struct PaneIcon: View {
     let symbol: String
     let tint: Color

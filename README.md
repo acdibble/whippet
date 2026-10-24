@@ -1,6 +1,6 @@
 # Whippet
 
-A fast, keyboard-driven launcher for macOS, in the spirit of Raycast. Free and open source.
+A fast, keyboard-driven launcher for macOS. Free and open source.
 
 - **Search and open apps** with fuzzy matching, ranked by how often you use them
 - **Clipboard history** for text, links, numbers and images, with full-text search, recognized text in images, pinning, and paste straight into the app you were using

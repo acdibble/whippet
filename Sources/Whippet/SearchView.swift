@@ -294,7 +294,7 @@ struct ResultActions: View {
     }
 }
 
-/// Marks commands and settings only CloudKit Admin accounts can see, like Raycast's Pro badge.
+/// Marks commands and settings only CloudKit Admin accounts can see.
 struct AdminBadge: View {
     var body: some View {
         Text("Admin")
