@@ -1931,6 +1931,26 @@
         }
       }
     },
+    "Search" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جست‌وجو"
+          }
+        }
+      }
+    },
+    "Search Clipboard History" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جست‌وجو در تاریخچهٔ کلیپ‌بورد"
+          }
+        }
+      }
+    },
     "Search GitHub" : {
       "localizations" : {
         "fa" : {
@@ -2497,6 +2517,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "استفاده از پیش‌فرض"
+          }
+        }
+      }
+    },
+    "Use “%@” with…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استفاده از «%@» با…"
           }
         }
       }

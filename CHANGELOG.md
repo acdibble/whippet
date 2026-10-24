@@ -12,10 +12,16 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Quicklinks: saved links that take what you type, such as Search GitHub. Select one and press Tab to type the text,
   then Return to open it. Manage them in Settings › Quicklinks, or with the Create Quicklink command. They sync through
   iCloud, can have hotkeys, and come with Google, GitHub, Wikipedia and Maps to start.
+- Search text is offered to every quicklink that takes text, and to clipboard history, even when it matches nothing by
+  name, under "Use … with…".
 
 ### Changed
 
 - A plain number, such as 0xFF or 1,000.5, shows its value in the search bar straight away, ready to copy or paste.
+
+### Fixed
+
+- Moving through results with the arrow keys could highlight the wrong rows, or two at once, across sections.
 
 ## [0.7.0] - 2026-10-24
 

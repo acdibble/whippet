@@ -19,6 +19,10 @@ enum LauncherResult: Identifiable, Hashable {
     case system(SystemCommand)
     case quicklink(Quicklink)
     case createQuicklink
+    /// A quicklink offered for the whole search text, opened with it straight away.
+    case searchWithQuicklink(Quicklink)
+    /// Clipboard history offered for the whole search text.
+    case searchClipboard
     case app(AppEntry)
     case clipboard(ClipboardItem)
 
@@ -41,6 +45,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .system(let command): "command:system.\(command.rawValue)"
         case .quicklink(let quicklink): "quicklink:\(quicklink.uuid)"
         case .createQuicklink: "command:create-quicklink"
+        case .searchWithQuicklink(let quicklink): "with:quicklink:\(quicklink.uuid)"
+        case .searchClipboard: "with:clipboard-history"
         case .app(let app): "app:\(app.url.path)"
         case .clipboard(let item): "clipboard:\(item.id)"
         }
@@ -59,6 +65,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .system(let command): command.title
         case .quicklink(let quicklink): quicklink.name
         case .createQuicklink: String(localized: "Create Quicklink")
+        case .searchWithQuicklink(let quicklink): quicklink.name
+        case .searchClipboard: String(localized: "Search Clipboard History")
         case .quit: String(localized: "Quit Whippet")
         case .clipboardHistory: String(localized: "Clipboard History")
         case .caffeinate: String(localized: "Caffeinate")
@@ -78,8 +86,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog, .quit:
             String(localized: "Command")
         case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
-        case .caffeinateMenuBar, .system, .createQuicklink: String(localized: "Command")
-        case .quicklink: String(localized: "Quicklink")
+        case .caffeinateMenuBar, .system, .createQuicklink, .searchClipboard: String(localized: "Command")
+        case .quicklink, .searchWithQuicklink: String(localized: "Quicklink")
         case .decaffeinate(let until): until
         case .app: String(localized: "Application")
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
@@ -126,6 +134,9 @@ enum LauncherResult: Identifiable, Hashable {
     var launchKey: String? {
         switch self {
         case .app(let app): app.stableID
+        // Counted as using the quicklink or command itself.
+        case .searchWithQuicklink(let quicklink): LauncherResult.quicklink(quicklink).id
+        case .searchClipboard: LauncherResult.clipboardHistory.id
         case .calculation, .pastCalculation, .clipboard, .quit: nil
         default: id
         }
@@ -142,6 +153,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .system: String(localized: "Run Command")
         case .quicklink(let quicklink): quicklink.takesArgument ? String(localized: "Enter Text") : String(localized: "Open Quicklink")
         case .createQuicklink: String(localized: "Open Command")
+        case .searchWithQuicklink: String(localized: "Open Quicklink")
+        case .searchClipboard: String(localized: "Search")
         case .quit: String(localized: "Quit")
         case .app: String(localized: "Open Application")
         case .clipboard: String(localized: "Copy to Clipboard")
@@ -383,7 +396,7 @@ final class LauncherModel {
             let candidates = commands + quicklinks.items.map(LauncherResult.quicklink) + appIndex.apps.map(LauncherResult.app)
             guard query.isEmpty else {
                 suggestionCount = 0
-                return Ranking.rank(candidates, query: query, title: \.searchText, frecency: frecency(of:))
+                return Ranking.rank(candidates, query: query, title: \.searchText, frecency: frecency(of:)) + textFallbacks
             }
             let suggestions = Ranking.suggestions(candidates, limit: Self.suggestionLimit, frecency: frecency(of:))
             let suggestedIDs = Set(suggestions.map(\.id))
@@ -608,6 +621,16 @@ final class LauncherModel {
             onDismiss()
         case .createQuicklink:
             onCreateQuicklink()
+        case .searchWithQuicklink(let quicklink):
+            guard Quicklinks.open(quicklink, argument: query.trimmingCharacters(in: .whitespaces)) else {
+                NSSound.beep()
+                return
+            }
+            onDismiss()
+        case .searchClipboard:
+            let text = query
+            open(.clipboard)
+            query = text
         case .system(let command):
             onDismiss()
             // After the panel has gone, so neither a confirmation nor the system's own response is hidden behind it.
@@ -703,6 +726,17 @@ final class LauncherModel {
         }
     }
 
+    /// What the search text can be used with even when it matches nothing by name: quicklinks that take text, most used
+    /// first, then clipboard history.
+    private var textFallbacks: [LauncherResult] {
+        let quicklinkResults = quicklinks.items.filter(\.takesArgument).map(LauncherResult.searchWithQuicklink)
+        let ordered = quicklinkResults.enumerated().sorted { lhs, rhs in
+            let left = frecency(of: lhs.element), right = frecency(of: rhs.element)
+            return left != right ? left > right : lhs.offset < rhs.offset
+        }
+        return ordered.map(\.element) + [.searchClipboard]
+    }
+
     private func frecency(of result: LauncherResult) -> Double {
         result.launchKey.map { history.frecency(of: $0) } ?? 0
     }
@@ -711,7 +745,11 @@ final class LauncherModel {
     func sectionTitle(at index: Int) -> String {
         let results = results
         guard results.indices.contains(index) else { return "" }
-        if case .clipboard = results[index] { return String(localized: "Clipboard History") }
+        switch results[index] {
+        case .clipboard: return String(localized: "Clipboard History")
+        case .searchWithQuicklink, .searchClipboard: return String(localized: "Use “\(query)” with…")
+        default: break
+        }
         guard mode == .root, query.isEmpty else { return String(localized: "Results") }
         if index < suggestionCount { return String(localized: "Suggestions") }
         switch results[index] {

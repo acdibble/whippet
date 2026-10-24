@@ -130,14 +130,17 @@ private struct RootResults: View {
                 } else {
                     ScrollViewReader { proxy in
                         ScrollView {
+                            // One flat list of headers and rows, each with its own identity. Rows nested in a ForEach
+                            // per section left stale selection highlights on the wrong rows as the selection moved.
                             LazyVStack(alignment: .leading, spacing: 2) {
-                                ForEach(sections(of: results), id: \.title) { section in
-                                    SectionHeader(title: section.title)
-                                    ForEach(section.rows, id: \.result.id) { row in
-                                        ResultRow(result: row.result, isSelected: row.index == model.selection)
-                                            .id(row.result.id)
+                                ForEach(listItems(of: results)) { item in
+                                    switch item {
+                                    case .header(let title):
+                                        SectionHeader(title: title)
+                                    case .row(let index, let result):
+                                        ResultRow(result: result, isSelected: index == model.selection)
                                             .onTapGesture {
-                                                model.selection = row.index
+                                                model.selection = index
                                                 model.activate()
                                             }
                                     }
@@ -168,17 +171,31 @@ private struct RootResults: View {
     }
 
     /// Groups consecutive results under a heading, keeping each result's position in `results` for selection.
-    private func sections(of results: [LauncherResult]) -> [(title: String, rows: [(index: Int, result: LauncherResult)])] {
-        var sections: [(title: String, rows: [(index: Int, result: LauncherResult)])] = []
+    private enum ListItem: Identifiable {
+        case header(String)
+        case row(index: Int, result: LauncherResult)
+
+        var id: String {
+            switch self {
+            case .header(let title): "header:\(title)"
+            case .row(_, let result): result.id
+            }
+        }
+    }
+
+    /// The results with a header wherever the section changes.
+    private func listItems(of results: [LauncherResult]) -> [ListItem] {
+        var items: [ListItem] = []
+        var currentTitle: String?
         for (index, result) in results.enumerated() {
             let title = model.sectionTitle(at: index)
-            if sections.last?.title == title {
-                sections[sections.count - 1].rows.append((index, result))
-                continue
+            if title != currentTitle {
+                items.append(.header(title))
+                currentTitle = title
             }
-            sections.append((title, [(index, result)]))
+            items.append(.row(index: index, result: result))
         }
-        return sections
+        return items
     }
 }
 
@@ -238,6 +255,9 @@ struct ResultRow: View {
         case .quicklink(let quicklink):
             if let icon = Quicklinks.icon(for: quicklink) { Image(nsImage: icon) } else { Image(systemName: "link") }
         case .createQuicklink: Image(systemName: "link.badge.plus")
+        case .searchWithQuicklink(let quicklink):
+            if let icon = Quicklinks.icon(for: quicklink) { Image(nsImage: icon) } else { Image(systemName: "link") }
+        case .searchClipboard: Image(systemName: "list.clipboard")
         case .quit: Image(systemName: "power")
         case .caffeinate, .caffeinateFor: Image(systemName: "cup.and.heat.waves.fill")
         case .caffeinateMenuBar: Image(systemName: "menubar.rectangle")
