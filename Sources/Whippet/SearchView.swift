@@ -202,6 +202,7 @@ struct ResultRow: View {
         case .sendFeedback: Image(systemName: "bubble.left")
         case .readFeedback: Image(systemName: "tray.full")
         case .changelog: Image(systemName: "list.bullet.rectangle")
+        case .system(let command): Image(systemName: command.symbol)
         case .quit: Image(systemName: "power")
         case .caffeinate, .caffeinateFor: Image(systemName: "cup.and.heat.waves.fill")
         case .caffeinateMenuBar: Image(systemName: "menubar.rectangle")

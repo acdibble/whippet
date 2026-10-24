@@ -8,6 +8,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Press ↓ in the empty search field to see every command and app, with the ones you use most under Suggestions.
+- Lock Screen, Sleep, Restart, Shut Down, Empty Trash and Toggle Dark Mode commands. Restart, Shut Down and Empty
+  Trash ask first.
 
 ### Changed
 

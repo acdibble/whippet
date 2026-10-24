@@ -56,6 +56,7 @@ targets:
         # Required by Sparkle alongside a signed feed: the update's signature is checked before it's opened.
         SUVerifyUpdateBeforeExtraction: true
         SUEnableAutomaticChecks: true
+        NSAppleEventsUsageDescription: Whippet asks Finder to empty the Trash, and System Events to restart, shut down or switch between light and dark appearance.
         # Feedback is sealed to this key; the private half is in the admin's iCloud Keychain (Settings › Developer).
         WhippetFeedbackPublicKey: 5W6U3iN7bTVu2QR5VGOByySsY05wViUPVM4EZnXAMSY=
     settings:
@@ -94,6 +95,7 @@ targets:
       - Sources/Whippet/FeedbackKey.swift
       - Sources/Whippet/FuzzyMatch.swift
       - Sources/Whippet/Ranking.swift
+      - Sources/Whippet/SystemCommand.swift
       - Sources/Whippet/Thumbnail.swift
     dependencies:
       - package: GRDB

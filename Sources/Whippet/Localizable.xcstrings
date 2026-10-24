@@ -181,6 +181,16 @@
         }
       }
     },
+    "Apps will be asked to quit first." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابتدا از برنامه‌ها خواسته می‌شود بسته شوند."
+          }
+        }
+      }
+    },
     "Awake until %@" : {
       "localizations" : {
         "fa" : {
@@ -771,6 +781,26 @@
         }
       }
     },
+    "Empty Trash" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خالی کردن سطل زباله"
+          }
+        }
+      }
+    },
+    "Empty the Trash?" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سطل زباله خالی شود؟"
+          }
+        }
+      }
+    },
     "Everything that syncs is end-to-end encrypted, images included. Apple can see only how many items there are, their sizes and when they changed." : {
       "localizations" : {
         "fa" : {
@@ -1041,6 +1071,16 @@
         }
       }
     },
+    "Items in the Trash will be deleted permanently." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موارد داخل سطل زباله برای همیشه حذف می‌شوند."
+          }
+        }
+      }
+    },
     "Keep Items" : {
       "localizations" : {
         "fa" : {
@@ -1107,6 +1147,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بارگیری بیشتر"
+          }
+        }
+      }
+    },
+    "Lock Screen" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قفل صفحه"
           }
         }
       }
@@ -1621,6 +1671,26 @@
         }
       }
     },
+    "Restart" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راه‌اندازی دوباره"
+          }
+        }
+      }
+    },
+    "Restart this Mac?" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این Mac دوباره راه‌اندازی شود؟"
+          }
+        }
+      }
+    },
     "Results" : {
       "localizations" : {
         "fa" : {
@@ -1781,6 +1851,26 @@
         }
       }
     },
+    "Shut Down" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خاموش کردن"
+          }
+        }
+      }
+    },
+    "Shut down this Mac?" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این Mac خاموش شود؟"
+          }
+        }
+      }
+    },
     "Sign in to iCloud to send feedback from Whippet, or open an issue on GitHub instead." : {
       "localizations" : {
         "fa" : {
@@ -1807,6 +1897,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اندازه"
+          }
+        }
+      }
+    },
+    "Sleep" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خواب"
           }
         }
       }
@@ -1987,6 +2087,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "امروز"
+          }
+        }
+      }
+    },
+    "Toggle Dark Mode" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغییر حالت تیره"
           }
         }
       }
@@ -2217,6 +2327,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "iCloud موقتاً در دسترس نیست."
+          }
+        }
+      }
+    },
+    "macOS didn't carry out the command." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS فرمان را اجرا نکرد."
           }
         }
       }

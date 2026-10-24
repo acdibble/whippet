@@ -1,0 +1,24 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSAppleEventsUsageDescription" : {
+      "comment" : "Shown when macOS asks to let Whippet control Finder or System Events.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whippet asks Finder to empty the Trash, and System Events to restart, shut down or switch between light and dark appearance."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whippet از Finder می‌خواهد سطل زباله را خالی کند و از System Events می‌خواهد Mac را دوباره راه‌اندازی یا خاموش کند یا میان حالت روشن و تیره جابه‌جا شود."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

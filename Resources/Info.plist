@@ -22,6 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Whippet asks Finder to empty the Trash, and System Events to restart, shut down or switch between light and dark appearance.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Dibble Codes</string>
 	<key>SUEnableAutomaticChecks</key>

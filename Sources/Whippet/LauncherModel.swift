@@ -15,6 +15,7 @@ enum LauncherResult: Identifiable, Hashable {
     case caffeinateFor
     case decaffeinate(until: String)
     case caffeinateMenuBar(isShown: Bool)
+    case system(SystemCommand)
     case app(AppEntry)
     case clipboard(ClipboardItem)
 
@@ -33,6 +34,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .caffeinateFor: "command:caffeinate-for"
         case .decaffeinate: "command:decaffeinate"
         case .caffeinateMenuBar: "command:caffeinate-menu-bar"
+        case .system(let command): "command:system.\(command.rawValue)"
         case .app(let app): "app:\(app.url.path)"
         case .clipboard(let item): "clipboard:\(item.id)"
         }
@@ -47,6 +49,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .sendFeedback: String(localized: "Send Feedback")
         case .readFeedback: String(localized: "Read Feedback")
         case .changelog: String(localized: "Changelog")
+        case .system(let command): command.title
         case .quit: String(localized: "Quit Whippet")
         case .clipboardHistory: String(localized: "Clipboard History")
         case .caffeinate: String(localized: "Caffeinate")
@@ -65,7 +68,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
         case .calculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog, .quit: String(localized: "Command")
         case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
-        case .caffeinateMenuBar: String(localized: "Command")
+        case .caffeinateMenuBar, .system: String(localized: "Command")
         case .decaffeinate(let until): until
         case .app: String(localized: "Application")
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
@@ -118,6 +121,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .caffeinate, .decaffeinate, .caffeinateMenuBar: String(localized: "Run Command")
         case .caffeinateFor: String(localized: "Choose Duration")
         case .changelog: String(localized: "Open in Browser")
+        case .system: String(localized: "Run Command")
         case .quit: String(localized: "Quit")
         case .app: String(localized: "Open Application")
         case .clipboard: String(localized: "Copy to Clipboard")
@@ -294,6 +298,7 @@ final class LauncherModel {
                 + [.caffeinate, .caffeinateFor]
                 + (caffeine.isActive ? [.decaffeinate(until: caffeine.untilDescription)] : [])
                 + [.caffeinateMenuBar(isShown: caffeine.showsInMenuBar)]
+                + SystemCommand.allCases.map(LauncherResult.system)
             let candidates = commands + appIndex.apps.map(LauncherResult.app)
             guard query.isEmpty else {
                 suggestionCount = 0
@@ -486,6 +491,10 @@ final class LauncherModel {
         case .decaffeinate:
             caffeine.stop()
             onDismiss()
+        case .system(let command):
+            onDismiss()
+            // After the panel has gone, so neither a confirmation nor the system's own response is hidden behind it.
+            DispatchQueue.main.async { Self.run(command) }
         case .quit:
             NSApp.terminate(nil)
         case .clipboardHistory:
@@ -550,6 +559,27 @@ final class LauncherModel {
             return
         }
         onDismiss()
+    }
+
+    /// Asks first for commands that can't be undone. Whippet is hidden once the panel closes, so it comes forward to
+    /// show the alert.
+    private static func run(_ command: SystemCommand) {
+        if let confirmation = command.confirmation {
+            NSApp.activate(ignoringOtherApps: true)
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = confirmation.title
+            alert.informativeText = confirmation.message
+            alert.addButton(withTitle: confirmation.button)
+            alert.addButton(withTitle: String(localized: "Cancel"))
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
+        do {
+            try command.run()
+        } catch {
+            NSApp.activate(ignoringOtherApps: true)
+            NSAlert(error: error).runModal()
+        }
     }
 
     private func frecency(of result: LauncherResult) -> Double {
