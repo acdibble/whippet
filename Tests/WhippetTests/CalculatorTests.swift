@@ -65,6 +65,24 @@ struct CalculatorTests {
         #expect(Calculator.evaluate(input) == nil)
     }
 
+    /// Built here rather than passed as arguments, which the test log would print in full.
+    @Test(arguments: ["brackets", "signs", "exponents"])
+    func deepNestingIsNotACalculation(_ nesting: String) {
+        let depth = 100_000
+        let input = switch nesting {
+        case "brackets": String(repeating: "(", count: depth) + "1"
+        case "signs": String(repeating: "-", count: depth) + "1 + 1"
+        default: Array(repeating: "2", count: depth).joined(separator: "^")
+        }
+        #expect(Calculator.evaluate(input) == nil)
+    }
+
+    @Test func moderateNestingStillEvaluates() throws {
+        let nested = String(repeating: "(", count: 50) + "1 + 1" + String(repeating: ")", count: 50)
+        #expect(try #require(Calculator.evaluate(nested)).value == 2)
+        #expect(try #require(Calculator.evaluate(String(repeating: "-", count: 50) + "1 + 1")).value == 2)
+    }
+
     @Test(arguments: [
         (0.1 + 0.2, "0.3"),
         (1_000_000, "1000000"),

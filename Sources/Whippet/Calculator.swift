@@ -97,8 +97,9 @@ enum Calculator {
 
     /// Finds the end of a number literal: a radix-prefixed run like `0xFF_FF`, or digits with `.`, `,` and `_` separators.
     private static func numberEnd(in input: String, from start: String.Index) -> String.Index {
-        let rest = input[start...].lowercased()
-        let isPrefixed = ["0x", "0b", "0o"].contains { rest.hasPrefix($0) }
+        // Only the first two characters, since lowercasing the whole rest for every number is quadratic in long input.
+        let prefix = input[start...].prefix(2).lowercased()
+        let isPrefixed = ["0x", "0b", "0o"].contains(prefix)
         var end = isPrefixed ? input.index(start, offsetBy: 2) : start
         while end < input.endIndex {
             let char = input[end]
@@ -173,9 +174,14 @@ enum Calculator {
 /// Recursive descent over `expression := term (+|- term)*`, `term := unary (*|/|% unary)*`,
 /// `unary := (+|-) unary | power` and right-associative `power := primary (^ unary)?`.
 private struct InfixParser {
+    /// Every recursion, through brackets, signs or exponents, passes through `unary`, so limiting its depth keeps
+    /// pasted input like thousands of `(` from overflowing the main thread's stack.
+    private static let maxDepth = 100
+
     let tokens: [Calculator.Token]
     private var position = 0
     private var sawBinaryOperator = false
+    private var depth = 0
 
     init(tokens: [Calculator.Token]) {
         self.tokens = tokens
@@ -213,6 +219,9 @@ private struct InfixParser {
     }
 
     private mutating func unary() -> Double? {
+        guard depth < Self.maxDepth else { return nil }
+        depth += 1
+        defer { depth -= 1 }
         if case .operation(let operation)? = next, operation == "-" || operation == "+" {
             position += 1
             guard let value = unary() else { return nil }
