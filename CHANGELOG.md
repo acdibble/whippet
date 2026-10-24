@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-24
+
 ### Added
 
 - A floating calculator that stays above other windows without taking focus from them, so you can do sums while
@@ -120,7 +122,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/acdibble/whippet/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/acdibble/whippet/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/acdibble/whippet/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/acdibble/whippet/compare/v0.4.0...v0.5.0
