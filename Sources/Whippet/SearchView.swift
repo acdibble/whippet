@@ -1,4 +1,5 @@
 import AppKit
+import KeyboardShortcuts
 import SwiftUI
 
 /// The launcher shell. The search field stays mounted across every mode so it keeps keyboard focus when switching views.
@@ -191,6 +192,9 @@ struct ResultRow: View {
             if result.isAdminOnly {
                 AdminBadge()
             }
+            if let hotkey = result.hotkey {
+                HotkeyLabel(shortcut: hotkey)
+            }
             Text(result.subtitle)
                 .foregroundStyle(Color.launcherSecondary)
         }
@@ -291,6 +295,21 @@ struct ResultActions: View {
             }
             .buttonStyle(.launcher)
         }
+    }
+}
+
+/// A result's global hotkey, drawn like the footer's key caps but sized to fit the whole shortcut.
+private struct HotkeyLabel: View {
+    let shortcut: KeyboardShortcuts.Shortcut
+
+    var body: some View {
+        // Kept left to right, so the modifiers stay before the key in right-to-left languages.
+        Text(shortcut.description.leftToRightIsolated)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(Color.launcherSecondary)
+            .padding(.horizontal, 6)
+            .frame(height: 20)
+            .background(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.launcherSecondary.opacity(0.5)))
     }
 }
 

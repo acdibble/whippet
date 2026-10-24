@@ -42,3 +42,18 @@ extension AppEntry {
         KeyboardShortcuts.Name("app.\(stableID)")
     }
 }
+
+extension LauncherResult {
+    /// The global hotkey set for this app or command in Settings › Shortcuts, if any.
+    @MainActor var hotkey: KeyboardShortcuts.Shortcut? {
+        let name: KeyboardShortcuts.Name? = switch self {
+        case .app(let app): app.shortcutName
+        case .calculator: CommandShortcut.calculator.name
+        case .clipboardHistory: CommandShortcut.clipboardHistory.name
+        case .settings: CommandShortcut.settings.name
+        case .caffeinate: CommandShortcut.caffeinate.name
+        default: nil
+        }
+        return name.flatMap { KeyboardShortcuts.getShortcut(for: $0) }
+    }
+}
