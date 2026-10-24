@@ -13,7 +13,6 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 - Search ranks apps and commands by how often and how recently you open them, and matches initials and word starts
   better, so "vsc" finds Visual Studio Code.
-
 - Feedback is encrypted so only Whippet's developer can read it, including the email address and system details.
 - Clipboard history with many screenshots scrolls smoothly, since images are shown from small copies kept in memory.
 

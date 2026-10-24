@@ -301,6 +301,16 @@
         }
       }
     },
+    "Cancel" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لغو"
+          }
+        }
+      }
+    },
     "Changelog" : {
       "localizations" : {
         "fa" : {
@@ -561,6 +571,16 @@
         }
       }
     },
+    "Copy Private Key" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی کلید خصوصی"
+          }
+        }
+      }
+    },
     "Copy to Clipboard" : {
       "localizations" : {
         "fa" : {
@@ -587,6 +607,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ایجاد گزارش…"
+          }
+        }
+      }
+    },
+    "Create Key…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ساختن کلید…"
           }
         }
       }
@@ -771,6 +801,36 @@
         }
       }
     },
+    "Feedback Key" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلید بازخورد"
+          }
+        }
+      }
+    },
+    "Feedback is sealed to this key. Its public key goes in WhippetFeedbackPublicKey in project.yml. The private key syncs through iCloud Keychain; back it up too, since feedback sealed to a lost key can't be read." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بازخورد با این کلید رمزگذاری می‌شود. کلید عمومی آن در WhippetFeedbackPublicKey در project.yml قرار می‌گیرد. کلید خصوصی از طریق جاکلیدی iCloud همگام‌سازی می‌شود؛ از آن نسخهٔ پشتیبان هم تهیه کنید، چون بازخوردی که با کلید گم‌شده رمزگذاری شده خواندنی نیست."
+          }
+        }
+      }
+    },
+    "Feedback sealed to the current key can't be read without it." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بازخوردی که با کلید فعلی رمزگذاری شده بدون آن خواندنی نیست."
+          }
+        }
+      }
+    },
     "Forever" : {
       "localizations" : {
         "fa" : {
@@ -797,6 +857,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "عمومی"
+          }
+        }
+      }
+    },
+    "Handled" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رسیدگی‌شده"
           }
         }
       }
@@ -901,6 +971,36 @@
         }
       }
     },
+    "Import" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن"
+          }
+        }
+      }
+    },
+    "Import Feedback Key" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن کلید بازخورد"
+          }
+        }
+      }
+    },
+    "Import Key…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن کلید…"
+          }
+        }
+      }
+    },
     "Include Images" : {
       "localizations" : {
         "fa" : {
@@ -917,16 +1017,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اطلاعات"
-          }
-        }
-      }
-    },
-    "Issue created" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "گزارش ایجاد شد"
           }
         }
       }
@@ -1011,6 +1101,36 @@
         }
       }
     },
+    "Load More" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بارگیری بیشتر"
+          }
+        }
+      }
+    },
+    "Mark as Handled" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "علامت‌گذاری به‌عنوان رسیدگی‌شده"
+          }
+        }
+      }
+    },
+    "Mark as Not Handled" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "علامت‌گذاری به‌عنوان رسیدگی‌نشده"
+          }
+        }
+      }
+    },
     "Memory" : {
       "localizations" : {
         "fa" : {
@@ -1071,6 +1191,16 @@
         }
       }
     },
+    "Not on this Mac" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "روی این Mac نیست"
+          }
+        }
+      }
+    },
     "Not signed in" : {
       "localizations" : {
         "fa" : {
@@ -1117,6 +1247,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "خاموش"
+          }
+        }
+      }
+    },
+    "On this Mac" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "روی این Mac"
+          }
+        }
+      }
+    },
+    "On this Mac, but this version uses a different key" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "روی این Mac، اما این نسخه از کلید دیگری استفاده می‌کند"
           }
         }
       }
@@ -1241,6 +1391,16 @@
         }
       }
     },
+    "Paste the private key from your backup." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلید خصوصی را از نسخهٔ پشتیبان خود جای‌گذاری کنید."
+          }
+        }
+      }
+    },
     "Paste to %@" : {
       "localizations" : {
         "fa" : {
@@ -1291,6 +1451,16 @@
         }
       }
     },
+    "Private key" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلید خصوصی"
+          }
+        }
+      }
+    },
     "Processing…" : {
       "localizations" : {
         "fa" : {
@@ -1307,6 +1477,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حاصل‌ضرب"
+          }
+        }
+      }
+    },
+    "Public Key" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلید عمومی"
           }
         }
       }
@@ -1407,6 +1587,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حذف"
+          }
+        }
+      }
+    },
+    "Replace Key" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جایگزین کردن کلید"
+          }
+        }
+      }
+    },
+    "Replace the feedback key?" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلید بازخورد جایگزین شود؟"
           }
         }
       }
@@ -1737,6 +1937,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "کلید همگام‌سازی iCloud وجود ندارد یا آسیب دیده است."
+          }
+        }
+      }
+    },
+    "This feedback is encrypted, and this Mac doesn't have the feedback key." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این بازخورد رمزگذاری شده و این Mac کلید بازخورد را ندارد."
           }
         }
       }
