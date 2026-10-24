@@ -90,6 +90,7 @@ targets:
       - Sources/Whippet/Calculator.swift
       - Sources/Whippet/ClipboardStore.swift
       - Sources/Whippet/FuzzyMatch.swift
+      - Sources/Whippet/Thumbnail.swift
     dependencies:
       - package: GRDB
     settings:

@@ -147,16 +147,19 @@ private struct ItemRow: View {
 
     @ViewBuilder
     private var icon: some View {
-        if let imageURL, let image = NSImage(contentsOf: imageURL) {
-            Image(nsImage: image)
-                .resizable()
-                .scaledToFill()
+        if let imageURL {
+            // 18 points at 2x.
+            ThumbnailView(url: imageURL, maxPixelSize: 36, contentMode: .fill) { symbol }
                 .frame(width: 18, height: 18)
                 .clipShape(RoundedRectangle(cornerRadius: 3))
         } else {
-            Image(systemName: item.kind.symbolName)
-                .foregroundStyle(Color.launcherSecondary)
+            symbol
         }
+    }
+
+    private var symbol: some View {
+        Image(systemName: item.kind.symbolName)
+            .foregroundStyle(Color.launcherSecondary)
     }
 }
 
@@ -175,10 +178,9 @@ private struct ItemDetail: View {
 
     @ViewBuilder
     private var preview: some View {
-        if let imageURL, let image = NSImage(contentsOf: imageURL) {
-            Image(nsImage: image)
-                .resizable()
-                .scaledToFit()
+        if let imageURL {
+            // Enough for the preview pane at 2x, however large the screenshot.
+            ThumbnailView(url: imageURL, maxPixelSize: 1600) { ProgressView().controlSize(.small) }
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .padding(16)
                 .frame(maxWidth: .infinity)
