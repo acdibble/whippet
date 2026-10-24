@@ -94,6 +94,29 @@ struct CalculatorTests {
     }
 
     @Test(arguments: [
+        ("42", 42.0),
+        ("0xFF", 255),
+        ("1,000.5", 1000.5),
+        ("-4", -4),
+        ("$12", 12),
+    ])
+    func plainNumbersShowTheirValue(_ input: String, _ expected: Double) throws {
+        let calculation = try #require(Calculator.evaluateNumber(input))
+        #expect(calculation.value == expected)
+        #expect(calculation.isPlainNumber)
+        #expect(calculation.operationName == "Number")
+    }
+
+    @Test(arguments: ["", "2 +", "abc", "1,00"])
+    func notAPlainNumber(_ input: String) {
+        #expect(Calculator.evaluateNumber(input) == nil)
+    }
+
+    @Test func calculationsArentPlainNumbers() throws {
+        #expect(try !#require(Calculator.evaluate("2 + 3")).isPlainNumber)
+    }
+
+    @Test(arguments: [
         (0.1 + 0.2, "0.3"),
         (1_000_000, "1000000"),
         (-2.5, "-2.5"),

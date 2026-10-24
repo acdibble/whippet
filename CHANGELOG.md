@@ -11,6 +11,10 @@ versions follow [Semantic Versioning](https://semver.org/).
   then Return to open it. Manage them in Settings › Quicklinks, or with the Create Quicklink command. They sync through
   iCloud, can have hotkeys, and come with Google, GitHub, Wikipedia and Maps to start.
 
+### Changed
+
+- A plain number, such as 0xFF or 1,000.5, shows its value in the search bar straight away, ready to copy or paste.
+
 ## [0.7.0] - 2026-10-24
 
 ### Added

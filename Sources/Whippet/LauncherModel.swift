@@ -366,7 +366,7 @@ final class LauncherModel {
     private func computeResults() -> [LauncherResult] {
         switch mode {
         case .root:
-            if let calculation = Calculator.evaluate(query) {
+            if let calculation = Calculator.evaluate(query) ?? Calculator.evaluateNumber(query) {
                 return calculatorResults(calculation)
             }
             // A calculation still being typed, such as "2+", gets the calculator's history rather than search results.
@@ -390,7 +390,7 @@ final class LauncherModel {
             suggestionCount = suggestions.count
             return suggestions + candidates.filter { !suggestedIDs.contains($0.id) }
         case .calculator:
-            return calculatorResults(Calculator.evaluate(query))
+            return calculatorResults(Calculator.evaluate(query) ?? Calculator.evaluateNumber(query))
         case .clipboard:
             return clipboard.search(query, kind: clipboardKind).map(LauncherResult.clipboard)
         }
@@ -555,11 +555,13 @@ final class LauncherModel {
 
         switch results[selection] {
         case .calculation(let calculation):
-            clipboard.recordCalculation(
-                expression: query.trimmingCharacters(in: .whitespaces),
-                answer: calculation.answer,
-                isRPN: calculation.isRPN
-            )
+            if !calculation.isPlainNumber {
+                clipboard.recordCalculation(
+                    expression: query.trimmingCharacters(in: .whitespaces),
+                    answer: calculation.answer,
+                    isRPN: calculation.isRPN
+                )
+            }
             clipboard.copy(text: calculation.answer)
             dismissAndPaste(copyOnly: copyOnly)
         case .pastCalculation(let record):

@@ -10,11 +10,17 @@ struct Calculation: Hashable {
     }
 
     /// Names the operation when the input uses a single kind of operator.
+    /// A number on its own, such as `0xFF`, shown with its value but not kept in calculator history.
+    var isPlainNumber: Bool {
+        !tokens.contains { if case .operation = $0 { true } else { false } }
+    }
+
     var operationName: String {
         let operations = Set(tokens.compactMap { token -> Character? in
             guard case .operation(let operation) = token else { return nil }
             return operation
         })
+        if operations.isEmpty { return String(localized: "Number") }
         guard operations.count == 1, let operation = operations.first else { return String(localized: "Expression") }
         switch operation {
         case "+": return String(localized: "Sum")
@@ -64,6 +70,13 @@ enum Calculator {
             options: .regularExpression
         )
         return withoutRadixLiterals.allSatisfy { $0.isASCIIDigit || $0.isWhitespace || "+-*/%^().,_".contains($0) }
+    }
+
+    /// A plain number, read like a copied one, so `0xFF`, `1,000.5` and `-4` show their value.
+    static func evaluateNumber(_ input: String) -> Calculation? {
+        let text = input.trimmingCharacters(in: .whitespaces)
+        guard let value = parseNumber(text), value.isFinite else { return nil }
+        return Calculation(tokens: [.number(value, literal: text)], value: value, isRPN: false)
     }
 
     static func format(_ value: Double) -> String {

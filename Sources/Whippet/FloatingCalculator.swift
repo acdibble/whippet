@@ -72,7 +72,7 @@ private struct FloatingCalculatorView: View {
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
-        let calculation = Calculator.evaluate(state.expression)
+        let calculation = Calculator.evaluate(state.expression) ?? Calculator.evaluateNumber(state.expression)
 
         VStack(spacing: 0) {
             VStack(alignment: .trailing, spacing: 4) {
@@ -128,11 +128,13 @@ private struct FloatingCalculatorView: View {
             NSSound.beep()
             return
         }
-        clipboard.recordCalculation(
-            expression: state.expression.trimmingCharacters(in: .whitespaces),
-            answer: calculation.answer,
-            isRPN: calculation.isRPN
-        )
+        if !calculation.isPlainNumber {
+            clipboard.recordCalculation(
+                expression: state.expression.trimmingCharacters(in: .whitespaces),
+                answer: calculation.answer,
+                isRPN: calculation.isRPN
+            )
+        }
         copy(calculation.answer)
         state.expression = ""
     }
