@@ -39,6 +39,9 @@ final class CaffeineStatusItem: NSObject, NSMenuDelegate {
     private func makeStatusItem() -> NSStatusItem {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.behavior = .removalAllowed
+        // macOS remembers an item ⌘-dragged out of the menu bar as hidden, and recreating it keeps it hidden, so turning
+        // the setting back on would show nothing. Done before observing, so it doesn't count as the user's change.
+        item.isVisible = true
         let menu = NSMenu()
         menu.delegate = self
         item.menu = menu

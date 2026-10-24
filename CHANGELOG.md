@@ -16,6 +16,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 - A calculation typed in the main search is answered inside the search bar, which stays one line tall. Press ↓ for
   the full calculator view.
 
+### Fixed
+
+- After ⌘-dragging the Caffeinate item out of the menu bar, turning Show Caffeinate in Menu Bar back on didn't show it.
+
 ## [0.6.0] - 2026-10-24
 
 ### Added
