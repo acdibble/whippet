@@ -82,14 +82,20 @@ final class ClipboardHistory {
         revision += 1
     }
 
-    func copy(_ item: ClipboardItem) {
+    /// Puts the item on the pasteboard, or leaves the pasteboard alone and returns false when an image's file is
+    /// missing or unreadable.
+    @discardableResult
+    func copy(_ item: ClipboardItem) -> Bool {
         let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        if let file = imageURL(for: item), let image = NSImage(contentsOf: file) {
-            pasteboard.writeObjects([image])
-            return
+        guard item.kind == .image else {
+            pasteboard.clearContents()
+            pasteboard.setString(item.text ?? "", forType: .string)
+            return true
         }
-        pasteboard.setString(item.text ?? "", forType: .string)
+        guard let file = imageURL(for: item), let image = NSImage(contentsOf: file) else { return false }
+        pasteboard.clearContents()
+        pasteboard.writeObjects([image])
+        return true
     }
 
     func recordCalculation(expression: String, answer: String, isRPN: Bool) {

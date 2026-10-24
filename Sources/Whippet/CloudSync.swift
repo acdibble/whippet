@@ -365,6 +365,9 @@ final class CloudSync {
             guard let hash = values["contentHash"] as? String, hash.count == 64, hash.allSatisfy(\.isHexDigit) else { return }
             let kind = (values["kind"] as? String).flatMap(ClipboardKind.init(rawValue:)) ?? .text
             if kind == .image, !includesImages { return }
+            let imageFile = kind == .image ? saveImage(record["image"] as? CKAsset, hash: hash, key: keys.images, store: store) : nil
+            // An image whose file couldn't be saved can't be stored, so it waits until the record changes again.
+            if kind == .image, imageFile == nil { return }
             item = .clipboard(contentHash: hash)
             isLocalAhead = try? store.mergeRemote(
                 RemoteClipboardItem(
@@ -372,7 +375,7 @@ final class CloudSync {
                     kind: kind,
                     text: values["text"] as? String,
                     ocrText: values["ocrText"] as? String,
-                    imageFile: kind == .image ? saveImage(record["image"] as? CKAsset, hash: hash, key: keys.images, store: store) : nil,
+                    imageFile: imageFile,
                     imageWidth: values["imageWidth"] as? Int,
                     imageHeight: values["imageHeight"] as? Int,
                     imageBytes: values["imageBytes"] as? Int,

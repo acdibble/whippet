@@ -1,4 +1,5 @@
 import Foundation
+import GRDB
 import Testing
 
 /// Each test gets its own store in a temporary folder, migrated from an empty database.
@@ -218,6 +219,17 @@ final class ClipboardStoreTests {
         merged = try #require(try items().first)
         #expect(merged.pinnedAt.map { $0.isSameMillisecond(as: newer) } == true)
         #expect(merged.sourceBundleID == "com.example.remote")
+    }
+
+    @Test func anImageWithoutAFileIsRejected() throws {
+        let image = RemoteClipboardItem(
+            hash: String(repeating: "b", count: 64), kind: .image, text: nil, ocrText: nil, imageFile: nil,
+            imageWidth: 1, imageHeight: 1, imageBytes: 3, copiedAt: .now, sourceBundleID: nil, timesCopied: 1,
+            pinnedAt: nil, updatedAt: .now, recordName: "clip-image", systemFields: Data()
+        )
+        #expect(throws: DatabaseError.self) { try self.store.mergeRemote(image) }
+        #expect(try items().isEmpty)
+        #expect(try store.nextImageAwaitingRecognition() == nil)
     }
 
     @Test func mergingACalculationKeepsTheNewerAnswer() throws {

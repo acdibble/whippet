@@ -448,7 +448,10 @@ final class LauncherModel {
             appIndex.open(app)
             onDismiss()
         case .clipboard(let item):
-            clipboard.copy(item)
+            guard clipboard.copy(item) else {
+                NSSound.beep()
+                return
+            }
             dismissAndPaste(copyOnly: copyOnly)
         }
     }

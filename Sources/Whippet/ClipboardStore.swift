@@ -483,6 +483,8 @@ final class ClipboardStore: Sendable {
                 table.column("recordName", .text).unique()
                 table.column("syncedAt", .datetime)
                 table.column("cloudSystemFields", .blob)
+                // Text recognition and copying read an image's file, so an image without one can't be stored.
+                table.check(Column("kind") != ClipboardKind.image.rawValue || Column("imageFile") != nil)
             }
             try db.create(virtualTable: "clipboardFts", using: FTS5()) { table in
                 table.synchronize(withTable: "clipboard")
