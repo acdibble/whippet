@@ -12,6 +12,11 @@ env:
   BUNDLE_ID: codes.dibble.whippet
   SIGNING_IDENTITY: Developer ID Application
   PROFILE_NAME: Whippet Developer ID
+  XCODEGEN_VERSION: 2.46.0
+  XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+  # Steps that generate the project, handle secrets or sign run with only the system's tools on PATH, so nothing
+  # installed in /opt/homebrew/bin or /usr/local/bin can stand in for security, codesign, xcrun or xcodebuild.
+  SYSTEM_PATH: /usr/bin:/bin:/usr/sbin:/sbin
 
 jobs:
   release:
@@ -27,15 +32,21 @@ jobs:
           echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
           echo "BUILD_NUMBER=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
 
-      # Generate the project before any signing material is on the runner, since Homebrew installs whatever
-      # XcodeGen version is current.
+      # The generated project is what xcodebuild runs with the Developer ID keychain unlocked, so XcodeGen is a
+      # pinned release, checked against its SHA-256 before it runs, rather than whatever Homebrew has.
       - name: Generate the Xcode project
+        env:
+          PATH: ${{ env.SYSTEM_PATH }}
         run: |
-          brew install xcodegen
-          xcodegen generate
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN_VERSION/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate
 
       - name: Install the Developer ID certificate in a temporary keychain
         env:
+          PATH: ${{ env.SYSTEM_PATH }}
           P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
           P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
         run: |
@@ -53,6 +64,7 @@ jobs:
 
       - name: Install the Developer ID provisioning profile
         env:
+          PATH: ${{ env.SYSTEM_PATH }}
           PROFILE_BASE64: ${{ secrets.DEVELOPER_ID_PROFILE_BASE64 }}
         run: |
           profile="$RUNNER_TEMP/whippet.provisionprofile"
@@ -65,6 +77,8 @@ jobs:
       # Signing settings for Release live on the app target in project.yml, since passing a provisioning profile
       # here would also apply it to the Swift packages, which Xcode rejects.
       - name: Archive
+        env:
+          PATH: ${{ env.SYSTEM_PATH }}
         run: |
           xcodebuild archive \
             -project Whippet.xcodeproj \
@@ -76,6 +90,8 @@ jobs:
             OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN"
 
       - name: Export the signed app
+        env:
+          PATH: ${{ env.SYSTEM_PATH }}
         run: |
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
@@ -98,6 +114,7 @@ jobs:
 
       - name: Install the notary API key
         env:
+          PATH: ${{ env.SYSTEM_PATH }}
           NOTARY_KEY_BASE64: ${{ secrets.NOTARY_KEY_P8_BASE64 }}
         run: |
           echo "$NOTARY_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/notary-key.p8"
@@ -105,6 +122,7 @@ jobs:
 
       - name: Notarize and staple the app
         env:
+          PATH: ${{ env.SYSTEM_PATH }}
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
         run: |
@@ -116,6 +134,7 @@ jobs:
 
       - name: Build, sign, notarize and staple the DMG
         env:
+          PATH: ${{ env.SYSTEM_PATH }}
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
         run: |
@@ -138,6 +157,8 @@ jobs:
 
       - name: Remove signing material
         if: always()
+        env:
+          PATH: ${{ env.SYSTEM_PATH }}
         run: |
           [ -n "${KEYCHAIN:-}" ] && security delete-keychain "$KEYCHAIN" || true
           rm -f "$RUNNER_TEMP/notary-key.p8"
