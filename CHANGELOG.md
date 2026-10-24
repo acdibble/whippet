@@ -24,6 +24,7 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Pasting deeply nested input into the calculator could crash Whippet, and long input could freeze it.
 - Caffeinate for… crashed Whippet when given a huge duration. Durations are now limited to a week.
 - Turning sync off and on quickly could start it twice.
+- Items deleted while sync was off, or while it was starting, stayed in iCloud and on other Macs.
 - Settings showed version 0.1.0 in builds made from source.
 
 ## [0.2.0] - 2026-10-24

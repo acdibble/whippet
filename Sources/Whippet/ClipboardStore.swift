@@ -298,6 +298,8 @@ final class ClipboardStore: Sendable {
                     sql: "UPDATE \(target.table) SET recordName = ? WHERE \(target.keyColumn) = ?",
                     arguments: [name, target.key]
                 )
+                // Copied again after being deleted, so the deletion no longer applies.
+                try db.execute(sql: "DELETE FROM deletedRecord WHERE recordName = ?", arguments: [name])
             }
         }
     }
@@ -351,24 +353,46 @@ final class ClipboardStore: Sendable {
         try database.write { db in
             try db.execute(sql: "UPDATE clipboard SET recordName = NULL, syncedAt = NULL, cloudSystemFields = NULL")
             try db.execute(sql: "UPDATE calculation SET recordName = NULL, syncedAt = NULL, cloudSystemFields = NULL")
+            try db.execute(sql: "DELETE FROM deletedRecord")
         }
     }
 
-    /// Deletes an item and returns its iCloud record name, or nil when it was never synced.
+    /// Record names of items deleted on this Mac whose deletion hasn't reached iCloud yet.
+    func pendingDeletions() throws -> [String] {
+        try database.read { db in
+            try String.fetchAll(db, sql: "SELECT recordName FROM deletedRecord")
+        }
+    }
+
+    func forgetDeletions(_ recordNames: [String]) throws {
+        guard !recordNames.isEmpty else { return }
+        try database.write { db in
+            for recordName in recordNames {
+                try db.execute(sql: "DELETE FROM deletedRecord WHERE recordName = ?", arguments: [recordName])
+            }
+        }
+    }
+
+    /// Deletes an item and returns its iCloud record name, or nil when it was never synced. The name is kept until the
+    /// deletion reaches iCloud, since sync may be off or still starting.
     func delete(contentHash: String) throws -> String? {
-        try delete(SyncTarget(.clipboard(contentHash: contentHash)))
+        try delete(SyncTarget(.clipboard(contentHash: contentHash)), remembersDeletion: true)
     }
 
     /// Deletes the item behind a record that was deleted on another Mac.
     func deleteRecord(named recordName: String) throws {
         guard let target = SyncTarget(recordName: recordName) else { return }
-        _ = try delete(target)
+        _ = try delete(target, remembersDeletion: false)
+        try forgetDeletions([recordName])
     }
 
-    private func delete(_ target: SyncTarget) throws -> String? {
+    private func delete(_ target: SyncTarget, remembersDeletion: Bool) throws -> String? {
         let row = try database.write { db in
             let row = try Row.fetchOne(db, sql: "SELECT * FROM \(target.table) WHERE \(target.keyColumn) = ?", arguments: [target.key])
             try db.execute(sql: "DELETE FROM \(target.table) WHERE \(target.keyColumn) = ?", arguments: [target.key])
+            if remembersDeletion, let recordName = row?["recordName"] as String? {
+                try db.execute(sql: "INSERT OR IGNORE INTO deletedRecord (recordName) VALUES (?)", arguments: [recordName])
+            }
             return row
         }
         if let imageFile = row?["imageFile"] as String? {
@@ -506,6 +530,9 @@ final class ClipboardStore: Sendable {
                 table.uniqueKey(["expression", "mode"])
             }
             try db.create(indexOn: "calculation", columns: ["syncKey"], options: .unique)
+            try db.create(table: "deletedRecord") { table in
+                table.primaryKey("recordName", .text)
+            }
         }
         return migrator
     }

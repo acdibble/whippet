@@ -144,6 +144,47 @@ final class ClipboardStoreTests {
         #expect(try items().isEmpty)
     }
 
+    @Test func deletionsAreRememberedUntilTheyReachICloud() throws {
+        let synced = try store.recordText("synced", sourceBundleID: nil)
+        try store.recordText("local only", sourceBundleID: nil)
+        try store.assignRecordNames([synced: "clip-synced"])
+        for item in try items() {
+            _ = try store.delete(contentHash: item.contentHash)
+        }
+
+        #expect(try store.pendingDeletions() == ["clip-synced"])
+        try store.forgetDeletions(["clip-synced"])
+        #expect(try store.pendingDeletions().isEmpty)
+    }
+
+    @Test func copyingAgainCancelsAPendingDeletion() throws {
+        let item = try store.recordText("back again", sourceBundleID: nil)
+        try store.assignRecordNames([item: "clip-again"])
+        guard case .clipboard(let hash) = item else { Issue.record("Expected a clipboard item"); return }
+        _ = try store.delete(contentHash: hash)
+        #expect(try store.pendingDeletions() == ["clip-again"])
+
+        let copiedAgain = try store.recordText("back again", sourceBundleID: nil)
+        try store.assignRecordNames([copiedAgain: "clip-again"])
+        #expect(try store.pendingDeletions().isEmpty)
+    }
+
+    @Test func aDeletionFromAnotherMacOrAResetClearsPendingDeletions() throws {
+        let first = try store.recordText("first", sourceBundleID: nil)
+        let second = try store.recordText("second", sourceBundleID: nil)
+        try store.assignRecordNames([first: "clip-first", second: "clip-second"])
+        for item in try items() {
+            _ = try store.delete(contentHash: item.contentHash)
+        }
+        #expect(Set(try store.pendingDeletions()) == ["clip-first", "clip-second"])
+
+        try store.deleteRecord(named: "clip-first")
+        #expect(try store.pendingDeletions() == ["clip-second"])
+
+        try store.forgetAllSyncState()
+        #expect(try store.pendingDeletions().isEmpty)
+    }
+
     @Test func deletingARecordFromAnotherMacRemovesTheImage() throws {
         let item = try store.recordImage(png: Data([1, 2, 3]), width: 1, height: 1, sourceBundleID: nil)
         try store.assignRecordNames([item: "clip-image"])

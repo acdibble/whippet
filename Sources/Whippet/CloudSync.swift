@@ -198,9 +198,15 @@ final class CloudSync {
         }
     }
 
+    /// Queues everything changed or deleted on this Mac that hasn't reached iCloud, including while sync was off.
     private func enqueueUnsyncedRecords() {
-        guard let items = try? store?.unsyncedItems(includeImages: includesImages) else { return }
-        enqueue(items)
+        if let items = try? store?.unsyncedItems(includeImages: includesImages) {
+            enqueue(items)
+        }
+        // After the saves, since naming an item that was copied again cancels its deletion.
+        guard let engine, let deletions = try? store?.pendingDeletions(), !deletions.isEmpty else { return }
+        engine.state.add(pendingRecordZoneChanges: deletions.map { .deleteRecord(Self.recordID($0)) })
+        updatePendingChanges()
     }
 
     /// Names the items with the key and queues them for upload.
@@ -512,6 +518,9 @@ extension CloudSync: CKSyncEngineDelegate {
             }
             sent.failedRecordSaves.forEach { Self.removeUpload(for: $0.record.recordID) }
             sent.failedRecordSaves.forEach { handleFailedSave($0, engine: syncEngine) }
+            // A record that's already gone counts as deleted.
+            let alreadyGone = sent.failedRecordDeletes.filter { $0.value.code == .unknownItem }.keys
+            try? store?.forgetDeletions((sent.deletedRecordIDs + alreadyGone).map(\.recordName))
             updatePendingChanges()
         case .willFetchChanges, .willSendChanges:
             status = .syncing
