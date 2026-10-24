@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-24
+
 ### Fixed
 
 - Check for Updates in 0.4.0 couldn't start. Install this version by hand once, and updates work from then on.
@@ -78,7 +80,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/acdibble/whippet/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/acdibble/whippet/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/acdibble/whippet/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/acdibble/whippet/compare/v0.1.0...v0.2.0
