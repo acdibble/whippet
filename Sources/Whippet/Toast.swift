@@ -60,7 +60,18 @@ private struct ToastView: View {
             .fixedSize()
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
-            .background(.regularMaterial, in: Capsule())
+            .modifier(ToastBackground())
             .padding(12)
+    }
+}
+
+/// Liquid Glass on macOS 26, like the system's own HUDs, and a material capsule before it.
+private struct ToastBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26, *) {
+            content.glassEffect(.regular, in: Capsule())
+        } else {
+            content.background(.regularMaterial, in: Capsule())
+        }
     }
 }

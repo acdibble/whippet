@@ -5,6 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- On macOS 26, the launcher panel, its buttons and confirmation toasts use Liquid Glass.
+
 ## [0.5.0] - 2026-10-24
 
 ### Fixed

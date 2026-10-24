@@ -21,7 +21,7 @@ struct SearchView: View {
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color.launcherSecondary)
                     }
-                    .buttonStyle(.launcher)
+                    .launcherButtonStyle()
                 }
 
                 TextField(placeholder, text: $model.query)
@@ -62,12 +62,7 @@ struct SearchView: View {
         }
         .frame(width: LauncherPanel.contentSize.width)
         .frame(height: model.isExpanded ? LauncherPanel.contentSize.height : nil)
-        .background {
-            RoundedRectangle(cornerRadius: 14)
-                .fill(.regularMaterial)
-                .overlay(RoundedRectangle(cornerRadius: 14).fill(Color(nsColor: .windowBackgroundColor).opacity(0.75)))
-        }
-        .shadow(color: .black.opacity(0.3), radius: 20, y: 8)
+        .modifier(PanelBackground())
         .padding(LauncherPanel.shadowInset)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onAppear { focus = .search }
@@ -243,6 +238,18 @@ extension ButtonStyle where Self == LauncherButtonStyle {
     static var launcher: LauncherButtonStyle { LauncherButtonStyle() }
 }
 
+extension View {
+    /// Glass buttons on macOS 26, which sit naturally on the panel's glass, and highlight-on-hover buttons before it.
+    @ViewBuilder
+    func launcherButtonStyle() -> some View {
+        if #available(macOS 26, *) {
+            buttonStyle(.glass)
+        } else {
+            buttonStyle(.launcher)
+        }
+    }
+}
+
 struct HoverHighlight<Label: View>: View {
     let isPressed: Bool
     @ViewBuilder let label: Label
@@ -280,7 +287,7 @@ struct ResultActions: View {
                     KeyCap(symbol: "return")
                 }
             }
-            .buttonStyle(.launcher)
+            .launcherButtonStyle()
             Divider()
                 .frame(height: 16)
             Button {
@@ -293,7 +300,27 @@ struct ResultActions: View {
                     KeyCap("K")
                 }
             }
-            .buttonStyle(.launcher)
+            .launcherButtonStyle()
+        }
+    }
+}
+
+/// Liquid Glass on macOS 26, which refracts what's behind the panel and draws its own depth. Earlier versions get a
+/// mostly opaque material with a shadow.
+private struct PanelBackground: ViewModifier {
+    private static let shape = RoundedRectangle(cornerRadius: 14)
+
+    func body(content: Content) -> some View {
+        if #available(macOS 26, *) {
+            content.glassEffect(.regular, in: Self.shape)
+        } else {
+            content
+                .background {
+                    Self.shape
+                        .fill(.regularMaterial)
+                        .overlay(Self.shape.fill(Color(nsColor: .windowBackgroundColor).opacity(0.75)))
+                }
+                .shadow(color: .black.opacity(0.3), radius: 20, y: 8)
         }
     }
 }
