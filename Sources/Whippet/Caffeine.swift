@@ -14,10 +14,7 @@ final class Caffeine {
     /// Whether the Caffeinate menu bar item is shown. The search command, Settings and the menu bar item all read and write
     /// this one property, so SwiftUI sees every change wherever it comes from.
     var showsInMenuBar = UserDefaults.standard.bool(forKey: "showsCaffeinateInMenuBar") {
-        didSet {
-            UserDefaults.standard.set(showsInMenuBar, forKey: "showsCaffeinateInMenuBar")
-            UserDefaults.standard.set((UserDefaults.standard.stringArray(forKey: "DEBUGTRACE") ?? []) + ["\(showsInMenuBar) \(Thread.callStackSymbols.dropFirst(1).prefix(4).joined(separator: " | "))"], forKey: "DEBUGTRACE")
-        }
+        didSet { UserDefaults.standard.set(showsInMenuBar, forKey: "showsCaffeinateInMenuBar") }
     }
 
     @ObservationIgnored private var assertionID = IOPMAssertionID(0)

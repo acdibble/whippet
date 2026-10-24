@@ -23,6 +23,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     override init() {
         LegacySettings.migrate()
+        // A debugging trace shipped in 0.2.0 kept appending stack traces under this key; clear what it wrote.
+        UserDefaults.standard.removeObject(forKey: "DEBUGTRACE")
         clipboard = ClipboardHistory()
         cloudSync = CloudSync(store: clipboard.store)
         super.init()
