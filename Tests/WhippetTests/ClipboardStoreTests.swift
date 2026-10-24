@@ -100,12 +100,12 @@ final class ClipboardStoreTests {
         try store.recordText("three", sourceBundleID: nil)
         let byText = Dictionary(uniqueKeysWithValues: try items().map { ($0.text ?? "", $0.id) })
 
-        try store.setPinned(true, id: try #require(byText["one"]))
+        _ = try store.setPinned(true, id: try #require(byText["one"]))
         try await pause()
-        try store.setPinned(true, id: try #require(byText["two"]))
+        _ = try store.setPinned(true, id: try #require(byText["two"]))
         #expect(try items().compactMap(\.text) == ["one", "two", "three"])
 
-        try store.setPinned(false, id: try #require(byText["one"]))
+        _ = try store.setPinned(false, id: try #require(byText["one"]))
         #expect(try items().compactMap(\.text) == ["two", "three", "one"])
     }
 
@@ -195,7 +195,7 @@ final class ClipboardStoreTests {
         try store.recordText("recent", sourceBundleID: nil)
         try store.assignRecordNames([old: "clip-old", oldImage: "clip-old-image"])
         let pinned = try #require(try items().first { $0.text == "old but pinned" })
-        try store.setPinned(true, id: pinned.id)
+        _ = try store.setPinned(true, id: pinned.id)
         let image = try #require(try items(kind: .image).first)
         let imageFile = try #require(store.imageURL(for: image))
 
@@ -210,7 +210,7 @@ final class ClipboardStoreTests {
     @Test func clearingCanIncludePinnedItems() throws {
         try store.recordText("plain", sourceBundleID: nil)
         try store.recordText("pinned", sourceBundleID: nil)
-        try store.setPinned(true, id: try #require(try items().first { $0.text == "pinned" }).id)
+        _ = try store.setPinned(true, id: try #require(try items().first { $0.text == "pinned" }).id)
 
         _ = try store.deleteItems(copiedBefore: nil)
         #expect(try items().compactMap(\.text) == ["pinned"])

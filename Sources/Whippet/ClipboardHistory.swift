@@ -112,13 +112,13 @@ final class ClipboardHistory {
 
     private func deleteItems(_ delete: @escaping @Sendable (ClipboardStore) throws -> [String]) {
         guard let store else { return }
-        recordingQueue.async {
+        recordingQueue.async { [weak self] in
             do {
                 let recordNames = try delete(store)
-                Task { @MainActor [weak self] in
+                Task { @MainActor in
                     guard let self else { return }
-                    recordNames.forEach(onLocalDelete)
-                    revision += 1
+                    recordNames.forEach(self.onLocalDelete)
+                    self.revision += 1
                 }
             } catch {
                 NSLog("Failed to delete clipboard items: \(error)")
@@ -191,18 +191,18 @@ final class ClipboardHistory {
     private func record(recognizesText: Bool = false, _ save: @escaping @Sendable (ClipboardStore) throws -> SyncItem?) {
         guard let store else { return }
         let cutoff = retention.cutoff(from: .now)
-        recordingQueue.async {
+        recordingQueue.async { [weak self] in
             do {
                 guard let item = try save(store) else { return }
                 // Each copy is a chance to remove what has expired since, without a timer.
                 let expired = try cutoff.map { try store.deleteItems(copiedBefore: $0) } ?? []
-                Task { @MainActor [weak self] in
+                Task { @MainActor in
                     guard let self else { return }
-                    onLocalChange(item)
-                    expired.forEach(onLocalDelete)
-                    revision += 1
+                    self.onLocalChange(item)
+                    expired.forEach(self.onLocalDelete)
+                    self.revision += 1
                     if recognizesText {
-                        recognizePendingImages()
+                        self.recognizePendingImages()
                     }
                 }
             } catch {
