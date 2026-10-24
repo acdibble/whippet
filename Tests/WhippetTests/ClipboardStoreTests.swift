@@ -50,6 +50,23 @@ final class ClipboardStoreTests {
         #expect(all[0].sourceBundleID == "com.example.b")
     }
 
+    @Test func copyingFromHistoryMovesTheItemUpWithoutADuplicate() async throws {
+        let png = Data([0x89, 0x50, 0x4E, 0x47, 4, 5, 6])
+        let image = try store.recordImage(png: png, width: 2, height: 2, sourceBundleID: "com.example.source")
+        try await pause()
+        try store.recordText("newer", sourceBundleID: nil)
+        try await pause()
+        guard case .clipboard(let hash) = image else { Issue.record("Expected a clipboard item"); return }
+
+        #expect(try store.recordCopy(contentHash: hash) == image)
+        let all = try items()
+        #expect(all.count == 2)
+        #expect(all.first?.contentHash == hash)
+        #expect(all.first?.timesCopied == 2)
+        #expect(all.first?.sourceBundleID == "com.example.source")
+        #expect(try store.recordCopy(contentHash: String(repeating: "0", count: 64)) == nil)
+    }
+
     @Test func recordingAnImageStoresItOnce() throws {
         let png = Data([0x89, 0x50, 0x4E, 0x47, 1, 2, 3])
         try store.recordImage(png: png, width: 4, height: 2, sourceBundleID: nil)

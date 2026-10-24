@@ -206,6 +206,20 @@ final class ClipboardStore: Sendable {
         return .clipboard(contentHash: hash)
     }
 
+    /// Moves an item copied again from history to the top and counts the copy, without recording its content again.
+    /// Returns nil when the item no longer exists.
+    @discardableResult
+    func recordCopy(contentHash: String) throws -> SyncItem? {
+        let changed = try database.write { db in
+            try db.execute(
+                sql: "UPDATE clipboard SET copiedAt = ?, timesCopied = timesCopied + 1, updatedAt = ? WHERE contentHash = ?",
+                arguments: [Date.now, Date.now, contentHash]
+            )
+            return db.changesCount > 0
+        }
+        return changed ? .clipboard(contentHash: contentHash) : nil
+    }
+
     func nextImageAwaitingRecognition() throws -> (hash: String, file: URL)? {
         try database.read { db in
             let row = try Row.fetchOne(

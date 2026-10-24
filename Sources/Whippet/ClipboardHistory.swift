@@ -127,18 +127,28 @@ final class ClipboardHistory {
     }
 
     /// Puts the item on the pasteboard, or leaves the pasteboard alone and returns false when an image's file is
-    /// missing or unreadable.
+    /// missing or unreadable. Images go on as the stored PNG, with TIFF for apps that only read that.
     @discardableResult
     func copy(_ item: ClipboardItem) -> Bool {
         let pasteboard = NSPasteboard.general
-        guard item.kind == .image else {
+        if item.kind == .image {
+            guard let file = imageURL(for: item), let png = try? Data(contentsOf: file) else { return false }
+            let pasteboardItem = NSPasteboardItem()
+            pasteboardItem.setData(png, forType: .png)
+            if let tiff = NSImage(data: png)?.tiffRepresentation {
+                pasteboardItem.setData(tiff, forType: .tiff)
+            }
+            pasteboard.clearContents()
+            pasteboard.writeObjects([pasteboardItem])
+        } else {
             pasteboard.clearContents()
             pasteboard.setString(item.text ?? "", forType: .string)
-            return true
         }
-        guard let file = imageURL(for: item), let image = NSImage(contentsOf: file) else { return false }
-        pasteboard.clearContents()
-        pasteboard.writeObjects([image])
+        // Polling would record the copy again, and a re-encoded image as a duplicate, so the item moves to the top here
+        // instead.
+        lastChangeCount = pasteboard.changeCount
+        let contentHash = item.contentHash
+        record { try $0.recordCopy(contentHash: contentHash) }
         return true
     }
 
