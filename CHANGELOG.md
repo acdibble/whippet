@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-24
+
 ### Changed
 
 - On macOS 26, the launcher panel, its buttons and confirmation toasts use Liquid Glass.
@@ -84,7 +86,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/acdibble/whippet/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/acdibble/whippet/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/acdibble/whippet/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/acdibble/whippet/compare/v0.2.0...v0.3.0
