@@ -32,6 +32,9 @@ targets:
     dependencies:
       - package: GRDB
       - package: KeyboardShortcuts
+    scheme:
+      testTargets:
+        - WhippetTests
     info:
       path: Resources/Info.plist
       properties:
@@ -57,3 +60,22 @@ targets:
           CODE_SIGN_STYLE: Manual
           CODE_SIGN_IDENTITY: Developer ID Application
           PROVISIONING_PROFILE_SPECIFIER: Whippet Developer ID
+
+  # Compiles the logic it tests from the app's sources instead of loading the app, which would open the real
+  # history database and start iCloud sync.
+  WhippetTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/WhippetTests
+      - Sources/Whippet/Calculator.swift
+      - Sources/Whippet/ClipboardStore.swift
+      - Sources/Whippet/FuzzyMatch.swift
+    dependencies:
+      - package: GRDB
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: codes.dibble.whippet.tests
+        DEVELOPMENT_TEAM: 5G59X57VMZ
+        CODE_SIGN_STYLE: Automatic

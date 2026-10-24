@@ -108,8 +108,8 @@ final class ClipboardStore: Sendable {
     private let databaseURL: URL
     private let database: DatabaseQueue
 
-    init() throws {
-        directory = Self.defaultDirectory
+    init(directory: URL = defaultDirectory) throws {
+        self.directory = directory
         imagesDirectory = directory.appending(path: "Images")
         try FileManager.default.createDirectory(at: imagesDirectory, withIntermediateDirectories: true)
         databaseURL = directory.appending(path: "clipboard.sqlite")
