@@ -30,11 +30,18 @@ final class AppIndex {
         "/Applications/Utilities",
         "/System/Applications",
         "/System/Applications/Utilities",
+        // Keychain Access, Archive Utility, Directory Utility and other system apps that aren't in Utilities.
+        "/System/Library/CoreServices/Applications",
         NSHomeDirectory() + "/Applications",
     ]
 
+    /// Apps in folders that are otherwise full of background agents, so only these are listed from them.
+    private static let individualApps = [
+        "/System/Library/CoreServices/Finder.app",
+    ]
+
     func refresh() {
-        apps = Self.searchDirectories
+        let inFolders = Self.searchDirectories
             .flatMap { directory in
                 let contents = try? FileManager.default.contentsOfDirectory(
                     at: URL(filePath: directory),
@@ -43,6 +50,10 @@ final class AppIndex {
                 return contents ?? []
             }
             .filter { $0.pathExtension == "app" }
+        let individual = Self.individualApps
+            .map { URL(filePath: $0) }
+            .filter { FileManager.default.fileExists(atPath: $0.path) }
+        apps = (inFolders + individual)
             .map { AppEntry(url: $0, name: Self.displayName(of: $0), bundleIdentifier: Bundle(url: $0)?.bundleIdentifier) }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }

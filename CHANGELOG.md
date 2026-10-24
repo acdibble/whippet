@@ -10,6 +10,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Whippet checks for updates and installs them, with Check for Updates… in the menu bar menu and Settings › General.
   Earlier versions need this one downloaded by hand.
 
+### Fixed
+
+- App search didn't find Finder, Keychain Access or the other system apps in `/System/Library/CoreServices`.
+
 ## [0.3.0] - 2026-10-24
 
 ### Added
