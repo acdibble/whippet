@@ -37,10 +37,12 @@ beside an installed release.
 
 The CloudKit schema and the security roles it needs are described in [docs/cloudkit.md](docs/cloudkit.md).
 
-Releases are built, signed, notarized and published by `.github/workflows/release.yml` when a `v*` tag is pushed.
-To cut one, rename the Unreleased section of [CHANGELOG.md](CHANGELOG.md) to the new version, make sure
-`MARKETING_VERSION` in `project.yml` matches it, and tag that commit. The workflow refuses a tag that doesn't match,
-and publishes the changelog section as the release notes. Afterwards, set `MARKETING_VERSION` to the next version.
+Releases are tested, built, signed, notarized and published by `.github/workflows/release.yml` when a commit titled
+`chore: release X.Y.Z` is pushed to `main`. To cut one, rename the Unreleased section of [CHANGELOG.md](CHANGELOG.md)
+to the new version, make sure `MARKETING_VERSION` in `project.yml` matches it, and push that commit. The workflow
+refuses a version that doesn't match, has no changelog section or is already released, runs the tests, then publishes
+the changelog section as the release notes and creates the `vX.Y.Z` tag. Afterwards, set `MARKETING_VERSION` to the
+next version.
 
 Each release also attaches a signed `appcast.xml`, which Sparkle in the app reads to offer the update. It's signed with
 the `SPARKLE_PRIVATE_KEY` repository secret, whose public key is `SUPublicEDKey` in `project.yml`.
