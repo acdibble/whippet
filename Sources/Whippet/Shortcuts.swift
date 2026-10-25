@@ -11,6 +11,10 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
     case clipboardHistory
     case settings
     case caffeinate
+    case startTimer
+    case timers
+    case startStopwatch
+    case stopwatch
 
     var id: Self { self }
 
@@ -25,6 +29,10 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
         case .clipboardHistory: String(localized: "Clipboard History")
         case .settings: String(localized: "Settings")
         case .caffeinate: String(localized: "Caffeinate")
+        case .startTimer: String(localized: "Start Timer…")
+        case .timers: String(localized: "Timers")
+        case .startStopwatch: String(localized: "Start Stopwatch")
+        case .stopwatch: String(localized: "Stopwatch")
         }
     }
 
@@ -35,6 +43,10 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
         case .clipboardHistory: "list.clipboard"
         case .settings: "gearshape"
         case .caffeinate: "cup.and.heat.waves.fill"
+        case .startTimer: "timer"
+        case .timers: "timer"
+        case .startStopwatch: "stopwatch"
+        case .stopwatch: "stopwatch"
         }
     }
 }
@@ -63,6 +75,10 @@ extension LauncherResult {
         case .clipboardHistory: CommandShortcut.clipboardHistory.name
         case .settings: CommandShortcut.settings.name
         case .caffeinate: CommandShortcut.caffeinate.name
+        case .newTimer: CommandShortcut.startTimer.name
+        case .newStopwatch: CommandShortcut.startStopwatch.name
+        case .stopwatch: CommandShortcut.stopwatch.name
+        case .timersView: CommandShortcut.timers.name
         case .quicklink(let quicklink): quicklink.shortcutName
         default: nil
         }

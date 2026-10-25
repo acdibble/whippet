@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let launchHistory = LaunchHistory()
     let appIndex: AppIndex
     let caffeine = Caffeine()
+    let timers = Timers()
     let feedbackStore = FeedbackStore()
     let settingsNavigation = SettingsNavigation()
     let quicklinks: Quicklinks
@@ -27,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var panel: LauncherPanel!
     private var registeredAppHotkeys: Set<String> = []
     private var caffeineStatusItem: CaffeineStatusItem?
+    private var timersStatusItem: TimersStatusItem?
 
     override init() {
         clipboard = ClipboardHistory()
@@ -51,7 +53,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             self?.quicklinks.reload()
         }
 
-        model = LauncherModel(appIndex: appIndex, clipboard: clipboard, caffeine: caffeine, history: launchHistory, quicklinks: quicklinks)
+        model = LauncherModel(
+            appIndex: appIndex,
+            clipboard: clipboard,
+            caffeine: caffeine,
+            timers: timers,
+            history: launchHistory,
+            quicklinks: quicklinks
+        )
         model.onDismiss = { [weak self] in self?.dismissPanel() }
         model.onOpenSettings = { [weak self] in self?.showSettings() }
         model.onSendFeedback = { [weak self] in self?.showFeedback() }
@@ -84,6 +93,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         appIndex.onChange = { [weak self] in self?.registerAppHotkeys() }
         appIndex.startWatching()
         caffeineStatusItem = CaffeineStatusItem(caffeine: caffeine)
+        Notifications.shared.configure()
+        timers.start()
+        timersStatusItem = TimersStatusItem(timers: timers)
+        timersStatusItem?.onStartTimer = { [weak self] in self?.run(.startTimer) }
+        timersStatusItem?.onStartStopwatch = { [weak self] in self?.run(.startStopwatch) }
+        timersStatusItem?.onOpenTimers = { [weak self] in self?.run(.timers) }
+        timersStatusItem?.onCopyTime = { [weak self] item in self?.model.copyTime(of: item) }
+        timersStatusItem?.onOpenStopwatch = { [weak self] id in
+            guard let self else { return }
+            showPanel()
+            model.showStopwatch(id)
+        }
+        timersStatusItem?.onRename = { [weak self] item in
+            guard let self else { return }
+            showPanel()
+            model.beginArgument(.rename(item), text: item.name)
+        }
 
         // Navigation keys are handled before they reach the focused view, because text fields treat Escape as "complete"
         // and focus can sit outside the search field.
@@ -96,6 +122,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let isPlainArrow = modifiers.isEmpty
             switch Int(event.keyCode) {
             case kVK_Escape: model.back()
+            case kVK_Return where model.usesPlainKeys && modifiers.isEmpty,
+                 kVK_Space where model.usesPlainKeys && modifiers.isEmpty:
+                model.activate()
+            case kVK_Delete where model.usesPlainKeys && modifiers.isEmpty:
+                model.deleteWithPlainKey()
             case kVK_Tab where modifiers.isEmpty:
                 guard model.beginArgumentForSelection() else { return event }
             case kVK_UpArrow: model.moveSelection(by: -1)
@@ -105,9 +136,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             case kVK_LeftArrow where isPlainArrow, kVK_RightArrow where isPlainArrow:
                 // Columns swap sides in right-to-left languages, so the arrow keys follow the screen rather than the column order.
                 let towardStart = (Int(event.keyCode) == kVK_LeftArrow) == (NSApp.userInterfaceLayoutDirection == .leftToRight)
-                guard model.moveColumn(by: towardStart ? -1 : 1) else { return event }
+                guard model.moveColumn(by: towardStart ? -1 : 1) || model.switchStopwatch(by: towardStart ? -1 : 1) else {
+                    return event
+                }
             default:
-                guard let key = Self.shortcutKey(for: event), performShortcut(key, modifiers: modifiers) else { return event }
+                guard let key = Self.shortcutKey(for: event) else { return event }
+                // Shift too, which types + on most layouts.
+                if model.usesPlainKeys, modifiers.isEmpty || modifiers == [.shift] {
+                    model.performPlainKey(key)
+                    return nil
+                }
+                guard performShortcut(key, modifiers: modifiers) else { return event }
             }
             return nil
         }
@@ -120,6 +159,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case ("c", [.command, .shift]): model.perform(.copyPath)
         case ("x", [.control]): model.perform(.delete)
         case ("o", [.command, .shift]): model.perform(.popOut)
+        case ("=", [.command]): model.perform(.addMinute)
+        case ("l", [.command]): model.perform(.lap)
+        case ("r", [.command]): model.perform(.restart)
         case ("k", [.command]): showActions()
         case ("q", [.command]): NSApp.terminate(nil)
         case (",", [.command]): showSettings()
@@ -140,6 +182,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private static let usKeys: [Int: Character] = [
         kVK_ANSI_P: "p", kVK_ANSI_C: "c", kVK_ANSI_X: "x", kVK_ANSI_K: "k", kVK_ANSI_Q: "q", kVK_ANSI_Comma: ",",
+        kVK_ANSI_Equal: "=", kVK_ANSI_L: "l", kVK_ANSI_R: "r",
     ]
 
     /// Clicking the Dock icon, which only shows while Settings is open, brings Settings forward.
@@ -228,6 +271,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             showSettings()
         case .caffeinate:
             caffeine.toggle()
+        case .startTimer:
+            showPanel()
+            model.beginArgument(.timerDuration)
+        case .startStopwatch:
+            showPanel()
+            model.startStopwatch()
+        case .stopwatch:
+            showPanel()
+            model.showStopwatch()
+        case .timers:
+            showPanel()
+            model.showTimers()
         }
     }
 
@@ -241,8 +296,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self?.model.perform(action)
             }
             item.image = NSImage(systemSymbolName: action.symbol, accessibilityDescription: nil)
-            item.keyEquivalent = action.shortcut.key
-            item.keyEquivalentModifierMask = action.shortcut.modifiers
+            if let shortcut = model.shortcut(for: action) {
+                item.keyEquivalent = shortcut.key
+                item.keyEquivalentModifierMask = shortcut.modifiers
+            }
             menu.addItem(item)
         }
 

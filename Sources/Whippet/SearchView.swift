@@ -25,20 +25,39 @@ struct SearchView: View {
                     .launcherButtonStyle()
                 }
 
-                if let quicklink = model.argumentQuicklink {
-                    Text("\(quicklink.name) ›")
+                if let target = model.argumentTarget {
+                    Text("\(target.label) ›")
                         .font(.system(size: 15, weight: .medium))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
                         .fixedSize()
-                    TextField("Type and press Return", text: $model.quicklinkArgument)
+                    TextField(target.placeholder, text: $model.argument)
                         .textFieldStyle(.plain)
                         .font(.system(size: 20))
                         .focused($focus, equals: .argument)
                         .onSubmit { model.activate() }
                         // The field is new in this update, so focusing it waits until it's in the window.
                         .onAppear { DispatchQueue.main.async { focus = .argument } }
+                } else if model.mode == .stopwatch {
+                    // A label, not a field, so plain keys control the stopwatch; ⌘K › Rename… renames it.
+                    Text(model.currentStopwatch?.name ?? TimerNaming.defaultStopwatchName)
+                        .font(.system(size: 20))
+                        .foregroundStyle(model.currentStopwatch == nil ? Color.launcherSecondary : .primary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    StopwatchSwitcher(model: model)
+                } else if model.mode == .timers {
+                    Text("Timers")
+                        .font(.system(size: 20))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(spacing: 4) {
+                        Text("New Timer")
+                            .padding(.trailing, 4)
+                        KeyCap("N")
+                    }
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.launcherSecondary)
                 } else {
                     TextField(placeholder, text: $model.query)
                         .textFieldStyle(.plain)
@@ -84,6 +103,8 @@ struct SearchView: View {
                 switch model.mode {
                 case .root, .calculator: RootResults(model: model)
                 case .clipboard: ClipboardHistoryView(model: model)
+                case .stopwatch: StopwatchView(model: model)
+                case .timers: TimersView(model: model)
                 }
             }
         }
@@ -96,8 +117,12 @@ struct SearchView: View {
         .onChange(of: model.isEnteringDuration) { _, isEntering in
             focus = isEntering ? .duration(0) : .search
         }
-        .onChange(of: model.argumentQuicklink) { _, quicklink in
-            guard quicklink == nil else { return }
+        .onChange(of: model.mode) { _, mode in
+            guard mode != .stopwatch else { return }
+            DispatchQueue.main.async { focus = .search }
+        }
+        .onChange(of: model.argumentTarget) { _, target in
+            guard target == nil else { return }
             DispatchQueue.main.async { focus = .search }
         }
     }
@@ -113,6 +138,7 @@ struct SearchView: View {
         case .root: String(localized: "Search apps and commands")
         case .calculator: String(localized: "Type a calculation…")
         case .clipboard: String(localized: "Type to filter entries…")
+        case .stopwatch, .timers: ""
         }
     }
 }
@@ -231,7 +257,7 @@ struct ResultRow: View {
             if let hotkey = result.hotkey {
                 HotkeyLabel(shortcut: hotkey)
             }
-            Text(result.subtitle)
+            ResultSubtitle(result: result)
                 .foregroundStyle(Color.launcherSecondary)
         }
         .font(.system(size: 14))
@@ -265,6 +291,49 @@ struct ResultRow: View {
         case .calculation: Image(systemName: "equal.square")
         case .pastCalculation: Image(systemName: "clock.arrow.circlepath")
         case .clipboard(let item): Image(systemName: item.kind.symbolName)
+        case .startTimer, .newTimer, .timerPreset: Image(systemName: "timer")
+        case .newStopwatch, .stopwatch: Image(systemName: "stopwatch")
+        case .timersView: Image(systemName: "list.bullet")
+        case .timer(let item):
+            switch (item.kind, item.isPaused) {
+            case (_, true): Image(systemName: "pause.circle")
+            case (.timer, false): Image(systemName: "timer")
+            case (.stopwatch, false): Image(systemName: "stopwatch")
+            }
+        case .ringingTimer: Image(systemName: "bell.and.waves.left.and.right")
+        }
+    }
+}
+
+/// A result's subtitle. A running timer or stopwatch counts in place.
+private struct ResultSubtitle: View {
+    let result: LauncherResult
+
+    var body: some View {
+        if case .timer(let item) = result {
+            if item.isPaused {
+                Text("Paused · \(time(of: item, at: .now))")
+                    .monospacedDigit()
+            } else {
+                // A stopwatch shows tenths of a second, so it ticks faster.
+                TimelineView(.periodic(from: .now, by: item.kind == .stopwatch ? 0.1 : 1)) { context in
+                    Text(time(of: item, at: context.date))
+                        .monospacedDigit()
+                }
+            }
+        } else {
+            Text(result.subtitle)
+        }
+    }
+
+    private func time(of item: TimerItem, at date: Date) -> String {
+        switch item.kind {
+        case .timer:
+            return String(localized: "\(TimerNaming.clock(item.value(at: date))) left")
+        case .stopwatch:
+            let total = TimerNaming.stopwatchClock(item.value(at: date))
+            guard !item.laps.isEmpty else { return total }
+            return String(localized: "Lap \(item.laps.count + 1) \(TimerNaming.stopwatchClock(item.currentLap(at: date))) · \(total)")
         }
     }
 }

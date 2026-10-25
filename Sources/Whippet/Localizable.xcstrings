@@ -61,12 +61,102 @@
         }
       }
     },
+    "%@ is done" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ تمام شد"
+          }
+        }
+      }
+    },
+    "%@ left" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ مانده"
+          }
+        }
+      }
+    },
+    "%@ paused" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ متوقف شد"
+          }
+        }
+      }
+    },
+    "%@ resumed" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ادامه یافت"
+          }
+        }
+      }
+    },
+    "%@ started" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ شروع شد"
+          }
+        }
+      }
+    },
+    "%@ timer" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایمر %@"
+          }
+        }
+      }
+    },
+    "%@ · Done" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · تمام شد"
+          }
+        }
+      }
+    },
     "%@ ›" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ ›"
+          }
+        }
+      }
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld از %2$lld"
+          }
+        }
+      }
+    },
+    "%lld timers are done" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld تایمر تمام شد"
           }
         }
       }
@@ -101,6 +191,26 @@
         }
       }
     },
+    "Add 1 Minute" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزودن ۱ دقیقه"
+          }
+        }
+      }
+    },
+    "Add 5 Minutes" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزودن ۵ دقیقه"
+          }
+        }
+      }
+    },
     "Add App…" : {
       "localizations" : {
         "fa" : {
@@ -131,12 +241,32 @@
         }
       }
     },
+    "Alert Sound" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صدای هشدار"
+          }
+        }
+      }
+    },
     "All Types" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "همهٔ انواع"
+          }
+        }
+      }
+    },
+    "Allow Notifications" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجازهٔ اعلان‌ها"
           }
         }
       }
@@ -357,6 +487,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لغو"
+          }
+        }
+      }
+    },
+    "Cancel Timer" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لغو تایمر"
           }
         }
       }
@@ -621,6 +761,16 @@
         }
       }
     },
+    "Copy Elapsed Time" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی زمان سپری‌شده"
+          }
+        }
+      }
+    },
     "Copy Path" : {
       "localizations" : {
         "fa" : {
@@ -637,6 +787,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "کپی کلید خصوصی"
+          }
+        }
+      }
+    },
+    "Copy Time Left" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی زمان باقی‌مانده"
           }
         }
       }
@@ -861,6 +1021,26 @@
         }
       }
     },
+    "Done" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تمام شد"
+          }
+        }
+      }
+    },
+    "Duration, such as 25m, 1h30m or 4:30" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مدت، مثل ۲۵ دقیقه، 1h30m یا 4:30"
+          }
+        }
+      }
+    },
     "Edit…" : {
       "localizations" : {
         "fa" : {
@@ -901,12 +1081,32 @@
         }
       }
     },
+    "Enter Duration" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن مدت"
+          }
+        }
+      }
+    },
     "Enter Text" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "وارد کردن متن"
+          }
+        }
+      }
+    },
+    "Every kind of notification from Whippet" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "همهٔ اعلان‌های Whippet"
           }
         }
       }
@@ -1261,6 +1461,56 @@
         }
       }
     },
+    "Lap" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دور"
+          }
+        }
+      }
+    },
+    "Lap %lld" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دور %lld"
+          }
+        }
+      }
+    },
+    "Lap %lld  %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دور %1$lld  %2$@"
+          }
+        }
+      }
+    },
+    "Lap %lld %@ · %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دور %1$lld %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "Lap %lld: %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دور %1$lld: %2$@"
+          }
+        }
+      }
+    },
     "Last copied" : {
       "localizations" : {
         "fa" : {
@@ -1371,12 +1621,42 @@
         }
       }
     },
+    "Name, or Return for “%@”" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نام، یا Return برای «%@»"
+          }
+        }
+      }
+    },
     "Needs Accessibility permission to send ⌘V; without it, Return only copies" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "برای ارسال ⌘V به مجوز دسترس‌پذیری نیاز دارد؛ بدون آن، Return فقط کپی می‌کند"
+          }
+        }
+      }
+    },
+    "New Timer" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایمر جدید"
+          }
+        }
+      }
+    },
+    "New name" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نام جدید"
           }
         }
       }
@@ -1411,6 +1691,26 @@
         }
       }
     },
+    "No timers running. Press N to start one." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هیچ تایمری در حال اجرا نیست. برای شروع N را بزنید."
+          }
+        }
+      }
+    },
+    "None" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هیچ‌کدام"
+          }
+        }
+      }
+    },
     "Not on this Mac" : {
       "localizations" : {
         "fa" : {
@@ -1427,6 +1727,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "وارد نشده"
+          }
+        }
+      }
+    },
+    "Notifications" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعلان‌ها"
           }
         }
       }
@@ -1561,12 +1871,42 @@
         }
       }
     },
+    "Open Notification Settings…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن تنظیمات اعلان‌ها…"
+          }
+        }
+      }
+    },
     "Open Quicklink" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "باز کردن پیوند سریع"
+          }
+        }
+      }
+    },
+    "Open Stopwatch" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن کرنومتر"
+          }
+        }
+      }
+    },
+    "Open Timers" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن تایمرها"
           }
         }
       }
@@ -1661,6 +2001,36 @@
         }
       }
     },
+    "Pause" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مکث"
+          }
+        }
+      }
+    },
+    "Paused" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متوقف"
+          }
+        }
+      }
+    },
+    "Paused · %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متوقف · %@"
+          }
+        }
+      }
+    },
     "Pin" : {
       "localizations" : {
         "fa" : {
@@ -1707,6 +2077,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "توان"
+          }
+        }
+      }
+    },
+    "Press L to take a lap" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای ثبت دور L را بزنید"
+          }
+        }
+      }
+    },
+    "Press Return or Space to start" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای شروع Return یا Space را بزنید"
           }
         }
       }
@@ -1821,6 +2211,26 @@
         }
       }
     },
+    "Recent" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اخیر"
+          }
+        }
+      }
+    },
+    "Recent Timers" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایمرهای اخیر"
+          }
+        }
+      }
+    },
     "Recognized words" : {
       "localizations" : {
         "fa" : {
@@ -1881,6 +2291,36 @@
         }
       }
     },
+    "Remove from Recent Timers" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف از تایمرهای اخیر"
+          }
+        }
+      }
+    },
+    "Rename %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغییر نام %@"
+          }
+        }
+      }
+    },
+    "Rename…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغییر نام…"
+          }
+        }
+      }
+    },
     "Replace Key" : {
       "localizations" : {
         "fa" : {
@@ -1911,6 +2351,16 @@
         }
       }
     },
+    "Reset" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بازنشانی"
+          }
+        }
+      }
+    },
     "Restart" : {
       "localizations" : {
         "fa" : {
@@ -1937,6 +2387,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نتایج"
+          }
+        }
+      }
+    },
+    "Resume" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ادامه"
           }
         }
       }
@@ -2131,6 +2591,16 @@
         }
       }
     },
+    "Show Timers in Menu Bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمایش تایمرها در نوار منو"
+          }
+        }
+      }
+    },
     "Show in Finder" : {
       "localizations" : {
         "fa" : {
@@ -2201,6 +2671,26 @@
         }
       }
     },
+    "Snooze" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعویق"
+          }
+        }
+      }
+    },
+    "Snooze For" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مدت تعویق"
+          }
+        }
+      }
+    },
     "Source" : {
       "localizations" : {
         "fa" : {
@@ -2211,12 +2701,102 @@
         }
       }
     },
+    "Start" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شروع"
+          }
+        }
+      }
+    },
+    "Start Stopwatch" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شروع کرنومتر"
+          }
+        }
+      }
+    },
+    "Start Timer" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شروع تایمر"
+          }
+        }
+      }
+    },
+    "Start Timer for %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شروع تایمر برای %@"
+          }
+        }
+      }
+    },
+    "Start Timer…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شروع تایمر…"
+          }
+        }
+      }
+    },
+    "Start “%@” for %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شروع «%1$@» برای %2$@"
+          }
+        }
+      }
+    },
     "Status" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "وضعیت"
+          }
+        }
+      }
+    },
+    "Stop" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توقف"
+          }
+        }
+      }
+    },
+    "Stop Stopwatch" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توقف کرنومتر"
+          }
+        }
+      }
+    },
+    "Stopwatch" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کرنومتر"
           }
         }
       }
@@ -2381,6 +2961,46 @@
         }
       }
     },
+    "Timer" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایمر"
+          }
+        }
+      }
+    },
+    "Timer Done" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پایان تایمر"
+          }
+        }
+      }
+    },
+    "Timer for %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایمر برای %@"
+          }
+        }
+      }
+    },
+    "Timers" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایمرها"
+          }
+        }
+      }
+    },
     "Times copied" : {
       "localizations" : {
         "fa" : {
@@ -2417,6 +3037,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "کل"
+          }
+        }
+      }
+    },
+    "Turned off in System Settings" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در تنظیمات سیستم خاموش است"
           }
         }
       }
@@ -2487,6 +3117,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "برداشتن سنجاق"
+          }
+        }
+      }
+    },
+    "Until they're allowed there, Whippet shows alerts instead" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تا وقتی آنجا اجازه داده نشود، Whippet به‌جای آن‌ها هشدار نشان می‌دهد"
           }
         }
       }
@@ -2587,6 +3227,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "چه چیزی در ذهن دارید؟"
+          }
+        }
+      }
+    },
+    "When a timer finishes, with Stop and Snooze" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقتی تایمری تمام می‌شود، با توقف و تعویق"
+          }
+        }
+      }
+    },
+    "While a timer or stopwatch is running" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقتی تایمر یا کرنومتری در حال اجراست"
           }
         }
       }

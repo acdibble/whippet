@@ -19,6 +19,7 @@ struct WhippetApp: App {
                 clipboard: appDelegate.clipboard,
                 appIndex: appDelegate.appIndex,
                 caffeine: appDelegate.caffeine,
+                timers: appDelegate.timers,
                 feedbackStore: appDelegate.feedbackStore,
                 navigation: appDelegate.settingsNavigation,
                 updater: appDelegate.updater,

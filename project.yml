@@ -98,6 +98,8 @@ targets:
       - Sources/Whippet/Ranking.swift
       - Sources/Whippet/SystemCommand.swift
       - Sources/Whippet/Thumbnail.swift
+      - Sources/Whippet/TimerDuration.swift
+      - Sources/Whippet/TimerItem.swift
     dependencies:
       - package: GRDB
     settings:

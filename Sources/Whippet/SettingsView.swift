@@ -18,6 +18,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     case shortcuts
     case clipboard
     case quicklinks
+    case notifications
     case cloudSync
     case usage
     case feedback
@@ -32,6 +33,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shortcuts: "Shortcuts"
         case .clipboard: "Clipboard History"
         case .quicklinks: "Quicklinks"
+        case .notifications: "Notifications"
         case .cloudSync: "Cloud Sync"
         case .usage: "Usage"
         case .feedback: "Feedback"
@@ -46,6 +48,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shortcuts: "command"
         case .clipboard: "list.clipboard.fill"
         case .quicklinks: "link"
+        case .notifications: "bell.badge.fill"
         case .cloudSync: "icloud.fill"
         case .usage: "chart.bar.fill"
         case .feedback: "tray.full.fill"
@@ -60,6 +63,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shortcuts: .purple
         case .clipboard: .teal
         case .quicklinks: .indigo
+        case .notifications: .red
         case .cloudSync: .blue
         case .usage: .green
         case .feedback: .orange
@@ -76,6 +80,7 @@ struct SettingsView: View {
     let clipboard: ClipboardHistory
     let appIndex: AppIndex
     let caffeine: Caffeine
+    let timers: Timers
     let feedbackStore: FeedbackStore
     @Bindable var navigation: SettingsNavigation
     let updater: Updater
@@ -105,9 +110,10 @@ struct SettingsView: View {
         } detail: {
             Group {
                 switch navigation.pane ?? .general {
-                case .general: GeneralPane(caffeine: caffeine, updater: updater)
+                case .general: GeneralPane(caffeine: caffeine, timers: timers, updater: updater)
                 case .shortcuts: ShortcutsPane(appIndex: appIndex, quicklinks: quicklinks)
                 case .quicklinks: QuicklinksPane(quicklinks: quicklinks, navigation: navigation)
+                case .notifications: NotificationsPane(timers: timers)
                 case .cloudSync: CloudSyncPane(cloudSync: cloudSync)
                 case .clipboard: ClipboardPane(clipboard: clipboard)
                 case .usage: UsagePane(clipboard: clipboard)
@@ -160,6 +166,7 @@ private struct PaneIcon: View {
 
 private struct GeneralPane: View {
     let caffeine: Caffeine
+    let timers: Timers
     @Bindable var updater: Updater
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
     @State private var canPaste = Paster.isTrusted
@@ -173,6 +180,10 @@ private struct GeneralPane: View {
                 Toggle("Open at Login", isOn: Binding(get: { launchesAtLogin }, set: { setLaunchAtLogin($0) }))
                 KeyboardShortcuts.Recorder("Whippet Hotkey", name: .togglePanel)
                 Toggle("Show Caffeinate in Menu Bar", isOn: Bindable(caffeine).showsInMenuBar)
+                Toggle(isOn: Bindable(timers).showsInMenuBar) {
+                    Text("Show Timers in Menu Bar")
+                    Text("While a timer or stopwatch is running")
+                }
             }
 
             Section {

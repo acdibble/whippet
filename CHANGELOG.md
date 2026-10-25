@@ -5,6 +5,22 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Timers and stopwatches. Type a duration such as `25m`, `1h30m` or `4:30` to start a timer, with a name after it
+  (`25m tea`), or use Start Timer… and Start Stopwatch. Several can run at once, each with its own name. They're listed
+  at the top of the launcher, where you can pause, add time, restart, take laps, rename or cancel them. A finished timer
+  rings and sends a notification you can snooze.
+- A timers view in the launcher, opened with the Timers command or from a running timer: every timer in one list
+  with its progress, managed in place with Space to pause or resume, + to add a minute, R to restart, ⌫ to cancel, S
+  to snooze and N for a new timer, and recent timers to start again.
+- A stopwatch view in the launcher, opened with the Stopwatch command or from a running stopwatch, with a large
+  clock, laps marked fastest and slowest, and Return or Space, L and R to start, lap and reset. ← and → switch between
+  stopwatches.
+- Settings › Notifications, to turn Whippet's notifications off altogether or one kind at a time, with the timer alert
+  sound and snooze length.
+  Settings › General can show a timer countdown in the menu bar.
+
 ## [0.9.0] - 2026-10-24
 
 ### Added

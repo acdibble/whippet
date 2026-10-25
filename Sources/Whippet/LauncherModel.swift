@@ -23,6 +23,19 @@ enum LauncherResult: Identifiable, Hashable {
     case searchWithQuicklink(Quicklink)
     /// Clipboard history offered for the whole search text.
     case searchClipboard
+    /// A timer typed into the search bar, such as `25m tea`.
+    case startTimer(seconds: Int, name: String?)
+    case newTimer
+    case newStopwatch
+    /// Opens the stopwatch view.
+    case stopwatch
+    /// Opens the timers view.
+    case timersView
+    /// A running or paused timer or stopwatch.
+    case timer(TimerItem)
+    /// A timer that has ended and is ringing.
+    case ringingTimer(TimerItem)
+    case timerPreset(TimerPreset)
     case app(AppEntry)
     case clipboard(ClipboardItem)
 
@@ -47,6 +60,14 @@ enum LauncherResult: Identifiable, Hashable {
         case .createQuicklink: "command:create-quicklink"
         case .searchWithQuicklink(let quicklink): "with:quicklink:\(quicklink.uuid)"
         case .searchClipboard: "with:clipboard-history"
+        case .startTimer: "timer:start"
+        case .newTimer: "command:start-timer"
+        case .newStopwatch: "command:start-stopwatch"
+        case .stopwatch: "command:stopwatch"
+        case .timersView: "command:timers"
+        case .timer(let item): "timer:\(item.id)"
+        case .ringingTimer(let item): "ringing:\(item.id)"
+        case .timerPreset(let preset): preset.launchKey
         case .app(let app): "app:\(app.url.path)"
         case .clipboard(let item): "clipboard:\(item.id)"
         }
@@ -74,6 +95,18 @@ enum LauncherResult: Identifiable, Hashable {
         case .decaffeinate: String(localized: "Decaffeinate")
         case .caffeinateMenuBar(let isShown):
             isShown ? String(localized: "Hide Caffeinate in Menu Bar") : String(localized: "Show Caffeinate in Menu Bar")
+        case .startTimer(let seconds, let name?):
+            String(localized: "Start “\(name)” for \(TimerNaming.duration(TimeInterval(seconds)))")
+        case .startTimer(let seconds, nil):
+            String(localized: "Start Timer for \(TimerNaming.duration(TimeInterval(seconds)))")
+        case .newTimer: String(localized: "Start Timer…")
+        case .newStopwatch: String(localized: "Start Stopwatch")
+        case .stopwatch: String(localized: "Stopwatch")
+        case .timersView: String(localized: "Timers")
+        case .timer(let item), .ringingTimer(let item): item.name
+        case .timerPreset(let preset):
+            preset.name.map { "\($0) · \(TimerNaming.duration(TimeInterval(preset.seconds)))" }
+                ?? TimerNaming.defaultTimerName(seconds: preset.seconds)
         case .app(let app): app.name
         case .clipboard(let item): item.title
         }
@@ -89,6 +122,10 @@ enum LauncherResult: Identifiable, Hashable {
         case .caffeinateMenuBar, .system, .createQuicklink, .searchClipboard: String(localized: "Command")
         case .quicklink, .searchWithQuicklink: String(localized: "Quicklink")
         case .decaffeinate(let until): until
+        case .startTimer, .timerPreset: String(localized: "Timer")
+        case .newTimer, .newStopwatch, .stopwatch, .timersView: String(localized: "Command")
+        case .timer(let item): item.kind == .timer ? String(localized: "Timer") : String(localized: "Stopwatch")
+        case .ringingTimer: String(localized: "Done")
         case .app: String(localized: "Application")
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
         }
@@ -137,7 +174,9 @@ enum LauncherResult: Identifiable, Hashable {
         // Counted as using the quicklink or command itself.
         case .searchWithQuicklink(let quicklink): LauncherResult.quicklink(quicklink).id
         case .searchClipboard: LauncherResult.clipboardHistory.id
-        case .calculation, .pastCalculation, .clipboard, .quit: nil
+        // Counted as using the timer it starts, which then ranks among Recent Timers.
+        case .startTimer(let seconds, let name): TimerPreset(name: name, seconds: seconds).launchKey
+        case .calculation, .pastCalculation, .clipboard, .quit, .timer, .ringingTimer: nil
         default: id
         }
     }
@@ -156,8 +195,65 @@ enum LauncherResult: Identifiable, Hashable {
         case .searchWithQuicklink: String(localized: "Open Quicklink")
         case .searchClipboard: String(localized: "Search")
         case .quit: String(localized: "Quit")
+        case .startTimer, .timerPreset: String(localized: "Start Timer")
+        case .newTimer: String(localized: "Enter Duration")
+        case .newStopwatch: String(localized: "Start Stopwatch")
+        case .stopwatch, .timersView: String(localized: "Open Command")
+        case .timer(let item) where item.kind == .stopwatch: String(localized: "Open Stopwatch")
+        case .timer(let item): item.isPaused ? String(localized: "Resume") : String(localized: "Pause")
+        case .ringingTimer: String(localized: "Stop")
         case .app: String(localized: "Open Application")
         case .clipboard: String(localized: "Copy to Clipboard")
+        }
+    }
+
+    var isStopwatch: Bool {
+        guard case .timer(let item) = self else { return false }
+        return item.kind == .stopwatch
+    }
+
+    /// A timer counting down, running or paused, as opposed to a stopwatch.
+    var isCountdown: Bool {
+        guard case .timer(let item) = self else { return false }
+        return item.kind == .timer
+    }
+
+    /// The timer or stopwatch a row shows, which stays the same when a timer finishes and its row changes.
+    var timerID: UUID? {
+        switch self {
+        case .timer(let item), .ringingTimer(let item): item.id
+        default: nil
+        }
+    }
+}
+
+/// What the search bar collects text for, shown as a label in front of it.
+enum ArgumentTarget: Equatable {
+    case quicklink(Quicklink)
+    case timerDuration
+    /// The name for a timer whose duration has been entered.
+    case timerName(seconds: Int)
+    case stopwatchName
+    case rename(TimerItem)
+
+    var label: String {
+        switch self {
+        case .quicklink(let quicklink): quicklink.name
+        case .timerDuration: String(localized: "Start Timer")
+        case .timerName(let seconds): String(localized: "Timer for \(TimerNaming.duration(TimeInterval(seconds)))")
+        case .stopwatchName: String(localized: "Start Stopwatch")
+        case .rename(let item): String(localized: "Rename \(item.name)")
+        }
+    }
+
+    var placeholder: String {
+        switch self {
+        case .quicklink: String(localized: "Type and press Return")
+        case .timerDuration: String(localized: "Duration, such as 25m, 1h30m or 4:30")
+        case .timerName(let seconds):
+            String(localized: "Name, or Return for “\(TimerNaming.defaultTimerName(seconds: seconds))”")
+        case .stopwatchName: String(localized: "Name, or Return for “\(TimerNaming.defaultStopwatchName)”")
+        case .rename: String(localized: "New name")
         }
     }
 }
@@ -166,6 +262,12 @@ enum LauncherResult: Identifiable, Hashable {
 enum ResultAction: CaseIterable {
     case primary
     case secondary
+    case addMinute
+    case addFiveMinutes
+    case lap
+    case restart
+    case rename
+    case snooze
     case togglePin
     case copyPath
     case popOut
@@ -175,6 +277,10 @@ enum ResultAction: CaseIterable {
         switch (self, result) {
         case (.primary, _): true
         case (.secondary, .app): true
+        case (.secondary, .timer), (.restart, .timer), (.rename, .timer), (.delete, .timer): true
+        case (.addMinute, _), (.addFiveMinutes, _): result.isCountdown
+        case (.lap, .timer(let item)): item.kind == .stopwatch && !item.isPaused
+        case (.snooze, .ringingTimer), (.delete, .timerPreset): true
         case (.secondary, _): result.pastes
         case (.togglePin, .clipboard), (.delete, .clipboard), (.copyPath, .app): true
         case (.popOut, .calculation), (.popOut, .pastCalculation), (.popOut, .calculator): true
@@ -186,11 +292,27 @@ enum ResultAction: CaseIterable {
     func title(for result: LauncherResult, model: LauncherModel) -> String {
         switch self {
         case .primary: model.actionTitle(for: result)
-        case .secondary: result.isApp ? String(localized: "Show in Finder") : String(localized: "Copy")
+        case .secondary:
+            switch result {
+            case .app: String(localized: "Show in Finder")
+            case .timer: result.isStopwatch ? String(localized: "Copy Elapsed Time") : String(localized: "Copy Time Left")
+            default: String(localized: "Copy")
+            }
+        case .addMinute: String(localized: "Add 1 Minute")
+        case .addFiveMinutes: String(localized: "Add 5 Minutes")
+        case .lap: String(localized: "Lap")
+        case .restart: result.isStopwatch ? String(localized: "Reset") : String(localized: "Restart")
+        case .rename: String(localized: "Rename…")
+        case .snooze: String(localized: "Snooze")
         case .togglePin: result.isPinned ? String(localized: "Unpin") : String(localized: "Pin")
         case .copyPath: String(localized: "Copy Path")
         case .popOut: String(localized: "Pop Out Calculator")
-        case .delete: String(localized: "Delete")
+        case .delete:
+            switch result {
+            case .timer: result.isStopwatch ? String(localized: "Stop Stopwatch") : String(localized: "Cancel Timer")
+            case .timerPreset: String(localized: "Remove from Recent Timers")
+            default: String(localized: "Delete")
+            }
         }
     }
 
@@ -198,6 +320,12 @@ enum ResultAction: CaseIterable {
         switch self {
         case .primary: "return"
         case .secondary: "doc.on.doc"
+        case .addMinute: "plus"
+        case .addFiveMinutes: "goforward.5"
+        case .lap: "flag"
+        case .restart: "arrow.counterclockwise"
+        case .rename: "pencil"
+        case .snooze: "zzz"
         case .togglePin: "pin"
         case .copyPath: "link"
         case .popOut: "macwindow.on.rectangle"
@@ -206,10 +334,14 @@ enum ResultAction: CaseIterable {
     }
 
     /// The key equivalent shown in the menu; the panel's key monitor handles the same keys outside the menu.
-    var shortcut: (key: String, modifiers: NSEvent.ModifierFlags) {
+    var shortcut: (key: String, modifiers: NSEvent.ModifierFlags)? {
         switch self {
         case .primary: ("\r", [])
         case .secondary: ("\r", [.command])
+        case .addMinute: ("=", [.command])
+        case .lap: ("l", [.command])
+        case .restart: ("r", [.command])
+        case .addFiveMinutes, .rename, .snooze: nil
         case .togglePin: ("p", [.command, .shift])
         case .copyPath: ("c", [.command, .shift])
         case .popOut: ("o", [.command, .shift])
@@ -225,6 +357,8 @@ final class LauncherModel {
         case root
         case calculator
         case clipboard
+        case stopwatch
+        case timers
     }
 
     var query = "" {
@@ -258,9 +392,12 @@ final class LauncherModel {
     @ObservationIgnored var onPopOutCalculator: (String?) -> Void = { _ in }
     @ObservationIgnored var onCreateQuicklink: () -> Void = {}
 
-    /// The quicklink whose text is being typed after Tab, shown as a label in front of the search bar.
-    private(set) var argumentQuicklink: Quicklink?
-    var quicklinkArgument = ""
+    /// The stopwatch the stopwatch view shows.
+    private var stopwatchID: UUID?
+
+    /// What the text typed after Tab is for, shown as a label in front of the search bar.
+    private(set) var argumentTarget: ArgumentTarget?
+    var argument = ""
 
     private static let calculatorColumnLength = 10
     private static let changelogURL = URL(string: "https://github.com/acdibble/whippet/blob/main/CHANGELOG.md")!
@@ -273,6 +410,9 @@ final class LauncherModel {
         let clipboardKind: ClipboardKind?
         let clipboardRevision: Int
         let isFeedbackAdmin: Bool
+        let timers: [TimerItem]
+        let ringingTimers: [TimerItem]
+        let timerPresets: [TimerPreset]
         let isCaffeinated: Bool
         let caffeinatedUntil: Date?
         let showsCaffeineInMenuBar: Bool
@@ -292,21 +432,54 @@ final class LauncherModel {
     private let quicklinks: Quicklinks
     /// How many of the results lead the empty search's Suggestions section; set with the results.
     @ObservationIgnored private var suggestionCount = 0
+    /// How many running and ringing timers lead the empty search, under Timers; set with the results.
+    @ObservationIgnored private var timerRowCount = 0
     private static let suggestionLimit = 5
     private let clipboard: ClipboardHistory
     private let caffeine: Caffeine
+    private let timers: Timers
 
     /// True while the Hours, Minutes and Seconds fields of "Caffeinate for…" are shown beside the search field.
     private(set) var isEnteringDuration = false
     /// Hours, minutes and seconds as typed into those fields.
     var durationFields = ["", "", ""]
 
-    init(appIndex: AppIndex, clipboard: ClipboardHistory, caffeine: Caffeine, history: LaunchHistory, quicklinks: Quicklinks) {
+    init(
+        appIndex: AppIndex,
+        clipboard: ClipboardHistory,
+        caffeine: Caffeine,
+        timers: Timers,
+        history: LaunchHistory,
+        quicklinks: Quicklinks
+    ) {
         self.caffeine = caffeine
+        self.timers = timers
         self.appIndex = appIndex
         self.clipboard = clipboard
         self.history = history
         self.quicklinks = quicklinks
+        timers.onChange = { [weak self] in self?.keepSelectedTimer() }
+    }
+
+    /// Timers move between sections as they finish and stop, so a selected timer is found again by its ID rather than
+    /// left on whatever row now has its place.
+    private func keepSelectedTimer() {
+        guard let previous = cachedResults?.results, previous.indices.contains(selection) else { return }
+        let selected = previous[selection]
+        let current = results
+        let index = current.firstIndex { result in
+            if let id = selected.timerID { return result.timerID == id }
+            return result.id == selected.id
+        }
+        guard let index else {
+            clampSelection()
+            return
+        }
+        selection = index
+    }
+
+    private func clampSelection() {
+        selection = min(selection, max(results.count - 1, 0))
     }
 
     /// True after ↓ in the empty search field, which shows Suggestions, then every command and app.
@@ -334,22 +507,32 @@ final class LauncherModel {
     }
 
     var isExpanded: Bool {
-        guard argumentQuicklink == nil else { return false }
+        guard argumentTarget == nil else { return false }
         return mode != .root || isShowingAll || (!query.isEmpty && !isCalculatingInline)
     }
 
     /// Switches the search bar to typing the text for a quicklink.
     func beginArgument(for quicklink: Quicklink) {
-        quicklinkArgument = ""
-        argumentQuicklink = quicklink
+        beginArgument(.quicklink(quicklink))
     }
 
-    /// Tab on a quicklink that takes text starts typing it; returns false so Tab does its usual job otherwise.
+    /// Switches the search bar to typing text for `target`, starting from `text`.
+    func beginArgument(_ target: ArgumentTarget, text: String = "") {
+        argument = text
+        argumentTarget = target
+    }
+
+    /// Tab on a quicklink that takes text starts typing it, and on a timer command or a typed timer without a name
+    /// asks for the duration or name. Returns false so Tab does its usual job otherwise.
     func beginArgumentForSelection() -> Bool {
-        guard argumentQuicklink == nil, case .quicklink(let quicklink)? = selectedResult, quicklink.takesArgument else {
-            return false
+        guard argumentTarget == nil else { return false }
+        switch selectedResult {
+        case .quicklink(let quicklink)? where quicklink.takesArgument: beginArgument(for: quicklink)
+        case .newTimer?: beginArgument(.timerDuration)
+        case .newStopwatch?: beginArgument(.stopwatchName)
+        case .startTimer(let seconds, nil)?: beginArgument(.timerName(seconds: seconds))
+        default: return false
         }
-        beginArgument(for: quicklink)
         return true
     }
 
@@ -360,6 +543,9 @@ final class LauncherModel {
             clipboardKind: clipboardKind,
             clipboardRevision: clipboard.revision,
             isFeedbackAdmin: isFeedbackAdmin,
+            timers: timers.items,
+            ringingTimers: timers.ringing,
+            timerPresets: timers.presets,
             isCaffeinated: caffeine.isActive,
             caffeinatedUntil: caffeine.endsAt,
             showsCaffeineInMenuBar: caffeine.showsInMenuBar,
@@ -392,20 +578,34 @@ final class LauncherModel {
                 + (caffeine.isActive ? [.decaffeinate(until: caffeine.untilDescription)] : [])
                 + [.caffeinateMenuBar(isShown: caffeine.showsInMenuBar)]
                 + SystemCommand.allCases.map(LauncherResult.system)
-                + [.createQuicklink]
-            let candidates = commands + quicklinks.items.map(LauncherResult.quicklink) + appIndex.apps.map(LauncherResult.app)
+                + [.createQuicklink, .newTimer, .timersView, .newStopwatch, .stopwatch]
+            let timerRows = timers.ringing.map(LauncherResult.ringingTimer) + timers.items.map(LauncherResult.timer)
+            let candidates = commands
+                + quicklinks.items.map(LauncherResult.quicklink)
+                + timers.presets.map(LauncherResult.timerPreset)
+                + appIndex.apps.map(LauncherResult.app)
             guard query.isEmpty else {
                 suggestionCount = 0
-                return Ranking.rank(candidates, query: query, title: \.searchText, frecency: frecency(of:)) + textFallbacks
+                timerRowCount = 0
+                let typedTimer = TimerDuration.parse(query).map { LauncherResult.startTimer(seconds: $0.seconds, name: $0.name) }
+                let ranked = Ranking.rank(timerRows + candidates, query: query, title: \.searchText, frecency: frecency(of:))
+                return (typedTimer.map { [$0] } ?? []) + ranked + textFallbacks
             }
             let suggestions = Ranking.suggestions(candidates, limit: Self.suggestionLimit, frecency: frecency(of:))
             let suggestedIDs = Set(suggestions.map(\.id))
             suggestionCount = suggestions.count
-            return suggestions + candidates.filter { !suggestedIDs.contains($0.id) }
+            timerRowCount = timerRows.count
+            return timerRows + suggestions + candidates.filter { !suggestedIDs.contains($0.id) }
         case .calculator:
             return calculatorResults(Calculator.evaluate(query) ?? Calculator.evaluateNumber(query))
         case .clipboard:
             return clipboard.search(query, kind: clipboardKind).map(LauncherResult.clipboard)
+        case .stopwatch:
+            return []
+        case .timers:
+            return timers.ringing.map(LauncherResult.ringingTimer)
+                + timers.items.filter { $0.kind == .timer }.map(LauncherResult.timer)
+                + timers.presets.map(LauncherResult.timerPreset)
         }
     }
 
@@ -480,7 +680,11 @@ final class LauncherModel {
         )
     }
 
+    /// In the stopwatch view, the stopwatch shown, so ⌘K and the action shortcuts work on it.
     var selectedResult: LauncherResult? {
+        if mode == .stopwatch {
+            return currentStopwatch.map(LauncherResult.timer)
+        }
         let results = results
         return results.indices.contains(selection) ? results[selection] : nil
     }
@@ -493,6 +697,8 @@ final class LauncherModel {
         case (.secondary, .app(let app)):
             NSWorkspace.shared.activateFileViewerSelecting([app.url])
             onDismiss()
+        case (.secondary, .timer(let item)):
+            copyTime(of: item)
         case (.secondary, _):
             activate(copyOnly: true)
         case (.togglePin, .clipboard(let item)):
@@ -510,7 +716,32 @@ final class LauncherModel {
             Toast.shared.show(String(localized: "Copied Path"), symbol: "link")
         case (.delete, .clipboard(let item)):
             clipboard.delete(item)
-            selection = min(selection, max(results.count - 1, 0))
+            clampSelection()
+        case (.addMinute, .timer(let item)):
+            timers.add(60, to: item.id)
+        case (.addFiveMinutes, .timer(let item)):
+            timers.add(300, to: item.id)
+        case (.lap, .timer(let item)):
+            timers.lap(item.id)
+        case (.restart, .timer(let item)):
+            timers.restart(item.id)
+        case (.rename, .timer(let item)):
+            beginArgument(.rename(item), text: item.name)
+        case (.snooze, .ringingTimer(let item)):
+            timers.snooze(item.id)
+            if mode != .timers {
+                onDismiss()
+            }
+        case (.delete, .timer(let item)):
+            timers.remove(item.id)
+            if mode == .stopwatch {
+                showStopwatch()
+                return
+            }
+            clampSelection()
+        case (.delete, .timerPreset(let preset)):
+            timers.forget(preset)
+            clampSelection()
         default:
             break
         }
@@ -520,6 +751,84 @@ final class LauncherModel {
         open(newMode)
     }
 
+    var stopwatches: [TimerItem] {
+        timers.items.filter { $0.kind == .stopwatch }
+    }
+
+    /// The stopwatch shown, or another one if it was stopped elsewhere, such as from the menu bar.
+    var currentStopwatch: TimerItem? {
+        let stopwatches = stopwatches
+        return stopwatches.first { $0.id == stopwatchID } ?? stopwatches.last
+    }
+
+    /// Opens the stopwatch view on a stopwatch, by default the newest. With none, the view waits at zero until Return
+    /// or Space starts one.
+    func showStopwatch(_ id: UUID? = nil) {
+        let target = id.flatMap { id in stopwatches.first { $0.id == id } } ?? stopwatches.last
+        if mode != .stopwatch {
+            open(.stopwatch)
+        }
+        stopwatchID = target?.id
+    }
+
+    /// Starts a stopwatch and opens the stopwatch view on it.
+    func startStopwatch(name: String? = nil) {
+        showStopwatch(timers.startStopwatch(name: name).id)
+    }
+
+    /// Opens the timers view, with a timer selected if given.
+    func showTimers(selecting id: UUID? = nil) {
+        open(.timers)
+        if let id {
+            selectTimer(id)
+        }
+    }
+
+    /// True in the stopwatch and timers views while no text is being typed, when plain keys control them.
+    var usesPlainKeys: Bool {
+        (mode == .stopwatch || mode == .timers) && argumentTarget == nil
+    }
+
+    /// The key that runs an action. In the stopwatch and timers views, their own actions need no modifier.
+    func shortcut(for action: ResultAction) -> (key: String, modifiers: NSEvent.ModifierFlags)? {
+        guard usesPlainKeys else { return action.shortcut }
+        switch (mode, action) {
+        case (.stopwatch, .lap): return ("l", [])
+        case (_, .restart): return ("r", [])
+        case (.timers, .addMinute): return ("+", [])
+        case (.timers, .snooze): return ("s", [])
+        case (.timers, .delete): return ("\u{8}", [])
+        default: return action.shortcut
+        }
+    }
+
+    /// A key pressed without modifiers in the stopwatch or timers view.
+    func performPlainKey(_ key: Character) {
+        switch (mode, key) {
+        case (.stopwatch, "l"): perform(.lap)
+        case (_, "r"): perform(.restart)
+        case (.timers, "+"), (.timers, "="): perform(.addMinute)
+        case (.timers, "s"): perform(.snooze)
+        case (.timers, "n"): beginArgument(.timerDuration)
+        default: break
+        }
+    }
+
+    /// ⌫ cancels the selected timer in the timers view. A stopwatch is stopped from ⌘K, so one key can't lose it.
+    func deleteWithPlainKey() {
+        guard mode == .timers else { return }
+        perform(.delete)
+    }
+
+    /// Moves to the previous or next stopwatch, returning false when there's only one so the key can edit the name.
+    func switchStopwatch(by offset: Int) -> Bool {
+        let stopwatches = stopwatches
+        guard mode == .stopwatch, argumentTarget == nil, stopwatches.count > 1 else { return false }
+        let index = stopwatches.firstIndex { $0.id == currentStopwatch?.id } ?? 0
+        showStopwatch(stopwatches[(index + offset + stopwatches.count) % stopwatches.count].id)
+        return true
+    }
+
     /// Switches view with an empty search and the default selection for that view.
     private func open(_ newMode: Mode) {
         mode = newMode
@@ -527,7 +836,8 @@ final class LauncherModel {
         clipboardKind = nil
         isEnteringDuration = false
         isShowingAll = false
-        argumentQuicklink = nil
+        argumentTarget = nil
+        stopwatchID = nil
         resetSelection()
     }
 
@@ -546,12 +856,20 @@ final class LauncherModel {
             startTimedCaffeinate()
             return
         }
-        if let quicklink = argumentQuicklink {
-            guard Quicklinks.open(quicklink, argument: quicklinkArgument) else {
-                NSSound.beep()
+        if let argumentTarget {
+            submitArgument(for: argumentTarget)
+            return
+        }
+        if mode == .stopwatch {
+            guard let currentStopwatch else {
+                startStopwatch()
                 return
             }
-            onDismiss()
+            timers.togglePause(currentStopwatch.id)
+            return
+        }
+        if mode == .timers {
+            activateInTimers()
             return
         }
         // An unfinished calculation in the search bar has nothing to copy yet.
@@ -648,13 +966,110 @@ final class LauncherModel {
                 return
             }
             dismissAndPaste(copyOnly: copyOnly)
+        case .startTimer(let seconds, let name):
+            timers.startTimer(seconds: seconds, name: name)
+            onDismiss()
+        case .timerPreset(let preset):
+            timers.startTimer(seconds: preset.seconds, name: preset.name)
+            onDismiss()
+        case .newTimer:
+            beginArgument(.timerDuration)
+        case .newStopwatch:
+            startStopwatch()
+        case .stopwatch:
+            showStopwatch()
+        case .timersView:
+            showTimers()
+        case .timer(let item) where item.kind == .stopwatch:
+            showStopwatch(item.id)
+        case .timer(let item):
+            showTimers(selecting: item.id)
+        case .ringingTimer(let item):
+            timers.stop(item.id)
+            onDismiss()
+        }
+    }
+
+    /// Return or Space in the timers view acts on the selected row and stays in the view.
+    private func activateInTimers() {
+        switch selectedResult {
+        case .timer(let item)?: timers.togglePause(item.id)
+        case .ringingTimer(let item)?:
+            timers.stop(item.id)
+            clampSelection()
+        case .timerPreset(let preset)?:
+            history.record(preset.launchKey)
+            selectTimer(timers.startTimer(seconds: preset.seconds, name: preset.name, announces: false).id)
+        default: beginArgument(.timerDuration)
+        }
+    }
+
+    /// Selects a timer in the timers view.
+    private func selectTimer(_ id: UUID) {
+        selection = results.firstIndex { if case .timer(let item) = $0 { item.id == id } else { false } } ?? selection
+    }
+
+    /// A timer started from the search bar closes the panel; one started in the timers view goes back to the list,
+    /// with it selected.
+    private func didStartTimer(_ item: TimerItem) {
+        guard mode == .timers else {
+            onDismiss()
+            return
+        }
+        argumentTarget = nil
+        selectTimer(item.id)
+    }
+
+    /// Return after typing the text for a quicklink, a timer or a stopwatch.
+    private func submitArgument(for target: ArgumentTarget) {
+        let text = argument.trimmingCharacters(in: .whitespaces)
+        switch target {
+        case .quicklink(let quicklink):
+            guard Quicklinks.open(quicklink, argument: argument) else {
+                NSSound.beep()
+                return
+            }
+            onDismiss()
+        case .timerDuration:
+            guard let parsed = TimerDuration.parse(text, plainNumberIsMinutes: true) else {
+                NSSound.beep()
+                return
+            }
+            guard let name = parsed.name else {
+                beginArgument(.timerName(seconds: parsed.seconds))
+                return
+            }
+            history.record(TimerPreset(name: name, seconds: parsed.seconds).launchKey)
+            didStartTimer(timers.startTimer(seconds: parsed.seconds, name: name, announces: mode != .timers))
+        case .timerName(let seconds):
+            let name = text.isEmpty ? nil : text
+            history.record(TimerPreset(name: name, seconds: seconds).launchKey)
+            didStartTimer(timers.startTimer(seconds: seconds, name: name, announces: mode != .timers))
+        case .stopwatchName:
+            argumentTarget = nil
+            startStopwatch(name: text.isEmpty ? nil : text)
+        case .rename(let item):
+            guard !text.isEmpty else {
+                NSSound.beep()
+                return
+            }
+            timers.rename(item.id, to: text)
+            argumentTarget = nil
         }
     }
 
     func actionTitle(for result: LauncherResult) -> String {
         if isEnteringDuration, case .caffeinateFor = result { return String(localized: "Caffeinate") }
+        if mode == .root, case .timer(let item) = result, item.kind == .timer { return String(localized: "Open Timers") }
         guard result.pastes, let name = targetApp?.localizedName else { return result.actionTitle }
         return String(localized: "Paste to \(name)")
+    }
+
+    /// Copies a timer's time left or a stopwatch's elapsed time, from the launcher or the menu bar.
+    func copyTime(of item: TimerItem) {
+        let value = item.value()
+        clipboard.copy(text: item.kind == .stopwatch ? TimerNaming.stopwatchClock(value) : TimerNaming.clock(value))
+        dismissAndPaste(copyOnly: true)
     }
 
     /// Without Accessibility permission the item stays copied and macOS is asked to show its permission prompt.
@@ -689,8 +1104,8 @@ final class LauncherModel {
             isEnteringDuration = false
             return
         }
-        if argumentQuicklink != nil {
-            argumentQuicklink = nil
+        if argumentTarget != nil {
+            argumentTarget = nil
             return
         }
         if mode != .root {
@@ -750,11 +1165,17 @@ final class LauncherModel {
         case .searchWithQuicklink, .searchClipboard: return String(localized: "Use “\(query)” with…")
         default: break
         }
+        if mode == .timers {
+            if case .timerPreset = results[index] { return String(localized: "Recent") }
+            return String(localized: "Timers")
+        }
         guard mode == .root, query.isEmpty else { return String(localized: "Results") }
-        if index < suggestionCount { return String(localized: "Suggestions") }
+        if index < timerRowCount { return String(localized: "Timers") }
+        if index < timerRowCount + suggestionCount { return String(localized: "Suggestions") }
         switch results[index] {
         case .app: return String(localized: "Applications")
         case .quicklink: return String(localized: "Quicklinks")
+        case .timerPreset: return String(localized: "Recent Timers")
         default: return String(localized: "Commands")
         }
     }
