@@ -281,6 +281,31 @@ final class ClipboardStoreTests {
         #expect(try store.syncRow(recordName: "clip-remote") != nil)
     }
 
+    @Test func aRecordDeletedHereStaysDeletedWhenICloudSendsItBack() throws {
+        let item = try store.recordText("deleted", sourceBundleID: nil)
+        guard case .clipboard(let hash) = item else { Issue.record("Expected a clipboard item"); return }
+        try store.assignRecordNames([item: "clip-remote"])
+        _ = try store.delete(contentHash: hash)
+
+        // A fetch returns the copy this Mac uploaded before the deletion was sent.
+        let isLocalAhead = try store.mergeRemote(remote(hash: hash, text: "deleted", copiedAt: .now, updatedAt: .now))
+
+        #expect(isLocalAhead == false)
+        #expect(try items().isEmpty)
+        #expect(try store.pendingDeletions() == ["clip-remote"])
+    }
+
+    @Test func recognizingTextOfADeletedImageChangesNothing() throws {
+        let png = Data([0x89, 0x50, 0x4E, 0x47, 4, 5, 6])
+        let item = try store.recordImage(png: png, width: 1, height: 1, sourceBundleID: nil)
+        guard case .clipboard(let hash) = item else { Issue.record("Expected a clipboard item"); return }
+        try store.assignRecordNames([item: "clip-image"])
+        _ = try store.delete(contentHash: hash)
+
+        #expect(try store.setRecognizedText("too late", hash: hash) == nil)
+        #expect(try store.pendingDeletions() == ["clip-image"])
+    }
+
     @Test func mergingKeepsTheLatestCopyAndHighestCount() throws {
         let local = try store.recordText("shared", sourceBundleID: nil)
         guard case .clipboard(let hash) = local else { Issue.record("Expected a clipboard item"); return }

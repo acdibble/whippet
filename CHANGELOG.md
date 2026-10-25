@@ -37,6 +37,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - In Dark mode, the launcher panel and toasts turned light over bright windows behind them.
+- With iCloud sync on, a deleted clipboard item could come back straight away, as could an image deleted while its
+  text was being recognized.
 
 ## [0.8.0] - 2026-10-24
 

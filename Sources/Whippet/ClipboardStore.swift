@@ -263,15 +263,17 @@ final class ClipboardStore: Sendable {
         }
     }
 
+    /// Returns nil when the item was deleted while its text was being recognized, so nothing syncs it back.
     @discardableResult
-    func setRecognizedText(_ text: String, hash: String) throws -> SyncItem {
-        try database.write { db in
+    func setRecognizedText(_ text: String, hash: String) throws -> SyncItem? {
+        let changed = try database.write { db in
             try db.execute(
                 sql: "UPDATE clipboard SET ocrText = ?, updatedAt = ? WHERE contentHash = ?",
                 arguments: [text, Date.now, hash]
             )
+            return db.changesCount > 0
         }
-        return .clipboard(contentHash: hash)
+        return changed ? .clipboard(contentHash: hash) : nil
     }
 
     /// Link previews stay on this Mac, so this doesn't change `updatedAt` and nothing syncs.
@@ -516,6 +518,12 @@ final class ClipboardStore: Sendable {
         }
     }
 
+    /// A record deleted on this Mac stays deleted until the deletion reaches iCloud, even when a fetch brings it back
+    /// first, as it does for a record this Mac uploaded just before deleting it.
+    private static func isPendingDeletion(_ recordName: String, in db: Database) throws -> Bool {
+        try Bool.fetchOne(db, sql: "SELECT EXISTS(SELECT 1 FROM deletedRecord WHERE recordName = ?)", arguments: [recordName]) ?? false
+    }
+
     func forgetDeletions(_ recordNames: [String]) throws {
         guard !recordNames.isEmpty else { return }
         try database.write { db in
@@ -591,6 +599,7 @@ final class ClipboardStore: Sendable {
     /// newer and should be uploaded.
     func mergeRemote(_ quicklink: RemoteQuicklink) throws -> Bool {
         try database.write { db in
+            if try Self.isPendingDeletion(quicklink.recordName, in: db) { return false }
             let localUpdatedAt = try Date.fetchOne(
                 db,
                 sql: "SELECT updatedAt FROM quicklink WHERE uuid = ?",
@@ -682,6 +691,7 @@ final class ClipboardStore: Sendable {
     /// changed side decides the pin and source app. Returns true when this Mac's copy is ahead and should be uploaded.
     func mergeRemote(_ item: RemoteClipboardItem) throws -> Bool {
         try database.write { db in
+            if try Self.isPendingDeletion(item.recordName, in: db) { return false }
             let local = try Row.fetchOne(
                 db,
                 sql: "SELECT copiedAt, timesCopied, updatedAt FROM clipboard WHERE contentHash = ?",
@@ -723,6 +733,7 @@ final class ClipboardStore: Sendable {
     /// Merges a calculation from another Mac, keeping the most recent answer. Returns true when this Mac's copy is newer.
     func mergeRemote(_ calculation: RemoteCalculation) throws -> Bool {
         try database.write { db in
+            if try Self.isPendingDeletion(calculation.recordName, in: db) { return false }
             let localCalculatedAt = try Date.fetchOne(
                 db,
                 sql: "SELECT calculatedAt FROM calculation WHERE syncKey = ?",

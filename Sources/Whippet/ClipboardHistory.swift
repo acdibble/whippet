@@ -265,8 +265,14 @@ final class ClipboardHistory {
                 if pending.isLinkPreview {
                     guard (try? store.setLinkPreviewRecognizedText(text, hash: pending.hash)) != nil else { break }
                 } else {
-                    guard let syncItem = try? store.setRecognizedText(text, hash: pending.hash) else { break }
-                    onLocalChange(syncItem)
+                    do {
+                        // Nil when the image was deleted meanwhile.
+                        if let syncItem = try store.setRecognizedText(text, hash: pending.hash) {
+                            onLocalChange(syncItem)
+                        }
+                    } catch {
+                        break
+                    }
                 }
                 revision += 1
             }
