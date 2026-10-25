@@ -75,8 +75,8 @@ enum LauncherResult: Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .calculation(let calculation): calculation.answer
-        case .pastCalculation(let record): "\(record.expression) = \(record.answer)".leftToRightIsolated
+        case .calculation(let calculation): calculation.displayAnswer
+        case .pastCalculation(let record): "\(record.expression) = \(record.displayAnswer)".leftToRightIsolated
         case .calculator: String(localized: "Calculator")
         case .floatingCalculator: String(localized: "Floating Calculator")
         case .settings: String(localized: "Settings")
@@ -493,13 +493,20 @@ final class LauncherModel {
     /// line tall, so it doesn't cover what you're reading, and ↓ opens the full calculator view.
     var isCalculatingInline: Bool {
         guard mode == .root, !isShowingAll, !query.isEmpty else { return false }
-        return results.first?.isCalculation == true || Calculator.looksLikeCalculation(query)
+        return results.first?.isCalculation == true || looksLikeCalculation(query)
     }
 
     /// The answer shown in the search bar, once the calculation is complete.
     var inlineCalculation: Calculation? {
         guard isCalculatingInline, case .calculation(let calculation)? = results.first else { return nil }
         return calculation
+    }
+
+    /// A calculation or unit conversion still being typed. Text that's also a named timer, such as `10 min to feed`,
+    /// stays a timer unless what follows `to` starts a unit that fits, such as `10 min to s`.
+    private func looksLikeCalculation(_ query: String) -> Bool {
+        Calculator.looksLikeCalculation(query)
+            || UnitConversion.looksLikeConversion(query, requiresTarget: TimerDuration.parse(query) != nil)
     }
 
     private func rememberInlineAnswer() {
@@ -569,11 +576,11 @@ final class LauncherModel {
     private func computeResults() -> [LauncherResult] {
         switch mode {
         case .root:
-            if let calculation = Calculator.evaluate(query) ?? Calculator.evaluateNumber(query) {
+            if let calculation = Calculator.calculate(query) {
                 return calculatorResults(calculation)
             }
             // A calculation still being typed, such as "2+", gets the calculator's history rather than search results.
-            if Calculator.looksLikeCalculation(query) {
+            if looksLikeCalculation(query) {
                 return calculatorResults(nil)
             }
             let commands: [LauncherResult] = [.calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .changelog, .quit]
@@ -601,7 +608,7 @@ final class LauncherModel {
             timerRowCount = timerRows.count
             return timerRows + suggestions + candidates.filter { !suggestedIDs.contains($0.id) }
         case .calculator:
-            return calculatorResults(Calculator.evaluate(query) ?? Calculator.evaluateNumber(query))
+            return calculatorResults(Calculator.calculate(query))
         case .clipboard:
             return clipboard.search(query, kind: clipboardKind).map(LauncherResult.clipboard)
         case .stopwatch:

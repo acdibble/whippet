@@ -4,18 +4,27 @@ struct Calculation: Hashable {
     let tokens: [Calculator.Token]
     let value: Double
     let isRPN: Bool
+    /// Set for a unit conversion, whose value is in the target unit.
+    var conversion: Conversion?
 
+    /// The number copied or pasted.
     var answer: String {
-        Calculator.format(value)
+        conversion == nil ? Calculator.format(value) : Calculator.format(value, significantDigits: UnitConversion.significantDigits)
     }
 
-    /// Names the operation when the input uses a single kind of operator.
+    /// The answer as shown, with its unit for a conversion.
+    var displayAnswer: String {
+        conversion?.output ?? answer
+    }
+
     /// A number on its own, such as `0xFF`, shown with its value but not kept in calculator history.
     var isPlainNumber: Bool {
-        !tokens.contains { if case .operation = $0 { true } else { false } }
+        conversion == nil && !tokens.contains { if case .operation = $0 { true } else { false } }
     }
 
+    /// Names the operation when the input uses a single kind of operator, or what a conversion measures.
     var operationName: String {
+        if let conversion { return conversion.kind }
         let operations = Set(tokens.compactMap { token -> Character? in
             guard case .operation(let operation) = token else { return nil }
             return operation
@@ -33,6 +42,7 @@ struct Calculation: Hashable {
     }
 
     var spelledAnswer: String {
+        if let conversion { return conversion.outputLong }
         let formatter = NumberFormatter()
         formatter.numberStyle = .spellOut
         let words = formatter.string(from: NSNumber(value: value)) ?? answer
@@ -79,8 +89,12 @@ enum Calculator {
         return Calculation(tokens: [.number(value, literal: text)], value: value, isRPN: false)
     }
 
-    static func format(_ value: Double) -> String {
-        value.formatted(.number.locale(Locale(identifier: "en_US_POSIX")).grouping(.never).precision(.significantDigits(1...15)))
+    /// Without grouping, and to `significantDigits`, which conversions lower to hide floating-point noise.
+    static func format(_ value: Double, significantDigits: Int = 15) -> String {
+        value.formatted(
+            .number.locale(Locale(identifier: "en_US_POSIX")).grouping(.never)
+                .precision(.significantDigits(1...significantDigits))
+        )
     }
 
     enum Token: Hashable {

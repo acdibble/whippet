@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Unit conversion in the calculator: type `5 km to mi`, `72 f in c` or `2 * 3 hogsheads to l`. It covers length, mass,
+  volume, temperature, time, data, speed, area, energy, pressure and angles, including parsecs, furlongs, fortnights
+  and smoots. A unit that could mean two things, such as `m` or `c`, takes the meaning that fits the other unit.
+  Return copies or pastes the number, and conversions are kept in calculator history.
 - Links in clipboard history show their page's title and preview image, and both the title and any text in the
   image are searchable. Previews are fetched on each Mac and not synced; turn them off in Settings › Clipboard
   History › Fetch Link Previews. ⌘K › Refresh Preview fetches one again.

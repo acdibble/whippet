@@ -84,7 +84,7 @@ struct SearchView: View {
 
                 // While the next part is typed, the previous answer stays, dimmed.
                 if model.isCalculatingInline, let calculation = model.inlineCalculation ?? model.lastInlineCalculation {
-                    Text("= \(calculation.answer)".leftToRightIsolated)
+                    Text("= \(calculation.displayAnswer)".leftToRightIsolated)
                         .font(.system(size: 20, weight: .medium))
                         .foregroundStyle(Color.launcherSecondary)
                         .opacity(model.inlineCalculation == nil ? 0.5 : 1)

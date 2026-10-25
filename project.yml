@@ -25,6 +25,11 @@ packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     revision: eef1a539a373c1f1a320624b1130fc5de7b2e100 # 2.10.0
+  # Unit conversion. Its package also lists swift-argument-parser, which only its command-line tool uses; that isn't
+  # built into Whippet.
+  Units:
+    url: https://github.com/NeedleInAJayStack/Units
+    revision: 28b3150f23ee84763f894c714eff87808e82e94d # 1.2.1
 
 targets:
   Whippet:
@@ -36,6 +41,7 @@ targets:
       - package: GRDB
       - package: KeyboardShortcuts
       - package: Sparkle
+      - package: Units
     scheme:
       testTargets:
         - WhippetTests
@@ -100,8 +106,10 @@ targets:
       - Sources/Whippet/Thumbnail.swift
       - Sources/Whippet/TimerDuration.swift
       - Sources/Whippet/TimerItem.swift
+      - Sources/Whippet/UnitConversion.swift
     dependencies:
       - package: GRDB
+      - package: Units
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

@@ -77,14 +77,14 @@ struct CalculationCard: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            side(Text(expression), label: calculation.operationName)
+            side(Text(calculation.conversion.map { AttributedString($0.input.leftToRightIsolated) } ?? expression), label: calculation.operationName)
             VStack(spacing: 8) {
                 Rectangle().fill(Color.primary.opacity(0.1)).frame(width: 1)
                 Image(systemName: "arrow.right")
                     .font(.system(size: 14, weight: .semibold))
                 Rectangle().fill(Color.primary.opacity(0.1)).frame(width: 1)
             }
-            side(Text(calculation.answer.leftToRightIsolated), label: calculation.spelledAnswer)
+            side(Text(calculation.displayAnswer.leftToRightIsolated), label: calculation.spelledAnswer)
         }
         .frame(height: 130)
         .background(Color.primary.opacity(isSelected ? 0.1 : 0.05), in: RoundedRectangle(cornerRadius: 10))

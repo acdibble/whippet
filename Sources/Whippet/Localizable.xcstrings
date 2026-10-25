@@ -291,6 +291,16 @@
         }
       }
     },
+    "Angle" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زاویه"
+          }
+        }
+      }
+    },
     "Another quicklink already uses this keyword." : {
       "localizations" : {
         "fa" : {
@@ -357,6 +367,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ابتدا از برنامه‌ها خواسته می‌شود بسته شوند."
+          }
+        }
+      }
+    },
+    "Area" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مساحت"
           }
         }
       }
@@ -701,6 +721,16 @@
         }
       }
     },
+    "Conversion" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تبدیل"
+          }
+        }
+      }
+    },
     "Copied Path" : {
       "localizations" : {
         "fa" : {
@@ -857,6 +887,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تیره"
+          }
+        }
+      }
+    },
+    "Data" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "داده"
           }
         }
       }
@@ -1081,6 +1121,16 @@
         }
       }
     },
+    "Energy" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انرژی"
+          }
+        }
+      }
+    },
     "Enter Duration" : {
       "localizations" : {
         "fa" : {
@@ -1207,6 +1257,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "برای همیشه"
+          }
+        }
+      }
+    },
+    "Frequency" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بسامد"
           }
         }
       }
@@ -1541,6 +1601,16 @@
         }
       }
     },
+    "Length" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طول"
+          }
+        }
+      }
+    },
     "Light" : {
       "localizations" : {
         "fa" : {
@@ -1607,6 +1677,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "علامت‌گذاری به‌عنوان رسیدگی‌نشده"
+          }
+        }
+      }
+    },
+    "Mass" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جرم"
           }
         }
       }
@@ -2127,6 +2207,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "برای شروع Return یا Space را بزنید"
+          }
+        }
+      }
+    },
+    "Pressure" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فشار"
           }
         }
       }
@@ -2761,6 +2851,16 @@
         }
       }
     },
+    "Speed" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سرعت"
+          }
+        }
+      }
+    },
     "Start" : {
       "localizations" : {
         "fa" : {
@@ -2921,6 +3021,16 @@
         }
       }
     },
+    "Temperature" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دما"
+          }
+        }
+      }
+    },
     "Text" : {
       "localizations" : {
         "fa" : {
@@ -3017,6 +3127,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "سه ماه"
+          }
+        }
+      }
+    },
+    "Time" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زمان"
           }
         }
       }
@@ -3267,6 +3387,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نسخه"
+          }
+        }
+      }
+    },
+    "Volume" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حجم"
           }
         }
       }

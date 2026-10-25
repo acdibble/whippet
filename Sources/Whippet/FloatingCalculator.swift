@@ -72,7 +72,7 @@ private struct FloatingCalculatorView: View {
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
-        let calculation = Calculator.evaluate(state.expression) ?? Calculator.evaluateNumber(state.expression)
+        let calculation = Calculator.calculate(state.expression)
 
         VStack(spacing: 0) {
             VStack(alignment: .trailing, spacing: 4) {
@@ -82,7 +82,7 @@ private struct FloatingCalculatorView: View {
                     .focused($isInputFocused)
                     .onSubmit { record(calculation) }
                     .onExitCommand(perform: close)
-                Text(calculation.map { "= \($0.answer)".leftToRightIsolated } ?? " ")
+                Text(calculation.map { "= \($0.displayAnswer)".leftToRightIsolated } ?? " ")
                     .font(.system(size: 24, weight: .semibold))
                     .textSelection(.enabled)
                     .lineLimit(1)
@@ -102,7 +102,7 @@ private struct FloatingCalculatorView: View {
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                             Spacer()
-                            Text(record.answer.leftToRightIsolated)
+                            Text(record.displayAnswer.leftToRightIsolated)
                                 .fontWeight(.medium)
                         }
                         .contentShape(Rectangle())
