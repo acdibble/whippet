@@ -5,15 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-25
+
 ### Added
 
-- Unit conversion in the calculator: type `5 km to mi`, `72 f in c` or `2 * 3 hogsheads to l`. It covers length, mass,
-  volume, temperature, time, data, speed, area, energy, pressure and angles, including parsecs, furlongs, fortnights
-  and smoots. A unit that could mean two things, such as `m` or `c`, takes the meaning that fits the other unit.
-  Return copies or pastes the number, and conversions are kept in calculator history.
-- Links in clipboard history show their page's title and preview image, and both the title and any text in the
-  image are searchable. Previews are fetched on each Mac and not synced; turn them off in Settings › Clipboard
-  History › Fetch Link Previews. ⌘K › Refresh Preview fetches one again.
 - Timers and stopwatches. Type a duration such as `25m`, `1h30m` or `4:30` to start a timer, with a name after it
   (`25m tea`), or use Start Timer… and Start Stopwatch. Several can run at once, each with its own name. They're listed
   at the top of the launcher, where you can pause, add time, restart, take laps, rename or cancel them. A finished timer
@@ -27,6 +22,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Settings › Notifications, to turn Whippet's notifications off altogether or one kind at a time, with the timer alert
   sound and snooze length.
   Settings › General can show a timer countdown in the menu bar.
+- Unit conversion in the calculator: type `5 km to mi`, `72 f in c` or `2 * 3 hogsheads to l`. It covers length, mass,
+  volume, temperature, time, data, speed, area, energy, pressure and angles, including parsecs, furlongs, fortnights
+  and smoots. A unit that could mean two things, such as `m` or `c`, takes the meaning that fits the other unit.
+  Return copies or pastes the number, and conversions are kept in calculator history.
+- Links in clipboard history show their page's title and preview image, and both the title and any text in the
+  image are searchable. Previews are fetched on each Mac and not synced; turn them off in Settings › Clipboard
+  History › Fetch Link Previews. ⌘K › Refresh Preview fetches one again.
 
 ## [0.9.0] - 2026-10-24
 
@@ -175,7 +177,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/acdibble/whippet/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/acdibble/whippet/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/acdibble/whippet/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/acdibble/whippet/compare/v0.6.0...v0.7.0
