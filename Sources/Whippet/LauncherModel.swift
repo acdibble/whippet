@@ -269,6 +269,7 @@ enum ResultAction: CaseIterable {
     case rename
     case snooze
     case togglePin
+    case refreshPreview
     case copyPath
     case popOut
     case delete
@@ -283,6 +284,7 @@ enum ResultAction: CaseIterable {
         case (.snooze, .ringingTimer), (.delete, .timerPreset): true
         case (.secondary, _): result.pastes
         case (.togglePin, .clipboard), (.delete, .clipboard), (.copyPath, .app): true
+        case (.refreshPreview, .clipboard(let item)): item.kind == .link
         case (.popOut, .calculation), (.popOut, .pastCalculation), (.popOut, .calculator): true
         default: false
         }
@@ -305,6 +307,7 @@ enum ResultAction: CaseIterable {
         case .rename: String(localized: "Rename…")
         case .snooze: String(localized: "Snooze")
         case .togglePin: result.isPinned ? String(localized: "Unpin") : String(localized: "Pin")
+        case .refreshPreview: String(localized: "Refresh Preview")
         case .copyPath: String(localized: "Copy Path")
         case .popOut: String(localized: "Pop Out Calculator")
         case .delete:
@@ -327,6 +330,7 @@ enum ResultAction: CaseIterable {
         case .rename: "pencil"
         case .snooze: "zzz"
         case .togglePin: "pin"
+        case .refreshPreview: "arrow.clockwise"
         case .copyPath: "link"
         case .popOut: "macwindow.on.rectangle"
         case .delete: "trash"
@@ -341,7 +345,7 @@ enum ResultAction: CaseIterable {
         case .addMinute: ("=", [.command])
         case .lap: ("l", [.command])
         case .restart: ("r", [.command])
-        case .addFiveMinutes, .rename, .snooze: nil
+        case .addFiveMinutes, .rename, .snooze, .refreshPreview: nil
         case .togglePin: ("p", [.command, .shift])
         case .copyPath: ("c", [.command, .shift])
         case .popOut: ("o", [.command, .shift])
@@ -701,6 +705,8 @@ final class LauncherModel {
             copyTime(of: item)
         case (.secondary, _):
             activate(copyOnly: true)
+        case (.refreshPreview, .clipboard(let item)):
+            clipboard.refreshPreview(item)
         case (.togglePin, .clipboard(let item)):
             clipboard.setPinned(item.pinnedAt == nil, item: item)
             selection = results.firstIndex { $0.id == result.id } ?? 0

@@ -1,5 +1,8 @@
 import AppKit
+import LinkPresentation
+import Network
 import Observation
+import UniformTypeIdentifiers
 import Vision
 
 @MainActor
@@ -20,6 +23,13 @@ final class ClipboardHistory {
             pruneExpiredItems()
         }
     }
+    /// Whether copied links get their page's title and preview image. Fetching opens the link, so it can be turned off.
+    var fetchesLinkPreviews = UserDefaults.standard.object(forKey: "clipboardFetchesLinkPreviews") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(fetchesLinkPreviews, forKey: "clipboardFetchesLinkPreviews")
+            fetchPendingLinkPreviews()
+        }
+    }
     /// Bundle identifiers of apps whose copies are never saved.
     var ignoredApps = UserDefaults.standard.stringArray(forKey: "clipboardIgnoredApps") ?? [] {
         didSet { UserDefaults.standard.set(ignoredApps, forKey: "clipboardIgnoredApps") }
@@ -30,6 +40,10 @@ final class ClipboardHistory {
     @ObservationIgnored private let recordingQueue = DispatchQueue(label: "codes.dibble.whippet.clipboard", qos: .userInitiated)
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var isRecognizing = false
+    @ObservationIgnored private var isFetchingPreviews = false
+    /// Previews wait while the Mac is offline, rather than marking every link as having none.
+    @ObservationIgnored private let pathMonitor = NWPathMonitor()
+    @ObservationIgnored private var isOnline = true
 
     private static let resultLimit = 100
     /// Larger text copies aren't saved: they're slow to show, and too big for an iCloud record.
@@ -57,6 +71,15 @@ final class ClipboardHistory {
         }
         recognizePendingImages()
         pruneExpiredItems()
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            let isOnline = path.status == .satisfied
+            Task { @MainActor in
+                guard let self else { return }
+                self.isOnline = isOnline
+                self.fetchPendingLinkPreviews()
+            }
+        }
+        pathMonitor.start(queue: .main)
     }
 
     func search(_ query: String, kind: ClipboardKind?) -> [ClipboardItem] {
@@ -95,9 +118,19 @@ final class ClipboardHistory {
     }
 
     /// Refreshes views after another Mac's changes were merged into the store, which may include items past retention.
+    /// Links from other Macs get their previews here.
     func didMergeRemoteChanges() {
         revision += 1
         pruneExpiredItems()
+        fetchPendingLinkPreviews()
+    }
+
+    /// Fetches a link's preview again.
+    func refreshPreview(_ item: ClipboardItem) {
+        guard item.kind == .link else { return }
+        try? store?.clearLinkPreview(hash: item.contentHash)
+        revision += 1
+        fetchPendingLinkPreviews()
     }
 
     /// Deletes unpinned items, or every item with `includingPinned`, here and from iCloud.
@@ -214,6 +247,7 @@ final class ClipboardHistory {
                     if recognizesText {
                         self.recognizePendingImages()
                     }
+                    self.fetchPendingLinkPreviews()
                 }
             } catch {
                 NSLog("Failed to record clipboard item: \(error)")
@@ -228,12 +262,69 @@ final class ClipboardHistory {
         Task {
             while let pending = try? store.nextImageAwaitingRecognition() {
                 let text = await Task.detached(priority: .utility) { Self.recognizeText(in: pending.file) }.value
-                guard let syncItem = try? store.setRecognizedText(text, hash: pending.hash) else { break }
-                onLocalChange(syncItem)
+                if pending.isLinkPreview {
+                    guard (try? store.setLinkPreviewRecognizedText(text, hash: pending.hash)) != nil else { break }
+                } else {
+                    guard let syncItem = try? store.setRecognizedText(text, hash: pending.hash) else { break }
+                    onLocalChange(syncItem)
+                }
                 revision += 1
             }
             isRecognizing = false
         }
+    }
+
+    /// Works through links without a preview one at a time, newest first, including links copied before previews
+    /// existed. A link that can't be fetched is saved with no title, so it isn't tried again until Refresh Preview.
+    private func fetchPendingLinkPreviews() {
+        guard fetchesLinkPreviews, isOnline, !isFetchingPreviews, let store else { return }
+        isFetchingPreviews = true
+        Task {
+            while fetchesLinkPreviews, isOnline, let pending = try? store.nextLinkAwaitingPreview() {
+                let preview = await Self.fetchPreview(of: pending.url)
+                // Gone offline mid-fetch: the link waits until the Mac is back online.
+                guard isOnline else { break }
+                guard (try? store.setLinkPreview(title: preview.title, imagePNG: preview.png, hash: pending.hash)) != nil
+                else { break }
+                revision += 1
+                if preview.png != nil {
+                    recognizePendingImages()
+                }
+            }
+            isFetchingPreviews = false
+        }
+    }
+
+    nonisolated private static let previewTimeout: TimeInterval = 15
+    /// Preview images are only shown in the history's detail pane, so they're kept no larger than this.
+    nonisolated private static let previewMaxPixelSize = 1200
+
+    /// The page's title and its preview image, or the site's icon, as PNG. Fails quietly with an empty title.
+    nonisolated private static func fetchPreview(of url: URL) async -> (title: String, png: Data?) {
+        let provider = LPMetadataProvider()
+        provider.timeout = previewTimeout
+        guard let metadata = try? await provider.startFetchingMetadata(for: url) else { return ("", nil) }
+        let title = metadata.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard let imageProvider = metadata.imageProvider ?? metadata.iconProvider else { return (title, nil) }
+        let data: Data? = await withCheckedContinuation { continuation in
+            imageProvider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
+                continuation.resume(returning: data)
+            }
+        }
+        return (title, data.flatMap(downscaledPNG))
+    }
+
+    nonisolated private static func downscaledPNG(_ data: Data) -> Data? {
+        let options = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: previewMaxPixelSize,
+        ] as CFDictionary
+        guard
+            let source = CGImageSourceCreateWithData(data as CFData, nil),
+            let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options)
+        else { return nil }
+        return NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
     }
 
     nonisolated private static func recognizeText(in file: URL) -> String {

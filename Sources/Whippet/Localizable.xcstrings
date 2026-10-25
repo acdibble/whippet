@@ -1171,6 +1171,26 @@
         }
       }
     },
+    "Fetch Link Previews" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دریافت پیش‌نمایش پیوندها"
+          }
+        }
+      }
+    },
+    "Fetching opens the link from this Mac. A single-use link, such as a sign-in or password reset link, may stop working once it's opened." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دریافت، پیوند را از این Mac باز می‌کند. پیوند یک‌بارمصرف، مثل پیوند ورود یا بازنشانی گذرواژه، ممکن است پس از باز شدن دیگر کار نکند."
+          }
+        }
+      }
+    },
     "Floating Calculator" : {
       "localizations" : {
         "fa" : {
@@ -1971,6 +1991,16 @@
         }
       }
     },
+    "Page title" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عنوان صفحه"
+          }
+        }
+      }
+    },
     "Paste into Apps" : {
       "localizations" : {
         "fa" : {
@@ -2247,6 +2277,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تازه‌سازی"
+          }
+        }
+      }
+    },
+    "Refresh Preview" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تازه‌سازی پیش‌نمایش"
           }
         }
       }
@@ -2611,6 +2651,16 @@
         }
       }
     },
+    "Shows each copied link's page title and image, and makes them searchable" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عنوان و تصویر صفحهٔ هر پیوند کپی‌شده را نشان می‌دهد و آن‌ها را قابل جست‌وجو می‌کند"
+          }
+        }
+      }
+    },
     "Shut Down" : {
       "localizations" : {
         "fa" : {
@@ -2647,6 +2697,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "برای همگام‌سازی وارد iCloud شوید."
+          }
+        }
+      }
+    },
+    "Site" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سایت"
           }
         }
       }

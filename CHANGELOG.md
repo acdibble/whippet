@@ -7,6 +7,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Links in clipboard history show their page's title and preview image, and both the title and any text in the
+  image are searchable. Previews are fetched on each Mac and not synced; turn them off in Settings › Clipboard
+  History › Fetch Link Previews. ⌘K › Refresh Preview fetches one again.
 - Timers and stopwatches. Type a duration such as `25m`, `1h30m` or `4:30` to start a timer, with a name after it
   (`25m tea`), or use Start Timer… and Start Stopwatch. Several can run at once, each with its own name. They're listed
   at the top of the launcher, where you can pause, add time, restart, take laps, rename or cancel them. A finished timer

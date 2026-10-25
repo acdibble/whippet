@@ -347,6 +347,89 @@ final class ClipboardStoreTests {
         #expect(try !store.mergeRemote(remote(answer: "12", at: .now.addingTimeInterval(60))))
         #expect(try store.recentCalculations(limit: 1).first?.answer == "12")
     }
+
+    // MARK: - Link previews
+
+    @Test func linksAwaitTheirPreviewNewestFirst() async throws {
+        try store.recordText("https://example.com/old", sourceBundleID: nil)
+        try await pause()
+        try store.recordText("not a link", sourceBundleID: nil)
+        try await pause()
+        try store.recordText("https://example.com/new", sourceBundleID: nil)
+
+        #expect(try store.nextLinkAwaitingPreview()?.url.absoluteString == "https://example.com/new")
+        let new = try #require(try store.nextLinkAwaitingPreview())
+        try store.setLinkPreview(title: "", imagePNG: nil, hash: new.hash)
+        #expect(try store.nextLinkAwaitingPreview()?.url.absoluteString == "https://example.com/old")
+    }
+
+    @Test func aPreviewIsSearchableAndShowsItsTitle() throws {
+        try store.recordText("https://example.com/a", sourceBundleID: nil)
+        let pending = try #require(try store.nextLinkAwaitingPreview())
+        try store.setLinkPreview(title: "Whippet Racing Results", imagePNG: Data([1, 2, 3]), hash: pending.hash)
+
+        let item = try #require(try items("racing").first)
+        #expect(item.title == "Whippet Racing Results")
+        #expect(item.linkHost == "example.com")
+        let file = try #require(store.imageURL(for: item))
+        #expect(FileManager.default.fileExists(atPath: file.path))
+
+        // The preview image's text is recognized like a copied image's, and searchable too.
+        let awaiting = try #require(try store.nextImageAwaitingRecognition())
+        #expect(awaiting.isLinkPreview)
+        try store.setLinkPreviewRecognizedText("finish line photo", hash: awaiting.hash)
+        #expect(try items("finish").map(\.id) == [item.id])
+        #expect(try store.nextImageAwaitingRecognition() == nil)
+    }
+
+    @Test func previewsStayLocal() throws {
+        let link = try store.recordText("https://example.com", sourceBundleID: nil)
+        try store.assignRecordNames([link: "clip-link"])
+        try store.markSynced(recordName: "clip-link", systemFields: Data())
+        let pending = try #require(try store.nextLinkAwaitingPreview())
+        try store.setLinkPreview(title: "Example", imagePNG: Data([1]), hash: pending.hash)
+        try store.setLinkPreviewRecognizedText("text", hash: pending.hash)
+
+        #expect(try store.unsyncedItems(includeImages: true).isEmpty)
+    }
+
+    @Test func refreshingAndDeletingRemoveThePreviewImage() throws {
+        try store.recordText("https://example.com", sourceBundleID: nil)
+        let pending = try #require(try store.nextLinkAwaitingPreview())
+        try store.setLinkPreview(title: "Example", imagePNG: Data([1]), hash: pending.hash)
+        let item = try #require(try items().first)
+        let file = try #require(store.imageURL(for: item))
+
+        try store.clearLinkPreview(hash: pending.hash)
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+        #expect(try store.nextLinkAwaitingPreview()?.hash == pending.hash)
+
+        try store.setLinkPreview(title: "Example", imagePNG: Data([1]), hash: pending.hash)
+        _ = try store.delete(contentHash: pending.hash)
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+    }
+}
+
+/// Upgrading a database from before link previews.
+struct LinkPreviewMigrationTests {
+    @Test func existingHistoryStaysSearchable() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "WhippetTests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let queue = try DatabaseQueue(path: directory.appending(path: "clipboard.sqlite").path)
+        try ClipboardStore.migrator.migrate(queue, upTo: "addQuicklinks")
+        try queue.write { db in
+            try db.execute(
+                sql: "INSERT INTO clipboard (contentHash, kind, text, copiedAt, updatedAt) VALUES (?, ?, ?, ?, ?)",
+                arguments: ["hash", "link", "https://example.com/greyhound", Date.now, Date.now]
+            )
+        }
+        try queue.close()
+
+        let store = try ClipboardStore(directory: directory)
+        #expect(try store.search("greyhound", kind: nil, limit: 10).count == 1)
+        #expect(try store.nextLinkAwaitingPreview()?.hash == "hash")
+    }
 }
 
 private extension Date {

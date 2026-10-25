@@ -23,6 +23,18 @@ struct ClipboardPane: View {
             }
 
             Section {
+                Toggle(isOn: $clipboard.fetchesLinkPreviews) {
+                    Text("Fetch Link Previews")
+                    Text("Shows each copied link's page title and image, and makes them searchable")
+                }
+                .toggleStyle(.switch)
+            } footer: {
+                Text("Fetching opens the link from this Mac. A single-use link, such as a sign-in or password reset link, may stop working once it's opened.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 ForEach(clipboard.ignoredApps, id: \.self) { bundleID in
                     IgnoredAppRow(bundleID: bundleID) {
                         clipboard.ignoredApps.removeAll { $0 == bundleID }

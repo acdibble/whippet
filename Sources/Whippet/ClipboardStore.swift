@@ -68,14 +68,35 @@ struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, TableRec
     let sourceBundleID: String?
     let timesCopied: Int
     let pinnedAt: Date?
+    /// A link's page title: nil until its preview has been fetched, empty when the page has none.
+    let linkTitle: String?
+    /// A link's preview image, in the images folder.
+    let linkImageFile: String?
+    /// Text recognized in a link's preview image: nil until recognition has run.
+    let linkOcrText: String?
 
     var title: String {
         if kind == .image {
             return String(localized: "Image (\(imageWidth ?? 0)×\(imageHeight ?? 0))")
         }
+        if let linkTitle, !linkTitle.isEmpty {
+            return linkTitle
+        }
         // Only the first line is read, since splitting a long copy on every render is slow.
         let firstLine = (text ?? "").drop(while: \.isWhitespace).prefix(while: { !$0.isNewline }).prefix(500)
         return String(firstLine).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// A link's site, shown beside its page title.
+    var linkHost: String? {
+        guard kind == .link, let text else { return nil }
+        let host = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines))?.host()
+        return host.map { $0.hasPrefix("www.") ? String($0.dropFirst(4)) : $0 }
+    }
+
+    /// True once a link has a page title to show.
+    var hasLinkTitle: Bool {
+        linkTitle.map { !$0.isEmpty } ?? false
     }
 }
 
@@ -135,8 +156,9 @@ struct ClipboardUsage {
     let calculations: Int
 }
 
-/// Clipboard history in a SQLite database in Application Support, with an FTS5 index over copied and recognized text.
-/// Images live beside it as PNG files named by their content hash.
+/// Clipboard history in a SQLite database in Application Support, with an FTS5 index over copied and recognized text
+/// and link titles. Images live beside it as PNG files named by their content hash, and links' preview images as
+/// `link-` followed by the link's hash.
 final class ClipboardStore: Sendable {
     /// Development builds keep their own history, sync state and key, which belong to CloudKit's Development environment.
     #if DEBUG
@@ -220,16 +242,24 @@ final class ClipboardStore: Sendable {
         return changed ? .clipboard(contentHash: contentHash) : nil
     }
 
-    func nextImageAwaitingRecognition() throws -> (hash: String, file: URL)? {
+    /// The newest copied image or link preview image whose text hasn't been recognized yet.
+    func nextImageAwaitingRecognition() throws -> (hash: String, file: URL, isLinkPreview: Bool)? {
         try database.read { db in
             let row = try Row.fetchOne(
                 db,
-                sql: "SELECT contentHash, imageFile FROM clipboard WHERE kind = ? AND ocrText IS NULL ORDER BY copiedAt DESC",
+                sql: """
+                    SELECT contentHash, imageFile AS file, 0 AS isLinkPreview, copiedAt FROM clipboard
+                        WHERE kind = ? AND ocrText IS NULL
+                    UNION ALL
+                    SELECT contentHash, linkImageFile AS file, 1 AS isLinkPreview, copiedAt FROM clipboard
+                        WHERE linkImageFile IS NOT NULL AND linkOcrText IS NULL
+                    ORDER BY copiedAt DESC LIMIT 1
+                    """,
                 arguments: [ClipboardKind.image.rawValue]
             )
             guard let row else { return nil }
-            let file: String = row["imageFile"]
-            return (row["contentHash"], imagesDirectory.appending(path: file))
+            let file: String = row["file"]
+            return (row["contentHash"], imagesDirectory.appending(path: file), row["isLinkPreview"])
         }
     }
 
@@ -242,6 +272,65 @@ final class ClipboardStore: Sendable {
             )
         }
         return .clipboard(contentHash: hash)
+    }
+
+    /// Link previews stay on this Mac, so this doesn't change `updatedAt` and nothing syncs.
+    func setLinkPreviewRecognizedText(_ text: String, hash: String) throws {
+        try database.write { db in
+            try db.execute(sql: "UPDATE clipboard SET linkOcrText = ? WHERE contentHash = ?", arguments: [text, hash])
+        }
+    }
+
+    // MARK: - Link previews
+
+    /// The newest link whose preview hasn't been fetched yet.
+    func nextLinkAwaitingPreview() throws -> (hash: String, url: URL)? {
+        try database.read { db in
+            let rows = try Row.fetchAll(
+                db,
+                sql: "SELECT contentHash, text FROM clipboard WHERE kind = ? AND linkTitle IS NULL ORDER BY copiedAt DESC",
+                arguments: [ClipboardKind.link.rawValue]
+            )
+            for row in rows {
+                let text: String? = row["text"]
+                if let url = text.flatMap({ URL(string: $0.trimmingCharacters(in: .whitespacesAndNewlines)) }) {
+                    return (row["contentHash"], url)
+                }
+            }
+            return nil
+        }
+    }
+
+    /// Saves a fetched preview. An empty title marks a link whose page had none, or couldn't be fetched, so it isn't
+    /// fetched again. Local only, like recognized text in previews.
+    func setLinkPreview(title: String, imagePNG: Data?, hash: String) throws {
+        var imageFile: String?
+        if let imagePNG {
+            let name = "link-\(hash).png"
+            try imagePNG.write(to: imagesDirectory.appending(path: name))
+            imageFile = name
+        }
+        try database.write { db in
+            try db.execute(
+                sql: "UPDATE clipboard SET linkTitle = ?, linkImageFile = ?, linkOcrText = NULL WHERE contentHash = ?",
+                arguments: [title, imageFile, hash]
+            )
+        }
+    }
+
+    /// Forgets a link's preview, so it's fetched again.
+    func clearLinkPreview(hash: String) throws {
+        let file = try database.write { db in
+            let file = try String.fetchOne(db, sql: "SELECT linkImageFile FROM clipboard WHERE contentHash = ?", arguments: [hash])
+            try db.execute(
+                sql: "UPDATE clipboard SET linkTitle = NULL, linkImageFile = NULL, linkOcrText = NULL WHERE contentHash = ?",
+                arguments: [hash]
+            )
+            return file
+        }
+        if let file {
+            try? FileManager.default.removeItem(at: imagesDirectory.appending(path: file))
+        }
     }
 
     /// Records a calculation, moving an expression already in history to the top with its latest answer,
@@ -270,8 +359,9 @@ final class ClipboardStore: Sendable {
         }
     }
 
+    /// A copied image's file, or a link's preview image.
     func imageURL(for item: ClipboardItem) -> URL? {
-        item.imageFile.map { imagesDirectory.appending(path: $0) }
+        (item.imageFile ?? item.linkImageFile).map { imagesDirectory.appending(path: $0) }
     }
 
     /// Returns the item for syncing, or nil when it no longer exists.
@@ -548,14 +638,18 @@ final class ClipboardStore: Sendable {
         }
         let filter = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
         let rows = try database.write { db in
-            let rows = try Row.fetchAll(db, sql: "SELECT recordName, imageFile FROM clipboard \(filter)", arguments: arguments)
+            let rows = try Row.fetchAll(
+                db,
+                sql: "SELECT recordName, imageFile, linkImageFile FROM clipboard \(filter)",
+                arguments: arguments
+            )
             try db.execute(sql: "DELETE FROM clipboard \(filter)", arguments: arguments)
             for case let recordName? in rows.map({ $0["recordName"] as String? }) {
                 try db.execute(sql: "INSERT OR IGNORE INTO deletedRecord (recordName) VALUES (?)", arguments: [recordName])
             }
             return rows
         }
-        for case let imageFile? in rows.map({ $0["imageFile"] as String? }) {
+        for case let imageFile? in rows.flatMap({ [$0["imageFile"] as String?, $0["linkImageFile"] as String?] }) {
             try? FileManager.default.removeItem(at: imagesDirectory.appending(path: imageFile))
         }
         return rows.compactMap { $0["recordName"] }
@@ -577,7 +671,8 @@ final class ClipboardStore: Sendable {
             }
             return row
         }
-        if let imageFile = row?["imageFile"] as String? {
+        // Quicklink rows have neither column, which reads as nil.
+        for case let imageFile? in [row?["imageFile"] as String?, row?["linkImageFile"] as String?] {
             try? FileManager.default.removeItem(at: imagesDirectory.appending(path: imageFile))
         }
         return row?["recordName"]
@@ -731,6 +826,26 @@ final class ClipboardStore: Sendable {
                 table.column("recordName", .text).unique()
                 table.column("syncedAt", .datetime)
                 table.column("cloudSystemFields", .blob)
+            }
+        }
+        // Added after 0.9.0. Link previews are fetched on each Mac and never synced.
+        migrator.registerMigration("addLinkPreviews") { db in
+            try db.alter(table: "clipboard") { table in
+                table.add(column: "linkTitle", .text)
+                table.add(column: "linkImageFile", .text)
+                table.add(column: "linkOcrText", .text)
+            }
+            // FTS5 tables can't gain columns, so the index is made again with the link's title and its preview's
+            // text, and filled from the existing rows.
+            try db.dropFTS5SynchronizationTriggers(forTable: "clipboardFts")
+            try db.drop(table: "clipboardFts")
+            try db.create(virtualTable: "clipboardFts", using: FTS5()) { table in
+                table.synchronize(withTable: "clipboard")
+                table.tokenizer = .unicode61()
+                table.column("text")
+                table.column("ocrText")
+                table.column("linkTitle")
+                table.column("linkOcrText")
             }
         }
         return migrator

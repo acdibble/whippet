@@ -137,6 +137,13 @@ private struct ItemRow: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer(minLength: 0)
+            // A link shown by its page title keeps its site in view.
+            if item.hasLinkTitle, let host = item.linkHost {
+                Text(host)
+                    .lineLimit(1)
+                    .foregroundStyle(Color.launcherSecondary)
+                    .layoutPriority(-1)
+            }
         }
         .font(.system(size: 13))
         .padding(.horizontal, 8)
@@ -178,7 +185,9 @@ private struct ItemDetail: View {
 
     @ViewBuilder
     private var preview: some View {
-        if let imageURL {
+        if item.kind == .link {
+            LinkPreview(item: item, imageURL: imageURL)
+        } else if let imageURL {
             // Enough for the preview pane at 2x, however large the screenshot.
             ThumbnailView(url: imageURL, maxPixelSize: 1600) { ProgressView().controlSize(.small) }
                 .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -214,6 +223,11 @@ private struct ItemDetail: View {
                 InformationRow("Size", Int64(item.imageBytes ?? 0).formatted(.byteCount(style: .file))),
                 InformationRow("Recognized words", recognizedWords),
             ]
+        } else if item.kind == .link {
+            rows += [
+                InformationRow("Site", item.linkHost ?? ""),
+                InformationRow("Page title", pageTitle),
+            ]
         } else {
             let text = item.text ?? ""
             rows += [
@@ -230,6 +244,40 @@ private struct ItemDetail: View {
     private var recognizedWords: String {
         guard let ocrText = item.ocrText else { return String(localized: "Processing…") }
         return ocrText.split(whereSeparator: \.isWhitespace).count.formatted()
+    }
+
+    private var pageTitle: String {
+        guard let linkTitle = item.linkTitle else { return String(localized: "Processing…") }
+        return linkTitle.isEmpty ? String(localized: "None") : linkTitle
+    }
+}
+
+/// A link's preview image, page title and address.
+private struct LinkPreview: View {
+    let item: ClipboardItem
+    let imageURL: URL?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 10) {
+                if let imageURL {
+                    ThumbnailView(url: imageURL, maxPixelSize: 1200) { ProgressView().controlSize(.small) }
+                        .frame(maxWidth: .infinity, maxHeight: 180)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                if item.hasLinkTitle {
+                    Text(item.title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .textSelection(.enabled)
+                }
+                Text(item.text ?? "")
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(Color.launcherSecondary)
+                    .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+        }
     }
 }
 
