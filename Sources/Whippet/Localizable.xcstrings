@@ -791,12 +791,32 @@
         }
       }
     },
+    "Copy Download Link" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی پیوند دانلود"
+          }
+        }
+      }
+    },
     "Copy Elapsed Time" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "کپی زمان سپری‌شده"
+          }
+        }
+      }
+    },
+    "Copy Link" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی پیوند"
           }
         }
       }
@@ -1067,6 +1087,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تمام شد"
+          }
+        }
+      }
+    },
+    "Download link copied" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوند دانلود کپی شد"
           }
         }
       }
@@ -2687,6 +2717,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تنظیمات…"
+          }
+        }
+      }
+    },
+    "Share Whippet with a Friend" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اشتراک Whippet با یک دوست"
+          }
+        }
+      }
+    },
+    "Share with a Friend" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اشتراک با یک دوست"
           }
         }
       }

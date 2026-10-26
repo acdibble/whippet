@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A Share Whippet with a Friend command, and a Copy Download Link button in Settings › About, which copy a link to
+  download the latest release.
+
 ## [0.10.0] - 2026-10-25
 
 ### Added

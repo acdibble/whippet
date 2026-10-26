@@ -146,6 +146,18 @@ enum SystemDetails {
     }
 }
 
+/// A link for sharing Whippet: the newest release's page, with the DMG to download, so it never goes stale.
+enum ShareLink {
+    static let downloadURL = "https://github.com/acdibble/whippet/releases/latest"
+
+    /// Copies the link and confirms it, from the launcher or Settings › About.
+    @MainActor
+    static func copy(using clipboard: ClipboardHistory) {
+        clipboard.copy(text: downloadURL)
+        Toast.shared.show(String(localized: "Download link copied"), symbol: "square.and.arrow.up")
+    }
+}
+
 /// Opens a prefilled new-issue page in the browser, so the app never needs a GitHub token.
 enum GitHubIssue {
     static func open(title: String, body: String) {

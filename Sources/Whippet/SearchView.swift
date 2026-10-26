@@ -277,6 +277,7 @@ struct ResultRow: View {
         case .sendFeedback: Image(systemName: "bubble.left")
         case .readFeedback: Image(systemName: "tray.full")
         case .changelog: Image(systemName: "list.bullet.rectangle")
+        case .shareWhippet: Image(systemName: "square.and.arrow.up")
         case .system(let command): Image(systemName: command.symbol)
         case .quicklink(let quicklink):
             if let icon = Quicklinks.icon(for: quicklink) { Image(nsImage: icon) } else { Image(systemName: "link") }

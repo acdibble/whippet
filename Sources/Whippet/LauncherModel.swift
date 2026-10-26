@@ -10,6 +10,7 @@ enum LauncherResult: Identifiable, Hashable {
     case sendFeedback
     case readFeedback
     case changelog
+    case shareWhippet
     case quit
     case clipboardHistory
     case caffeinate
@@ -49,6 +50,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .sendFeedback: "command:send-feedback"
         case .readFeedback: "command:read-feedback"
         case .changelog: "command:changelog"
+        case .shareWhippet: "command:share-whippet"
         case .quit: "command:quit"
         case .clipboardHistory: "command:clipboard-history"
         case .caffeinate: "command:caffeinate"
@@ -83,6 +85,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .sendFeedback: String(localized: "Send Feedback")
         case .readFeedback: String(localized: "Read Feedback")
         case .changelog: String(localized: "Changelog")
+        case .shareWhippet: String(localized: "Share Whippet with a Friend")
         case .system(let command): command.title
         case .quicklink(let quicklink): quicklink.name
         case .createQuicklink: String(localized: "Create Quicklink")
@@ -116,7 +119,8 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
-        case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog, .quit:
+        case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog,
+             .shareWhippet, .quit:
             String(localized: "Command")
         case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
         case .caffeinateMenuBar, .system, .createQuicklink, .searchClipboard: String(localized: "Command")
@@ -189,6 +193,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .caffeinate, .decaffeinate, .caffeinateMenuBar: String(localized: "Run Command")
         case .caffeinateFor: String(localized: "Choose Duration")
         case .changelog: String(localized: "Open in Browser")
+        case .shareWhippet: String(localized: "Copy Link")
         case .system: String(localized: "Run Command")
         case .quicklink(let quicklink): quicklink.takesArgument ? String(localized: "Enter Text") : String(localized: "Open Quicklink")
         case .createQuicklink: String(localized: "Open Command")
@@ -583,7 +588,7 @@ final class LauncherModel {
             if looksLikeCalculation(query) {
                 return calculatorResults(nil)
             }
-            let commands: [LauncherResult] = [.calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .changelog, .quit]
+            let commands: [LauncherResult] = [.calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .changelog, .shareWhippet, .quit]
                 + (isFeedbackAdmin ? [.readFeedback] : [])
                 + [.caffeinate, .caffeinateFor]
                 + (caffeine.isActive ? [.decaffeinate(until: caffeine.untilDescription)] : [])
@@ -921,6 +926,9 @@ final class LauncherModel {
             onSendFeedback()
         case .readFeedback:
             onReadFeedback()
+        case .shareWhippet:
+            onDismiss()
+            ShareLink.copy(using: clipboard)
         case .changelog:
             NSWorkspace.shared.open(Self.changelogURL)
             onDismiss()

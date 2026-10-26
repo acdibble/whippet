@@ -119,7 +119,7 @@ struct SettingsView: View {
                 case .usage: UsagePane(clipboard: clipboard)
                 case .feedback: FeedbackAdminPane(store: feedbackStore)
                 case .developer: DeveloperPane(cloudSync: cloudSync)
-                case .about: AboutPane()
+                case .about: AboutPane(clipboard: clipboard)
                 }
             }
             .formStyle(.grouped)
@@ -475,6 +475,7 @@ private struct FeedbackKeySection: View {
 }
 
 private struct AboutPane: View {
+    let clipboard: ClipboardHistory
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -490,6 +491,11 @@ private struct AboutPane: View {
                 LabeledContent("Feedback") {
                     Button("Send Feedback…") {
                         openWindow(id: FeedbackView.windowID)
+                    }
+                }
+                LabeledContent("Share with a Friend") {
+                    Button("Copy Download Link") {
+                        ShareLink.copy(using: clipboard)
                     }
                 }
             }
