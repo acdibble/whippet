@@ -16,6 +16,7 @@ versions follow [Semantic Versioning](https://semver.org/).
   hides the window.
 - Clicking the Dock icon brings back the open window, such as Send Feedback, and opens Settings only when nothing is
   open.
+- Closing the feedback window clears it, so the next feedback starts empty.
 
 ## [0.10.3] - 2026-10-26
 

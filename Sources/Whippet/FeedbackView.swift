@@ -85,10 +85,15 @@ struct FeedbackView: View {
             DockIcon.update()
             startCatchingPastedImages()
         }
+        // The window keeps its state while closed, so closing it starts the next feedback afresh.
         .onDisappear {
             DockIcon.update()
             pasteMonitor.map(NSEvent.removeMonitor)
             pasteMonitor = nil
+            message = ""
+            email = ""
+            images = []
+            error = nil
         }
     }
 
