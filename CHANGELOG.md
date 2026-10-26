@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.4] - 2026-10-26
+
 ### Added
 
 - Up to 10 images can be attached to feedback, by pasting, dropping or choosing them. They're sent at full size,
@@ -218,7 +220,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v0.10.3...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v0.10.4...HEAD
+[0.10.4]: https://github.com/acdibble/whippet/compare/v0.10.3...v0.10.4
 [0.10.3]: https://github.com/acdibble/whippet/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/acdibble/whippet/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/acdibble/whippet/compare/v0.10.0...v0.10.1

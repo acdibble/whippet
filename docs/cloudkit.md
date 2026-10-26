@@ -24,11 +24,11 @@ nobody can create records of these types in the public database.
 
 | Record type | Fields | Indexes |
 |---|---|---|
-| `Feedback` | `sealedKey` (Bytes), `sealed` (Bytes), `handled` (Int64); from 0.11.0 `attachments` (Asset List) and `attachmentCount` (Int64); before 0.6.0 also `message`, `email` and `details` (String) in plain text | `recordName` Queryable, `createdTimestamp` Sortable, `createdBy` Queryable |
+| `Feedback` | `sealedKey` (Bytes), `sealed` (Bytes), `handled` (Int64); from 0.10.4 `attachments` (Asset List) and `attachmentCount` (Int64); before 0.6.0 also `message`, `email` and `details` (String) in plain text | `recordName` Queryable, `createdTimestamp` Sortable, `createdBy` Queryable |
 
 From 0.6.0, the message, email and system details are sealed with HPKE to the public key in `WhippetFeedbackPublicKey`
 (`project.yml`). Only the admin's private key, kept in iCloud Keychain and created in Settings › Developer, opens them.
-From 0.11.0, each attached image is sealed the same way, separately, as one asset in `attachments`; `attachmentCount`
+From 0.10.4, each attached image is sealed the same way, separately, as one asset in `attachments`; `attachmentCount`
 is plain so the admin pane knows to fetch them.
 The roles below are still the first line of defence, and the only one for feedback sent by earlier versions.
 
