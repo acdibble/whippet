@@ -251,50 +251,63 @@ private struct GeneralPane: View {
     }
 }
 
-/// A hotkey recorder for each command and installed application; recorded hotkeys are live immediately.
+/// A hotkey recorder for each command, quicklink and installed application; recorded hotkeys are live immediately. The
+/// search filters all three, and a list with nothing matching is left out.
 private struct ShortcutsPane: View {
     let appIndex: AppIndex
     let quicklinks: Quicklinks
     @State private var search = ""
 
     var body: some View {
+        let commands = CommandShortcut.allCases.filter { matches($0.title) }
+        let quicklinks = quicklinks.items.filter { matches($0.name) }
+        let apps = appIndex.apps.filter { matches($0.name) }
+
         Form {
-            Section("Commands") {
-                ForEach(CommandShortcut.allCases) { command in
-                    KeyboardShortcuts.Recorder(for: command.name) {
-                        Label(command.title, systemImage: command.symbol)
+            if !commands.isEmpty {
+                Section("Commands") {
+                    ForEach(commands) { command in
+                        KeyboardShortcuts.Recorder(for: command.name) {
+                            Label(command.title, systemImage: command.symbol)
+                        }
                     }
                 }
             }
-            if !quicklinks.items.isEmpty {
+            if !quicklinks.isEmpty {
                 Section("Quicklinks") {
-                    ForEach(quicklinks.items) { quicklink in
+                    ForEach(quicklinks) { quicklink in
                         KeyboardShortcuts.Recorder(for: quicklink.shortcutName) {
                             Label(quicklink.name, systemImage: "link")
                         }
                     }
                 }
             }
-            Section("Applications") {
-                ForEach(filteredApps) { app in
-                    KeyboardShortcuts.Recorder(for: app.shortcutName) {
-                        Label {
-                            Text(app.name)
-                        } icon: {
-                            Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
-                                .resizable()
-                                .frame(width: 18, height: 18)
+            if !apps.isEmpty {
+                Section("Applications") {
+                    ForEach(apps) { app in
+                        KeyboardShortcuts.Recorder(for: app.shortcutName) {
+                            Label {
+                                Text(app.name)
+                            } icon: {
+                                Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
+                                    .resizable()
+                                    .frame(width: 18, height: 18)
+                            }
                         }
                     }
                 }
             }
         }
-        .searchable(text: $search, prompt: "Search applications")
+        .overlay {
+            if commands.isEmpty, quicklinks.isEmpty, apps.isEmpty {
+                ContentUnavailableView.search(text: search)
+            }
+        }
+        .searchable(text: $search, prompt: "Search shortcuts")
     }
 
-    private var filteredApps: [AppEntry] {
-        if search.isEmpty { return appIndex.apps }
-        return appIndex.apps.filter { $0.name.localizedCaseInsensitiveContains(search) }
+    private func matches(_ name: String) -> Bool {
+        search.isEmpty || name.localizedCaseInsensitiveContains(search)
     }
 }
 

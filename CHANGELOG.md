@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The search in Settings › Shortcuts filters commands and quicklinks as well as applications, and hides lists with
+  no matches.
+
 ## [0.10.1] - 2026-10-26
 
 ### Added

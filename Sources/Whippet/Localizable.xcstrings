@@ -2611,16 +2611,6 @@
         }
       }
     },
-    "Search applications" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "جست‌وجوی برنامه‌ها"
-          }
-        }
-      }
-    },
     "Search apps and commands" : {
       "localizations" : {
         "fa" : {
@@ -2637,6 +2627,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "در Whippet پیوند سریع را جست‌وجو کنید و Tab را بزنید تا متنی را تایپ کنید که جای {query} در پیوند آن را می‌گیرد."
+          }
+        }
+      }
+    },
+    "Search shortcuts" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جست‌وجوی میان‌برها"
           }
         }
       }
