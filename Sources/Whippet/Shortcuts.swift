@@ -51,6 +51,12 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
     }
 }
 
+extension WindowCommand {
+    var shortcutName: KeyboardShortcuts.Name {
+        KeyboardShortcuts.Name("window.\(rawValue)")
+    }
+}
+
 extension Quicklink {
     /// Keyed by UUID, so a hotkey survives renaming the quicklink.
     var shortcutName: KeyboardShortcuts.Name {
@@ -80,6 +86,7 @@ extension LauncherResult {
         case .stopwatch: CommandShortcut.stopwatch.name
         case .timersView: CommandShortcut.timers.name
         case .quicklink(let quicklink): quicklink.shortcutName
+        case .window(let command): command.shortcutName
         default: nil
         }
         return name.flatMap { KeyboardShortcuts.getShortcut(for: $0) }

@@ -18,6 +18,7 @@ enum LauncherResult: Identifiable, Hashable {
     case decaffeinate(until: String)
     case caffeinateMenuBar(isShown: Bool)
     case system(SystemCommand)
+    case window(WindowCommand)
     case quicklink(Quicklink)
     case createQuicklink
     /// A quicklink offered for the whole search text, opened with it straight away.
@@ -58,6 +59,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .decaffeinate: "command:decaffeinate"
         case .caffeinateMenuBar: "command:caffeinate-menu-bar"
         case .system(let command): "command:system.\(command.rawValue)"
+        case .window(let command): "command:window.\(command.rawValue)"
         case .quicklink(let quicklink): "quicklink:\(quicklink.uuid)"
         case .createQuicklink: "command:create-quicklink"
         case .searchWithQuicklink(let quicklink): "with:quicklink:\(quicklink.uuid)"
@@ -87,6 +89,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .changelog: String(localized: "Changelog")
         case .shareWhippet: String(localized: "Share Whippet with a Friend")
         case .system(let command): command.title
+        case .window(let command): command.title
         case .quicklink(let quicklink): quicklink.name
         case .createQuicklink: String(localized: "Create Quicklink")
         case .searchWithQuicklink(let quicklink): quicklink.name
@@ -124,6 +127,7 @@ enum LauncherResult: Identifiable, Hashable {
             String(localized: "Command")
         case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
         case .caffeinateMenuBar, .system, .createQuicklink, .searchClipboard: String(localized: "Command")
+        case .window: String(localized: "Window")
         case .quicklink, .searchWithQuicklink: String(localized: "Quicklink")
         case .decaffeinate(let until): until
         case .startTimer, .timerPreset: String(localized: "Timer")
@@ -201,6 +205,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .changelog: String(localized: "Open in Browser")
         case .shareWhippet: String(localized: "Copy Link")
         case .system: String(localized: "Run Command")
+        case .window: String(localized: "Move Window")
         case .quicklink(let quicklink): quicklink.takesArgument ? String(localized: "Enter Text") : String(localized: "Open Quicklink")
         case .createQuicklink: String(localized: "Open Command")
         case .searchWithQuicklink: String(localized: "Open Quicklink")
@@ -603,6 +608,7 @@ final class LauncherModel {
                 + [.caffeinateMenuBar(isShown: caffeine.showsInMenuBar)]
                 + SystemCommand.allCases.map(LauncherResult.system)
                 + [.createQuicklink, .newTimer, .timersView, .newStopwatch, .stopwatch]
+                + WindowCommand.allCases.map(LauncherResult.window)
             let timerRows = timers.ringing.map(LauncherResult.ringingTimer) + timers.items.map(LauncherResult.timer)
             let candidates = commands
                 + quicklinks.items.map(LauncherResult.quicklink)
@@ -978,6 +984,11 @@ final class LauncherModel {
             let text = query
             open(.clipboard)
             query = text
+        case .window(let command):
+            // The app the panel opened over, or Whippet itself over one of its own windows.
+            let app = targetWindow != nil ? NSRunningApplication.current : targetApp
+            onDismiss()
+            DispatchQueue.main.async { WindowManager.perform(command, in: app) }
         case .system(let command):
             onDismiss()
             // After the panel has gone, so neither a confirmation nor the system's own response is hidden behind it.
@@ -1212,6 +1223,7 @@ final class LauncherModel {
         case .app: return String(localized: "Applications")
         case .quicklink: return String(localized: "Quicklinks")
         case .timerPreset: return String(localized: "Recent Timers")
+        case .window: return String(localized: "Window")
         default: return String(localized: "Commands")
         }
     }

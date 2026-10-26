@@ -5,6 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Window commands that move and resize the front window: left, right, top and bottom halves, thirds and two thirds,
+  Maximize, Center, Next Display and Restore. Each can have its own hotkey in Settings › Shortcuts. They use the
+  Accessibility permission pasting already asks for.
+
 ## [0.10.6] - 2026-10-26
 
 ### Changed

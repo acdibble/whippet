@@ -88,6 +88,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self?.run(command)
             }
         }
+        // Straight on the front window, without the panel.
+        for command in WindowCommand.allCases {
+            KeyboardShortcuts.onKeyDown(for: command.shortcutName) {
+                WindowManager.perform(command, in: NSWorkspace.shared.frontmostApplication)
+            }
+        }
         registerAppHotkeys()
         registerQuicklinkHotkeys()
         appIndex.onChange = { [weak self] in self?.registerAppHotkeys() }

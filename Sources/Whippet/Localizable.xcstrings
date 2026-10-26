@@ -411,6 +411,16 @@
         }
       }
     },
+    "Bottom Half" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نیمهٔ پایین"
+          }
+        }
+      }
+    },
     "Caffeinate" : {
       "localizations" : {
         "fa" : {
@@ -527,6 +537,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لغو تایمر"
+          }
+        }
+      }
+    },
+    "Center" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وسط"
+          }
+        }
+      }
+    },
+    "Center Third" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک‌سوم میانی"
           }
         }
       }
@@ -1281,6 +1311,26 @@
         }
       }
     },
+    "First Third" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک‌سوم اول"
+          }
+        }
+      }
+    },
+    "First Two Thirds" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دوسوم اول"
+          }
+        }
+      }
+    },
     "Floating Calculator" : {
       "localizations" : {
         "fa" : {
@@ -1641,12 +1691,42 @@
         }
       }
     },
+    "Last Third" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک‌سوم آخر"
+          }
+        }
+      }
+    },
+    "Last Two Thirds" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دوسوم آخر"
+          }
+        }
+      }
+    },
     "Last copied" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "آخرین کپی"
+          }
+        }
+      }
+    },
+    "Left Half" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نیمهٔ چپ"
           }
         }
       }
@@ -1741,6 +1821,16 @@
         }
       }
     },
+    "Maximize" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بزرگ‌کردن"
+          }
+        }
+      }
+    },
     "Memory" : {
       "localizations" : {
         "fa" : {
@@ -1757,6 +1847,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "دقیقه"
+          }
+        }
+      }
+    },
+    "Move Window" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جابه‌جایی پنجره"
           }
         }
       }
@@ -1781,12 +1881,12 @@
         }
       }
     },
-    "Needs Accessibility permission to send ⌘V; without it, Return only copies" : {
+    "Needs Accessibility permission to send ⌘V and move other apps' windows; without it, Return only copies" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "برای ارسال ⌘V به مجوز دسترس‌پذیری نیاز دارد؛ بدون آن، Return فقط کپی می‌کند"
+            "value" : "برای فرستادن ⌘V و جابه‌جایی پنجره‌های برنامه‌های دیگر به اجازهٔ دسترس‌پذیری نیاز است؛ بدون آن، Return فقط کپی می‌کند"
           }
         }
       }
@@ -1807,6 +1907,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نام جدید"
+          }
+        }
+      }
+    },
+    "Next Display" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمایشگر بعدی"
           }
         }
       }
@@ -2131,12 +2241,12 @@
         }
       }
     },
-    "Paste into Apps" : {
+    "Paste and Move Windows" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "جای‌گذاری در برنامه‌ها"
+            "value" : "جای‌گذاری و جابه‌جایی پنجره‌ها"
           }
         }
       }
@@ -2561,6 +2671,16 @@
         }
       }
     },
+    "Restore" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بازگرداندن"
+          }
+        }
+      }
+    },
     "Results" : {
       "localizations" : {
         "fa" : {
@@ -2577,6 +2697,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ادامه"
+          }
+        }
+      }
+    },
+    "Right Half" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نیمهٔ راست"
           }
         }
       }
@@ -3271,6 +3401,16 @@
         }
       }
     },
+    "Top Half" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نیمهٔ بالا"
+          }
+        }
+      }
+    },
     "Total" : {
       "localizations" : {
         "fa" : {
@@ -3527,6 +3667,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تنظیمات Whippet"
+          }
+        }
+      }
+    },
+    "Window" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پنجره"
           }
         }
       }

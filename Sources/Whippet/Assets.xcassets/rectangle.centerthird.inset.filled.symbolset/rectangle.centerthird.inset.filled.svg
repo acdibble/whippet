@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Center Third for Whippet, drawn to the proportions of rectangle.leadingthird.inset.filled-->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="3300" height="2200">
+ <g id="Notes">
+  <rect height="2200" id="artboard" style="fill:white;opacity:1" width="3300" x="0" y="0"/>
+ </g>
+ <g id="Guides">
+  <line id="Baseline-S" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="696" y2="696"/>
+  <line id="Capline-S" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="625.541" y2="625.541"/>
+  <line id="Baseline-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1126" y2="1126"/>
+  <line id="Capline-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1055.54" y2="1055.54"/>
+  <line id="Baseline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1556" y2="1556"/>
+  <line id="Capline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1485.54" y2="1485.54"/>
+  <line id="left-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1391.0" x2="1391.0" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1531.05" x2="1531.05" y1="1030.79" y2="1150.12"/>
+ </g>
+ <g id="Symbols">
+  <g id="Regular-M" transform="matrix(1 0 0 1 1391.0 1126)">
+   <path d="M26.700 -80.250 L113.300 -80.250 C121.143 -80.250 127.500 -73.893 127.500 -66.050 L127.500 -4.450 C127.500 3.393 121.143 9.750 113.300 9.750 L26.700 9.750 C18.857 9.750 12.500 3.393 12.500 -4.450 L12.500 -66.050 C12.500 -73.893 18.857 -80.250 26.700 -80.250 Z M26.700 -72.350 C23.221 -72.350 20.400 -69.529 20.400 -66.050 L20.400 -4.450 C20.400 -0.971 23.221 1.850 26.700 1.850 L113.300 1.850 C116.779 1.850 119.600 -0.971 119.600 -4.450 L119.600 -66.050 C119.600 -69.529 116.779 -72.350 113.300 -72.350 Z M61.950 -65.550 L78.050 -65.550 C79.762 -65.550 81.150 -64.162 81.150 -62.450 L81.150 -7.950 C81.150 -6.238 79.762 -4.850 78.050 -4.850 L61.950 -4.850 C60.238 -4.850 58.850 -6.238 58.850 -7.950 L58.850 -62.450 C58.850 -64.162 60.238 -65.550 61.950 -65.550 Z"/>
+  </g>
+ </g>
+</svg>

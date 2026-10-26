@@ -221,8 +221,8 @@ private struct GeneralPane: View {
                         }
                     }
                 } label: {
-                    Text("Paste into Apps")
-                    Text("Needs Accessibility permission to send ⌘V; without it, Return only copies")
+                    Text("Paste and Move Windows")
+                    Text("Needs Accessibility permission to send ⌘V and move other apps' windows; without it, Return only copies")
                 }
             }
 
@@ -251,8 +251,8 @@ private struct GeneralPane: View {
     }
 }
 
-/// A hotkey recorder for each command, quicklink and installed application; recorded hotkeys are live immediately. The
-/// search filters all three, and a list with nothing matching is left out.
+/// A hotkey recorder for each command, window command, quicklink and installed application; recorded hotkeys are live
+/// immediately. The search filters every list, and a list with nothing matching is left out.
 private struct ShortcutsPane: View {
     let appIndex: AppIndex
     let quicklinks: Quicklinks
@@ -260,6 +260,7 @@ private struct ShortcutsPane: View {
 
     var body: some View {
         let commands = CommandShortcut.allCases.filter { matches($0.title) }
+        let windowCommands = WindowCommand.allCases.filter { matches($0.title) }
         let quicklinks = quicklinks.items.filter { matches($0.name) }
         let apps = appIndex.apps.filter { matches($0.name) }
 
@@ -269,6 +270,15 @@ private struct ShortcutsPane: View {
                     ForEach(commands) { command in
                         KeyboardShortcuts.Recorder(for: command.name) {
                             Label(command.title, systemImage: command.symbol)
+                        }
+                    }
+                }
+            }
+            if !windowCommands.isEmpty {
+                Section("Window") {
+                    ForEach(windowCommands) { command in
+                        KeyboardShortcuts.Recorder(for: command.shortcutName) {
+                            Label { Text(command.title) } icon: { command.image }
                         }
                     }
                 }
@@ -299,7 +309,7 @@ private struct ShortcutsPane: View {
             }
         }
         .overlay {
-            if commands.isEmpty, quicklinks.isEmpty, apps.isEmpty {
+            if commands.isEmpty, windowCommands.isEmpty, quicklinks.isEmpty, apps.isEmpty {
                 ContentUnavailableView.search(text: search)
             }
         }

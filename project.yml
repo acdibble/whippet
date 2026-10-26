@@ -109,6 +109,7 @@ targets:
       - Sources/Whippet/TimerDuration.swift
       - Sources/Whippet/TimerItem.swift
       - Sources/Whippet/UnitConversion.swift
+      - Sources/Whippet/WindowLayout.swift
     dependencies:
       - package: GRDB
       - package: Units
