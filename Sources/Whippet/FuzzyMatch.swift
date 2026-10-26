@@ -36,7 +36,18 @@ enum FuzzyMatch {
         }
 
         guard let score = best.compactMap({ $0 }).max() else { return nil }
-        return score - candidateChars.count / 10
+        return score + prefixBonus(queryChars, in: candidateChars, original: original) - candidateChars.count / 10
+    }
+
+    /// What you type is usually how a name starts, so a name starting with the query beats letters scattered across
+    /// word starts, as Settings beats Search YouTube for "set", whatever either's usage. A word starting with it, such as
+    /// System Settings or a quicklink's keyword, counts for less.
+    private static func prefixBonus(_ query: [Character], in candidate: [Character], original: [Character]) -> Int {
+        if candidate.starts(with: query) { return 15 }
+        let startsAWord = candidate.indices.contains { index in
+            isWordStart(index, in: original) && candidate[index...].starts(with: query)
+        }
+        return startsAWord ? 8 : 0
     }
 
     /// The start of a word: the first character, one after a space or punctuation, or a capital after a lowercase letter.

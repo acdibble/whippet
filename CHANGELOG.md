@@ -14,6 +14,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 - With more than one screen, the launcher opened on the screen with Settings when Settings was open, rather than
   the screen you were working on.
+- A command or app whose name starts with what you type now comes before matches scattered through other names, so
+  `set` finds Settings before Search YouTube.
 
 ## [0.10.0] - 2026-10-25
 

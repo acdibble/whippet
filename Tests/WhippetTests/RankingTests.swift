@@ -31,6 +31,23 @@ struct RankingTests {
         #expect(ranked.first == "Terminal")
     }
 
+    @Test func aNameStartingWithTheQueryBeatsAScatteredMatch() {
+        // Search YouTube matches s-e at its start and the word-start T of YouTube, and is used more.
+        let use: [String: Double] = ["Settings": 1, "Search YouTube yt": 6]
+        let ranked = Ranking.rank(
+            ["Search YouTube yt", "Settings", "System Settings", "Script Editor"],
+            query: "set",
+            title: { $0 },
+            frecency: { use[$0] ?? 0 }
+        )
+        #expect(ranked.first == "Settings")
+    }
+
+    @Test func aKeywordStillFindsItsQuicklink() {
+        let ranked = Ranking.rank(["YouTube Music", "Search YouTube yt"], query: "yt", title: { $0 }, frecency: { _ in 0 })
+        #expect(ranked.first == "Search YouTube yt")
+    }
+
     @Test func nonMatchesAreDropped() {
         #expect(Ranking.rank(["Safari", "Notes"], query: "saf", title: { $0 }, frecency: { _ in 0 }) == ["Safari"])
     }
