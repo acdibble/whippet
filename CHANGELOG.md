@@ -10,6 +10,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 - A Share Whippet with a Friend command, and a Copy Download Link button in Settings › About, which copy a link to
   download the latest release.
 
+### Fixed
+
+- With more than one screen, the launcher opened on the screen with Settings when Settings was open, rather than
+  the screen you were working on.
+
 ## [0.10.0] - 2026-10-25
 
 ### Added

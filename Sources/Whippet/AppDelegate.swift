@@ -202,8 +202,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model.reset()
         let frontmost = NSWorkspace.shared.frontmostApplication
         model.targetApp = frontmost?.processIdentifier == ProcessInfo.processInfo.processIdentifier ? nil : frontmost
+        // The screen is chosen from the app in front, before Whippet activates and its own windows take focus.
+        panel.center(onScreenOf: frontmost)
         NSApp.activate()
-        panel.center()
         panel.makeKeyAndOrderFront(nil)
     }
 
