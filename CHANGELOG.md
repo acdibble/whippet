@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-26
+
 ### Added
 
 - Window commands that move and resize the front window: left, right, top and bottom halves, thirds and two thirds,
@@ -244,7 +246,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v0.10.6...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/acdibble/whippet/compare/v0.10.6...v0.11.0
 [0.10.6]: https://github.com/acdibble/whippet/compare/v0.10.5...v0.10.6
 [0.10.5]: https://github.com/acdibble/whippet/compare/v0.10.4...v0.10.5
 [0.10.4]: https://github.com/acdibble/whippet/compare/v0.10.3...v0.10.4
