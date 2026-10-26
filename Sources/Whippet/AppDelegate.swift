@@ -186,8 +186,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     ]
 
     /// Clicking the Dock icon, which only shows while Settings is open, brings Settings forward.
+    /// The Dock icon only shows while a window is open, so clicking it brings back that window, such as Send Feedback,
+    /// and opens Settings only when nothing is open.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        showSettings()
+        let windowIDs = [SettingsView.windowID, FeedbackView.windowID]
+        let openWindow = NSApp.windows.first { window in
+            window.isVisible && windowIDs.contains { window.identifier?.rawValue.hasPrefix($0) == true }
+        }
+        guard let openWindow else {
+            showSettings()
+            return false
+        }
+        openWindow.makeKeyAndOrderFront(nil)
         return false
     }
 
@@ -201,7 +211,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func showPanel() {
         model.reset()
         let frontmost = NSWorkspace.shared.frontmostApplication
-        model.targetApp = frontmost?.processIdentifier == ProcessInfo.processInfo.processIdentifier ? nil : frontmost
+        let isWhippetInFront = frontmost?.processIdentifier == ProcessInfo.processInfo.processIdentifier
+        // Over one of Whippet's own windows, such as Send Feedback, pastes go to that window.
+        model.targetWindow = isWhippetInFront ? NSApp.keyWindow.flatMap { $0 === panel ? nil : $0 } : nil
+        model.targetApp = isWhippetInFront && model.targetWindow == nil ? nil : frontmost
         // The screen is chosen from the app in front, before Whippet activates and its own windows take focus.
         panel.center(onScreenOf: frontmost)
         NSApp.activate()
@@ -330,6 +343,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// brought back instead.
     private func dismissPanel() {
         panel.orderOut(nil)
+        if let window = model.targetWindow, window.isVisible {
+            window.makeKeyAndOrderFront(nil)
+            return
+        }
         guard NSApp.isActive, !isSettingsOpen else { return }
         if floatingCalculator.isVisible, let targetApp = model.targetApp {
             targetApp.activate()

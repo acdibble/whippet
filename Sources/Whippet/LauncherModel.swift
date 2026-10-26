@@ -397,6 +397,8 @@ final class LauncherModel {
     @ObservationIgnored var onDismiss: () -> Void = {}
     /// The app that was in front when the panel opened, which keeps keyboard focus underneath it and receives pastes.
     var targetApp: NSRunningApplication?
+    /// One of Whippet's own windows when the panel opened over it. Pastes go to it without needing Accessibility.
+    weak var targetWindow: NSWindow?
     @ObservationIgnored var onOpenSettings: () -> Void = {}
     @ObservationIgnored var onSendFeedback: () -> Void = {}
     @ObservationIgnored var onReadFeedback: () -> Void = {}
@@ -1103,6 +1105,10 @@ final class LauncherModel {
     /// Without Accessibility permission the item stays copied and macOS is asked to show its permission prompt.
     private func dismissAndPaste(copyOnly: Bool) {
         onDismiss()
+        if !copyOnly, let targetWindow {
+            Paster.paste(into: targetWindow)
+            return
+        }
         if !copyOnly, targetApp != nil, Paster.isTrusted {
             Paster.pasteAfterPanelCloses()
             return

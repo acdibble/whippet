@@ -10,6 +10,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Up to 10 images can be attached to feedback, by pasting, dropping or choosing them. They're sent at full size,
   sealed like the rest of the feedback, without their location or other camera details.
 
+### Fixed
+
+- Pasting from clipboard history into Whippet's own windows, such as Send Feedback, pastes there, and no longer
+  hides the window.
+- Clicking the Dock icon brings back the open window, such as Send Feedback, and opens Settings only when nothing is
+  open.
+
 ## [0.10.3] - 2026-10-26
 
 ### Fixed
