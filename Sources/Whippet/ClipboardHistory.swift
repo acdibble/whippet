@@ -41,6 +41,8 @@ final class ClipboardHistory {
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var isRecognizing = false
     @ObservationIgnored private var isFetchingPreviews = false
+    /// Sites that asked for a pause, and until when. Their links wait while the rest are fetched.
+    @ObservationIgnored private var pausedHosts: [String: Date] = [:]
     /// Previews wait while the Mac is offline, rather than marking every link as having none.
     @ObservationIgnored private let pathMonitor = NWPathMonitor()
     @ObservationIgnored private var isOnline = true
@@ -286,10 +288,19 @@ final class ClipboardHistory {
         guard fetchesLinkPreviews, isOnline, !isFetchingPreviews, let store else { return }
         isFetchingPreviews = true
         Task {
-            while fetchesLinkPreviews, isOnline, let pending = try? store.nextLinkAwaitingPreview() {
-                let preview = await Self.fetchPreview(of: pending.url)
+            while fetchesLinkPreviews, isOnline, let pending = try? store.nextLinkAwaitingPreview(skippingHosts: activePauses) {
+                let fetched = await Self.fetchPreview(of: pending.url)
                 // Gone offline mid-fetch: the link waits until the Mac is back online.
                 guard isOnline else { break }
+                if case .rateLimited(let retryAfter) = fetched, let host = pending.url.host()?.lowercased() {
+                    pausePreviews(from: host, for: retryAfter)
+                    continue
+                }
+                // A link without a host can't be paused, so a rate limit counts as a failed fetch.
+                guard case .fetched(let preview) = fetched else {
+                    guard (try? store.setLinkPreview(title: "", imagePNG: nil, hash: pending.hash)) != nil else { break }
+                    continue
+                }
                 guard (try? store.setLinkPreview(title: preview.title, imagePNG: preview.png, hash: pending.hash)) != nil
                 else { break }
                 revision += 1
@@ -301,23 +312,57 @@ final class ClipboardHistory {
         }
     }
 
+    private var activePauses: Set<String> {
+        pausedHosts = pausedHosts.filter { $0.value > .now }
+        return Set(pausedHosts.keys)
+    }
+
+    private func pausePreviews(from host: String, for duration: TimeInterval) {
+        pausedHosts[host] = .now + duration
+        Task {
+            // A second over, so the pause has surely ended when the queue looks again.
+            try? await Task.sleep(for: .seconds(duration + 1))
+            fetchPendingLinkPreviews()
+        }
+    }
+
+    nonisolated private enum PreviewFetch {
+        case fetched((title: String, png: Data?))
+        case rateLimited(retryAfter: TimeInterval)
+    }
+
     nonisolated private static let previewTimeout: TimeInterval = 15
     /// Preview images are only shown in the history's detail pane, so they're kept no larger than this.
     nonisolated private static let previewMaxPixelSize = 1200
 
-    /// The page's title and its preview image, or the site's icon, as PNG. Fails quietly with an empty title.
-    nonisolated private static func fetchPreview(of url: URL) async -> (title: String, png: Data?) {
+    /// The page's title and its preview image as PNG: the one LinkPresentation finds, else the one the page's meta
+    /// tags name, else the site's icon. Fails quietly with an empty title.
+    nonisolated private static func fetchPreview(of url: URL) async -> PreviewFetch {
         let provider = LPMetadataProvider()
         provider.timeout = previewTimeout
-        guard let metadata = try? await provider.startFetchingMetadata(for: url) else { return ("", nil) }
+        guard let metadata = try? await provider.startFetchingMetadata(for: url) else { return .fetched(("", nil)) }
         let title = metadata.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard let imageProvider = metadata.imageProvider ?? metadata.iconProvider else { return (title, nil) }
-        let data: Data? = await withCheckedContinuation { continuation in
-            imageProvider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
+        if let imageProvider = metadata.imageProvider, let data = await load(imageProvider) {
+            return .fetched((title, downscaledPNG(data)))
+        }
+        switch await PageImage.fetch(for: metadata.url ?? url, timeout: previewTimeout) {
+        case .image(let data):
+            if let png = downscaledPNG(data) { return .fetched((title, png)) }
+        case .rateLimited(let retryAfter):
+            return .rateLimited(retryAfter: retryAfter)
+        case .none:
+            break
+        }
+        guard let iconProvider = metadata.iconProvider else { return .fetched((title, nil)) }
+        return .fetched((title, await load(iconProvider).flatMap(downscaledPNG)))
+    }
+
+    nonisolated private static func load(_ provider: NSItemProvider) async -> Data? {
+        await withCheckedContinuation { continuation in
+            provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
                 continuation.resume(returning: data)
             }
         }
-        return (title, data.flatMap(downscaledPNG))
     }
 
     nonisolated private static func downscaledPNG(_ data: Data) -> Data? {

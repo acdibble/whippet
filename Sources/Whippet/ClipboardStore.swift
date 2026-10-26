@@ -285,8 +285,8 @@ final class ClipboardStore: Sendable {
 
     // MARK: - Link previews
 
-    /// The newest link whose preview hasn't been fetched yet.
-    func nextLinkAwaitingPreview() throws -> (hash: String, url: URL)? {
+    /// The newest link whose preview hasn't been fetched yet, leaving out sites that asked for a pause.
+    func nextLinkAwaitingPreview(skippingHosts: Set<String> = []) throws -> (hash: String, url: URL)? {
         try database.read { db in
             let rows = try Row.fetchAll(
                 db,
@@ -295,7 +295,8 @@ final class ClipboardStore: Sendable {
             )
             for row in rows {
                 let text: String? = row["text"]
-                if let url = text.flatMap({ URL(string: $0.trimmingCharacters(in: .whitespacesAndNewlines)) }) {
+                if let url = text.flatMap({ URL(string: $0.trimmingCharacters(in: .whitespacesAndNewlines)) }),
+                   !skippingHosts.contains(url.host()?.lowercased() ?? "") {
                     return (row["contentHash"], url)
                 }
             }
@@ -306,17 +307,23 @@ final class ClipboardStore: Sendable {
     /// Saves a fetched preview. An empty title marks a link whose page had none, or couldn't be fetched, so it isn't
     /// fetched again. Local only, like recognized text in previews.
     func setLinkPreview(title: String, imagePNG: Data?, hash: String) throws {
+        // Each image gets a new name, as thumbnails are cached by file, so one fetched again isn't shown stale.
         var imageFile: String?
         if let imagePNG {
-            let name = "link-\(hash).png"
+            let name = "link-\(hash)-\(UUID().uuidString.prefix(8)).png"
             try imagePNG.write(to: imagesDirectory.appending(path: name))
             imageFile = name
         }
-        try database.write { db in
+        let oldFile = try database.write { db in
+            let oldFile = try String.fetchOne(db, sql: "SELECT linkImageFile FROM clipboard WHERE contentHash = ?", arguments: [hash])
             try db.execute(
                 sql: "UPDATE clipboard SET linkTitle = ?, linkImageFile = ?, linkOcrText = NULL WHERE contentHash = ?",
                 arguments: [title, imageFile, hash]
             )
+            return oldFile
+        }
+        if let oldFile, oldFile != imageFile {
+            try? FileManager.default.removeItem(at: imagesDirectory.appending(path: oldFile))
         }
     }
 
@@ -858,6 +865,11 @@ final class ClipboardStore: Sendable {
                 table.column("linkTitle")
                 table.column("linkOcrText")
             }
+        }
+        // Previews fetched before 0.10.6 often have only the site's icon, as LinkPresentation finds no share image on
+        // some sites, so every link's preview is fetched again. The old image stays until the new one replaces it.
+        migrator.registerMigration("refetchLinkPreviews") { db in
+            try db.execute(sql: "UPDATE clipboard SET linkTitle = NULL WHERE kind = 'link'")
         }
         return migrator
     }

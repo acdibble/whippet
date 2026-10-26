@@ -418,6 +418,47 @@ final class ClipboardStoreTests {
         #expect(try store.unsyncedItems(includeImages: true).isEmpty)
     }
 
+    @Test func previewsFetchedBeforeThePageImageFallbackAreFetchedAgain() throws {
+        try store.recordText("https://example.com", sourceBundleID: nil)
+        try store.recordText("not a link", sourceBundleID: nil)
+        let pending = try #require(try store.nextLinkAwaitingPreview())
+        try store.setLinkPreview(title: "Example", imagePNG: Data([1]), hash: pending.hash)
+        #expect(try store.nextLinkAwaitingPreview() == nil)
+
+        // As if the database were from a version before the migration.
+        let database = try DatabaseQueue(path: directory.appending(path: "clipboard.sqlite").path)
+        try database.write { try $0.execute(sql: "DELETE FROM grdb_migrations WHERE identifier = 'refetchLinkPreviews'") }
+        try database.close()
+        let reopened = try ClipboardStore(directory: directory)
+
+        #expect(try reopened.nextLinkAwaitingPreview()?.hash == pending.hash)
+        // The old image is kept until it's replaced, so it's still shown, and deleted with the link.
+        let link = try #require(try reopened.search("", kind: .link, limit: 10).first)
+        let file = try #require(reopened.imageURL(for: link))
+        #expect(FileManager.default.fileExists(atPath: file.path))
+        _ = try reopened.deleteItems(copiedBefore: nil, includingPinned: true)
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+    }
+
+    @Test func aPreviewFetchedAgainGetsANewFileAndRemovesTheOldOne() throws {
+        try store.recordText("https://example.com", sourceBundleID: nil)
+        let pending = try #require(try store.nextLinkAwaitingPreview())
+        try store.setLinkPreview(title: "Example", imagePNG: Data([1]), hash: pending.hash)
+        let firstItem = try #require(try items().first)
+        let first = try #require(store.imageURL(for: firstItem))
+
+        try store.setLinkPreview(title: "Example", imagePNG: Data([2]), hash: pending.hash)
+        let secondItem = try #require(try items().first)
+        let second = try #require(store.imageURL(for: secondItem))
+        #expect(second != first)
+        #expect(!FileManager.default.fileExists(atPath: first.path))
+        #expect(FileManager.default.fileExists(atPath: second.path))
+
+        try store.setLinkPreview(title: "Example", imagePNG: nil, hash: pending.hash)
+        #expect(try items().first?.linkImageFile == nil)
+        #expect(!FileManager.default.fileExists(atPath: second.path))
+    }
+
     @Test func refreshingAndDeletingRemoveThePreviewImage() throws {
         try store.recordText("https://example.com", sourceBundleID: nil)
         let pending = try #require(try store.nextLinkAwaitingPreview())

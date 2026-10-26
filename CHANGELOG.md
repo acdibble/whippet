@@ -5,6 +5,16 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Link previews in clipboard history show the page title first, with the image in the space below, and the details
+  list the URL. Images no longer list how many words were recognized.
+
+### Fixed
+
+- Link previews use the page's share image when macOS doesn't find one, as on GitHub, instead of the site's icon.
+  Previews already fetched are fetched again once, and sites that ask for a pause are retried later.
+
 ## [0.10.5] - 2026-10-26
 
 ### Fixed
