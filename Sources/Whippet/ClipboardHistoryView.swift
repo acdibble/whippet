@@ -221,12 +221,10 @@ private struct ItemDetail: View {
             rows += [
                 InformationRow("Dimensions", "\(item.imageWidth ?? 0)×\(item.imageHeight ?? 0)"),
                 InformationRow("Size", Int64(item.imageBytes ?? 0).formatted(.byteCount(style: .file))),
-                InformationRow("Recognized words", recognizedWords),
             ]
         } else if item.kind == .link {
             rows += [
-                InformationRow("Site", item.linkHost ?? ""),
-                InformationRow("Page title", pageTitle),
+                InformationRow("URL", item.text ?? ""),
             ]
         } else {
             let text = item.text ?? ""
@@ -240,44 +238,31 @@ private struct ItemDetail: View {
             InformationRow("Last copied", item.copiedAt.formatted(date: .abbreviated, time: .shortened)),
         ]
     }
-
-    private var recognizedWords: String {
-        guard let ocrText = item.ocrText else { return String(localized: "Processing…") }
-        return ocrText.split(whereSeparator: \.isWhitespace).count.formatted()
-    }
-
-    private var pageTitle: String {
-        guard let linkTitle = item.linkTitle else { return String(localized: "Processing…") }
-        return linkTitle.isEmpty ? String(localized: "None") : linkTitle
-    }
 }
 
-/// A link's preview image, page title and address.
+/// A link's page title, then its preview image in the space left. The address is in the details below.
 private struct LinkPreview: View {
     let item: ClipboardItem
     let imageURL: URL?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                if let imageURL {
-                    ThumbnailView(url: imageURL, maxPixelSize: 1200) { ProgressView().controlSize(.small) }
-                        .frame(maxWidth: .infinity, maxHeight: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                if item.hasLinkTitle {
-                    Text(item.title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .textSelection(.enabled)
-                }
-                Text(item.text ?? "")
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(Color.launcherSecondary)
+        VStack(alignment: .leading, spacing: 10) {
+            if item.hasLinkTitle {
+                Text(item.title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .lineLimit(2)
                     .textSelection(.enabled)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
+            if let imageURL {
+                ThumbnailView(url: imageURL, maxPixelSize: 1200) { ProgressView().controlSize(.small) }
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                Spacer(minLength: 0)
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
     }
 }
 

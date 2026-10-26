@@ -2131,16 +2131,6 @@
         }
       }
     },
-    "Page title" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عنوان صفحه"
-          }
-        }
-      }
-    },
     "Paste into Apps" : {
       "localizations" : {
         "fa" : {
@@ -2301,16 +2291,6 @@
         }
       }
     },
-    "Processing…" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "در حال پردازش…"
-          }
-        }
-      }
-    },
     "Product" : {
       "localizations" : {
         "fa" : {
@@ -2417,16 +2397,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تایمرهای اخیر"
-          }
-        }
-      }
-    },
-    "Recognized words" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "واژه‌های شناسایی‌شده"
           }
         }
       }
@@ -2887,16 +2857,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "برای همگام‌سازی وارد iCloud شوید."
-          }
-        }
-      }
-    },
-    "Site" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "سایت"
           }
         }
       }
@@ -3377,6 +3337,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "برای فیلتر کردن موارد بنویسید…"
+          }
+        }
+      }
+    },
+    "URL" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نشانی"
           }
         }
       }
