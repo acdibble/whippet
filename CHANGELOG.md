@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-10-26
+
 ### Changed
 
 - The search in Settings › Shortcuts filters commands and quicklinks as well as applications, and hides lists with
@@ -196,7 +198,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v0.10.2...HEAD
+[0.10.2]: https://github.com/acdibble/whippet/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/acdibble/whippet/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/acdibble/whippet/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/acdibble/whippet/compare/v0.8.0...v0.9.0
