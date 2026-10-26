@@ -221,6 +221,16 @@
         }
       }
     },
+    "Add Images…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزودن تصاویر…"
+          }
+        }
+      }
+    },
     "Add Quicklink…" : {
       "localizations" : {
         "fa" : {
@@ -1441,6 +1451,16 @@
         }
       }
     },
+    "Images are sent without their location or other details from the camera." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصاویر بدون موقعیت مکانی و دیگر جزئیات دوربین فرستاده می‌شوند."
+          }
+        }
+      }
+    },
     "Import" : {
       "localizations" : {
         "fa" : {
@@ -2001,6 +2021,16 @@
         }
       }
     },
+    "Open Image" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن تصویر"
+          }
+        }
+      }
+    },
     "Open Notification Settings…" : {
       "localizations" : {
         "fa" : {
@@ -2117,6 +2147,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جای‌گذاری در برنامه‌ها"
+          }
+        }
+      }
+    },
+    "Paste or drop screenshots here" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اسکرین‌شات‌ها را اینجا جای‌گذاری کنید یا بکشید"
           }
         }
       }
@@ -2447,6 +2487,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حذف"
+          }
+        }
+      }
+    },
+    "Remove Image" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف تصویر"
           }
         }
       }

@@ -1,6 +1,7 @@
 import AppKit
 import CloudKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The window for sending feedback, opened from the menu bar menu, the Send Feedback command and Settings › About.
 struct FeedbackView: View {
@@ -13,6 +14,15 @@ struct FeedbackView: View {
     @State private var canSend: Bool?
     @State private var isSending = false
     @State private var error: String?
+    @State private var images: [AttachedImage] = []
+    @State private var isChoosingImages = false
+    @State private var pasteMonitor: Any?
+
+    private struct AttachedImage: Identifiable {
+        let id = UUID()
+        let data: Data
+        let thumbnail: CGImage
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,6 +32,7 @@ struct FeedbackView: View {
                         .font(.body)
                         .frame(minHeight: 140)
                 }
+                imagesSection
                 Section {
                     TextField("Email", text: $email, prompt: Text("Optional, if you'd like a reply"))
                 }
@@ -44,6 +55,9 @@ struct FeedbackView: View {
                 }
             }
             .formStyle(.grouped)
+            // Sized to its sections, so the window grows with them instead of scrolling them under the buttons.
+            .scrollDisabled(true)
+            .fixedSize(horizontal: false, vertical: true)
 
             HStack {
                 Button("Open GitHub Issue…") {
@@ -57,13 +71,143 @@ struct FeedbackView: View {
             .padding([.horizontal, .bottom], 20)
         }
         .frame(width: 480)
+        .onDrop(of: [.fileURL, .image], isTargeted: nil, perform: drop)
+        .fileImporter(isPresented: $isChoosingImages, allowedContentTypes: [.image], allowsMultipleSelection: true) { result in
+            guard case .success(let urls) = result else { return }
+            attach(urls.compactMap { url in
+                let isAccessing = url.startAccessingSecurityScopedResource()
+                defer { if isAccessing { url.stopAccessingSecurityScopedResource() } }
+                return try? Data(contentsOf: url)
+            })
+        }
         .task { canSend = await store.canSend }
-        .onAppear { DockIcon.update() }
-        .onDisappear { DockIcon.update() }
+        .onAppear {
+            DockIcon.update()
+            startCatchingPastedImages()
+        }
+        .onDisappear {
+            DockIcon.update()
+            pasteMonitor.map(NSEvent.removeMonitor)
+            pasteMonitor = nil
+        }
     }
 
+    private var imagesSection: some View {
+        Section {
+            if !images.isEmpty {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 8) {
+                        ForEach(images) { image in
+                            Image(decorative: image.thumbnail, scale: 1)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 64, height: 64)
+                                .clipShape(.rect(cornerRadius: 6))
+                                .overlay(alignment: .topTrailing) {
+                                    Button {
+                                        images.removeAll { $0.id == image.id }
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .symbolRenderingMode(.palette)
+                                            .foregroundStyle(.white, .black.opacity(0.6))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help("Remove Image")
+                                    .padding(2)
+                                }
+                        }
+                    }
+                }
+                .scrollIndicators(.never)
+            }
+            HStack {
+                Text(images.isEmpty ? "Paste or drop screenshots here" : "\(images.count) of \(FeedbackImage.limit)")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Add Images…") { isChoosingImages = true }
+                    .disabled(images.count >= FeedbackImage.limit)
+            }
+        } header: {
+            Text("Images")
+        } footer: {
+            if !images.isEmpty {
+                Text("Images are sent without their location or other details from the camera.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// GitHub can't take images in a link, so the issue asks for them to be dragged in.
     private var issueBody: String {
-        "\(message)\n\n---\n\(SystemDetails.summary)"
+        let note = images.isEmpty ? "" : "\n\n(Drag the \(images.count) attached images here.)"
+        return "\(message)\(note)\n\n---\n\(SystemDetails.summary)"
+    }
+
+    /// The text box only takes text, so ⌘V with an image on the pasteboard attaches it instead.
+    private func startCatchingPastedImages() {
+        guard pasteMonitor == nil else { return }
+        pasteMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard
+                event.window?.identifier?.rawValue.hasPrefix(Self.windowID) == true,
+                event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+                event.charactersIgnoringModifiers == "v",
+                let pasted = FeedbackImage.images(on: .general)
+            else { return event }
+            attach(pasted)
+            return nil
+        }
+    }
+
+    private func drop(_ providers: [NSItemProvider]) -> Bool {
+        let providers = providers.filter { $0.canLoadObject(ofClass: URL.self) || $0.hasItemConformingToTypeIdentifier(UTType.image.identifier) }
+        guard !providers.isEmpty else { return false }
+        Task {
+            var dropped: [Data] = []
+            for provider in providers {
+                if let data = await Self.imageData(from: provider) { dropped.append(data) }
+            }
+            attach(dropped)
+        }
+        return true
+    }
+
+    private static func imageData(from provider: NSItemProvider) async -> Data? {
+        if provider.canLoadObject(ofClass: URL.self) {
+            let url = await withCheckedContinuation { continuation in
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in continuation.resume(returning: url) }
+            }
+            guard let url, url.isFileURL, UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true else { return nil }
+            return try? Data(contentsOf: url)
+        }
+        return await withCheckedContinuation { continuation in
+            _ = provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
+                continuation.resume(returning: data)
+            }
+        }
+    }
+
+    /// Strips metadata off the main thread, then adds what fits under the limit, beeping for anything left over or
+    /// unreadable.
+    private func attach(_ datas: [Data]) {
+        guard !datas.isEmpty else { return }
+        Task {
+            let prepared = await Task.detached(priority: .userInitiated) {
+                datas.map { data -> (Data, CGImage)? in
+                    guard
+                        let image = FeedbackImage.prepare(data),
+                        let thumbnail = FeedbackImage.thumbnail(of: image, maxPixelSize: 128)
+                    else { return nil }
+                    return (image, thumbnail)
+                }
+            }.value
+            let room = FeedbackImage.limit - images.count
+            let readable = prepared.compactMap { $0 }
+            images += readable.prefix(max(0, room)).map { AttachedImage(data: $0.0, thumbnail: $0.1) }
+            if readable.count != datas.count || readable.count > room {
+                NSSound.beep()
+            }
+        }
     }
 
     private func send() {
@@ -71,10 +215,11 @@ struct FeedbackView: View {
         error = nil
         Task {
             do {
-                try await store.send(message: message, email: email)
+                try await store.send(message: message, email: email, images: images.map(\.data))
                 Toast.shared.show(String(localized: "Thanks for the feedback"), symbol: "checkmark.circle.fill")
                 message = ""
                 email = ""
+                images = []
                 dismissWindow(id: Self.windowID)
             } catch {
                 self.error = error.localizedDescription
@@ -117,6 +262,9 @@ struct FeedbackAdminPane: View {
                     Text(entry.details)
                         .font(.caption.monospaced())
                         .foregroundStyle(.secondary)
+                    if entry.imageCount > 0 {
+                        FeedbackImagesRow(store: store, entry: entry)
+                    }
                     HStack {
                         if entry.isHandled {
                             Label("Handled", systemImage: "checkmark.circle.fill")
@@ -188,7 +336,8 @@ struct FeedbackAdminPane: View {
     /// submitted, so marking the feedback handled is a separate step.
     private func createIssue(from entry: FeedbackStore.Entry) {
         let title = entry.message.split(whereSeparator: \.isNewline).first.map { String($0.prefix(80)) } ?? ""
-        GitHubIssue.open(title: title, body: "\(entry.message)\n\n---\nFrom in-app feedback\n\(entry.details)")
+        let note = entry.imageCount > 0 ? "\n\n(\(entry.imageCount) images attached in Whippet.)" : ""
+        GitHubIssue.open(title: title, body: "\(entry.message)\(note)\n\n---\nFrom in-app feedback\n\(entry.details)")
     }
 
     private func reply(to email: String, about entry: FeedbackStore.Entry) {
@@ -214,6 +363,65 @@ struct FeedbackAdminPane: View {
             }
             await reload()
         }
+    }
+}
+
+/// A feedback's images, fetched and opened when its section is shown. Clicking one opens it in the default viewer.
+private struct FeedbackImagesRow: View {
+    let store: FeedbackStore
+    let entry: FeedbackStore.Entry
+    @State private var images: [(data: Data, thumbnail: CGImage)]?
+    @State private var error: String?
+
+    var body: some View {
+        Group {
+            if let images {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 8) {
+                        ForEach(images.indices, id: \.self) { index in
+                            Button {
+                                open(images[index].data, index: index)
+                            } label: {
+                                Image(decorative: images[index].thumbnail, scale: 1)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 80, height: 80)
+                                    .clipShape(.rect(cornerRadius: 6))
+                            }
+                            .buttonStyle(.plain)
+                            .help("Open Image")
+                        }
+                    }
+                }
+                .scrollIndicators(.never)
+            } else if let error {
+                Text(error)
+                    .foregroundStyle(.red)
+            } else {
+                LabeledContent("Images") {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+            }
+        }
+        .task(id: entry.id) {
+            do {
+                let datas = try await store.images(of: entry)
+                images = datas.compactMap { data in
+                    FeedbackImage.thumbnail(of: data, maxPixelSize: 160).map { (data, $0) }
+                }
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
+    }
+
+    private func open(_ data: Data, index: Int) {
+        let url = FileManager.default.temporaryDirectory
+            .appending(path: "Whippet Feedback \(entry.id.recordName.prefix(8)) \(index + 1)")
+            .appendingPathExtension(FeedbackImage.fileExtension(of: data))
+        guard (try? data.write(to: url)) != nil else { return }
+        NSWorkspace.shared.open(url)
     }
 }
 

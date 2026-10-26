@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Up to 10 images can be attached to feedback, by pasting, dropping or choosing them. They're sent at full size,
+  sealed like the rest of the feedback, without their location or other camera details.
+
 ## [0.10.3] - 2026-10-26
 
 ### Fixed

@@ -37,6 +37,29 @@ enum SealedFeedback {
         )
         return try JSONDecoder().decode(FeedbackContent.self, from: try recipient.open(ciphertext))
     }
+
+    private static let imageInfo = Data("Whippet feedback image v1".utf8)
+    /// The length of an X25519 encapsulated key, which starts each sealed image.
+    private static let encapsulatedKeyLength = 32
+
+    /// Seals an image on its own, as one blob of the encapsulated key followed by the ciphertext, so each image can be
+    /// stored as a separate CloudKit asset.
+    static func sealImage(_ data: Data, to publicKey: Curve25519.KeyAgreement.PublicKey) throws -> Data {
+        var sender = try HPKE.Sender(recipientKey: publicKey, ciphersuite: ciphersuite, info: imageInfo)
+        let ciphertext = try sender.seal(data)
+        return sender.encapsulatedKey + ciphertext
+    }
+
+    static func openImage(_ sealed: Data, with privateKey: Curve25519.KeyAgreement.PrivateKey) throws -> Data {
+        guard sealed.count > encapsulatedKeyLength else { throw CryptoKitError.incorrectParameterSize }
+        var recipient = try HPKE.Recipient(
+            privateKey: privateKey,
+            ciphersuite: ciphersuite,
+            info: imageInfo,
+            encapsulatedKey: sealed.prefix(encapsulatedKeyLength)
+        )
+        return try recipient.open(sealed.dropFirst(encapsulatedKeyLength))
+    }
 }
 
 /// The admin's feedback key. The public half is built into the app as `WhippetFeedbackPublicKey`; the private half is

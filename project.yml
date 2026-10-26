@@ -98,6 +98,7 @@ targets:
       - Sources/Whippet/CaffeineDuration.swift
       - Sources/Whippet/Calculator.swift
       - Sources/Whippet/ClipboardStore.swift
+      - Sources/Whippet/FeedbackImage.swift
       - Sources/Whippet/FeedbackKey.swift
       - Sources/Whippet/FuzzyMatch.swift
       - Sources/Whippet/Quicklink.swift

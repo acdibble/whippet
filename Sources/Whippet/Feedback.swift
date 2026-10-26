@@ -18,6 +18,9 @@ final class FeedbackStore {
         var details: String { content?.details ?? "" }
         var sentAt: Date { record.creationDate ?? .distantPast }
         var isHandled: Bool { (record["handled"] as? Int64 ?? 0) != 0 }
+        var imageCount: Int { Int(record["attachmentCount"] as? Int64 ?? 0) }
+        /// Images are sealed when the rest of the feedback is.
+        var isSealed: Bool { record["sealedKey"] != nil }
 
         /// Reads sealed feedback with the admin key, or the plain fields that versions before 0.6 sent.
         init(record: CKRecord, privateKey: Curve25519.KeyAgreement.PrivateKey?) {
@@ -50,7 +53,10 @@ final class FeedbackStore {
         get async { (try? await CKContainer(identifier: "iCloud.codes.dibble.whippet").accountStatus()) == .available }
     }
 
-    func send(message: String, email: String) async throws {
+    /// Every field but the images, which are fetched for one feedback at a time when it's shown.
+    private static let fieldsWithoutImages = ["sealedKey", "sealed", "handled", "message", "email", "details", "attachmentCount"]
+
+    func send(message: String, email: String, images: [Data]) async throws {
         let content = FeedbackContent(
             message: message,
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -68,6 +74,21 @@ final class FeedbackStore {
             record["details"] = content.details
         }
         record["handled"] = Int64(0)
+
+        // Assets upload from files, removed once the record is saved or fails to.
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        if !images.isEmpty {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let assets = try images.enumerated().map { index, image in
+                let url = directory.appending(path: "\(index)")
+                let data = try FeedbackKey.publicKey.map { try SealedFeedback.sealImage(image, to: $0) } ?? image
+                try data.write(to: url)
+                return CKAsset(fileURL: url)
+            }
+            record["attachments"] = assets
+            record["attachmentCount"] = Int64(assets.count)
+        }
         _ = try await database.save(record)
     }
 
@@ -96,14 +117,37 @@ final class FeedbackStore {
         let privateKey = FeedbackKey.matchingPrivateKey
         let (results, nextCursor): ([(CKRecord.ID, Result<CKRecord, Error>)], CKQueryOperation.Cursor?)
         if let cursor {
-            (results, nextCursor) = try await database.records(continuingMatchFrom: cursor, resultsLimit: Self.pageSize)
+            (results, nextCursor) = try await database.records(
+                continuingMatchFrom: cursor,
+                desiredKeys: Self.fieldsWithoutImages,
+                resultsLimit: Self.pageSize
+            )
         } else {
             let query = CKQuery(recordType: Self.recordType, predicate: NSPredicate(value: true))
             query.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-            (results, nextCursor) = try await database.records(matching: query, resultsLimit: Self.pageSize)
+            (results, nextCursor) = try await database.records(
+                matching: query,
+                desiredKeys: Self.fieldsWithoutImages,
+                resultsLimit: Self.pageSize
+            )
         }
         let entries = results.compactMap { try? $0.1.get() }.map { Entry(record: $0, privateKey: privateKey) }
         return Page(entries: entries, cursor: nextCursor)
+    }
+
+    /// The feedback's images, opened with the admin key when they're sealed.
+    func images(of entry: Entry) async throws -> [Data] {
+        guard entry.imageCount > 0 else { return [] }
+        let results = try await database.records(for: [entry.id], desiredKeys: ["attachments"])
+        guard let record = try results[entry.id]?.get(), let assets = record["attachments"] as? [CKAsset] else { return [] }
+        let privateKey = FeedbackKey.matchingPrivateKey
+        return try assets.compactMap { asset in
+            guard let url = asset.fileURL else { return nil }
+            let data = try Data(contentsOf: url)
+            guard entry.isSealed else { return data }
+            guard let privateKey else { return nil }
+            return try SealedFeedback.openImage(data, with: privateKey)
+        }
     }
 
     func delete(_ entry: Entry) async throws {
