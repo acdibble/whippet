@@ -71,7 +71,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: codes.dibble.whippet
         PRODUCT_NAME: Whippet
         # The version being worked on. The release workflow checks that its tag matches.
-        MARKETING_VERSION: 0.10.2
+        MARKETING_VERSION: 0.10.3
         CURRENT_PROJECT_VERSION: 1
         DEVELOPMENT_TEAM: 5G59X57VMZ
         CODE_SIGN_STYLE: Automatic
