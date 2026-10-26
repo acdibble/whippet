@@ -1109,7 +1109,9 @@ final class LauncherModel {
             Paster.paste(into: targetWindow)
             return
         }
-        if !copyOnly, targetApp != nil, Paster.isTrusted {
+        if !copyOnly, let targetApp, Paster.isTrusted {
+            // With a Whippet window open, closing the panel leaves Whippet in front, so the app is brought back for ⌘V.
+            targetApp.activate()
             Paster.pasteAfterPanelCloses()
             return
         }

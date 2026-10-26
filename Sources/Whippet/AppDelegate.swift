@@ -189,10 +189,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// The Dock icon only shows while a window is open, so clicking it brings back that window, such as Send Feedback,
     /// and opens Settings only when nothing is open.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        let windowIDs = [SettingsView.windowID, FeedbackView.windowID]
-        let openWindow = NSApp.windows.first { window in
-            window.isVisible && windowIDs.contains { window.identifier?.rawValue.hasPrefix($0) == true }
-        }
         guard let openWindow else {
             showSettings()
             return false
@@ -347,7 +343,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             window.makeKeyAndOrderFront(nil)
             return
         }
-        guard NSApp.isActive, !isSettingsOpen else { return }
+        // Hiding Whippet would hide its open window too, such as Settings.
+        guard NSApp.isActive, openWindow == nil else { return }
         if floatingCalculator.isVisible, let targetApp = model.targetApp {
             targetApp.activate()
             return
@@ -355,8 +352,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.hide(nil)
     }
 
-    private var isSettingsOpen: Bool {
-        NSApp.windows.contains { $0.identifier?.rawValue.hasPrefix(SettingsView.windowID) == true && $0.isVisible }
+    /// Settings or Send Feedback, when one is open.
+    private var openWindow: NSWindow? {
+        let windowIDs = [SettingsView.windowID, FeedbackView.windowID]
+        return NSApp.windows.first { window in
+            window.isVisible && windowIDs.contains { window.identifier?.rawValue.hasPrefix($0) == true }
+        }
     }
 }
 

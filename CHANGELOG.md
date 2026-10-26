@@ -5,6 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Pasting from clipboard history with Settings open pastes into the app you were in, not into Settings.
+
 ## [0.10.4] - 2026-10-26
 
 ### Added
