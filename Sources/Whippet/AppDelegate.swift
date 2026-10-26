@@ -247,11 +247,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let uuid = quicklink.uuid
             KeyboardShortcuts.onKeyDown(for: quicklink.shortcutName) { [weak self] in
                 guard let self, let quicklink = quicklinks.items.first(where: { $0.uuid == uuid }) else { return }
-                launchHistory.record("quicklink:\(uuid)")
                 guard quicklink.takesArgument else {
+                    launchHistory.record("quicklink:\(uuid)")
                     Quicklinks.open(quicklink)
                     return
                 }
+                // Counted when it opens with the text.
                 showPanel()
                 model.beginArgument(for: quicklink)
             }

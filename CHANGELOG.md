@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- A quicklink that takes text counts as used when it opens with that text, whether started with Return, Tab or
+  its hotkey, and not when you start typing and then cancel.
+
 ## [0.10.2] - 2026-10-26
 
 ### Changed

@@ -170,6 +170,12 @@ enum LauncherResult: Identifiable, Hashable {
         return title
     }
 
+    /// Return on it asks for text, and the quicklink is only counted as used once it opens with that text.
+    var startsQuicklinkArgument: Bool {
+        if case .quicklink(let quicklink) = self { return quicklink.takesArgument }
+        return false
+    }
+
     /// The key launches are recorded under: an app's bundle identifier, or a command's identifier. Calculations,
     /// clipboard items and Quit aren't recorded.
     var launchKey: String? {
@@ -897,8 +903,8 @@ final class LauncherModel {
         }
         let results = results
         guard results.indices.contains(selection) else { return }
-        // Apps are recorded by AppIndex.open, which their hotkeys use too.
-        if !results[selection].isApp, let key = results[selection].launchKey {
+        // Apps are recorded by AppIndex.open, which their hotkeys use too, and a quicklink that takes text when it opens.
+        if !results[selection].isApp, !results[selection].startsQuicklinkArgument, let key = results[selection].launchKey {
             history.record(key)
         }
 
@@ -1050,6 +1056,7 @@ final class LauncherModel {
                 NSSound.beep()
                 return
             }
+            history.record(LauncherResult.quicklink(quicklink).id)
             onDismiss()
         case .timerDuration:
             guard let parsed = TimerDuration.parse(text, plainNumberIsMinutes: true) else {
