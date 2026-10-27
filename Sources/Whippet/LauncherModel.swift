@@ -416,6 +416,9 @@ final class LauncherModel {
 
     /// The stopwatch the stopwatch view shows.
     private var stopwatchID: UUID?
+    /// True when the panel opened straight on this view or text field from a hotkey or the menu bar, rather than from
+    /// the main list, so Escape closes Whippet instead of going back to a list you never saw.
+    private var openedDirectly = false
 
     /// What the text typed after Tab is for, shown as a label in front of the search bar.
     private(set) var argumentTarget: ArgumentTarget?
@@ -783,6 +786,12 @@ final class LauncherModel {
         open(newMode)
     }
 
+    /// Runs `open`, which shows a view or text field, as the panel's first screen. See `openedDirectly`.
+    func openDirectly(_ open: () -> Void) {
+        open()
+        openedDirectly = true
+    }
+
     var stopwatches: [TimerItem] {
         timers.items.filter { $0.kind == .stopwatch }
     }
@@ -870,6 +879,7 @@ final class LauncherModel {
         isShowingAll = false
         argumentTarget = nil
         stopwatchID = nil
+        openedDirectly = false
         resetSelection()
     }
 
@@ -1146,17 +1156,42 @@ final class LauncherModel {
         onDismiss()
     }
 
+    /// Escape clears what's typed first, then goes back to where you came from, closing Whippet when that was outside it.
     func back() {
         if isEnteringDuration {
+            if durationFields.contains(where: { !$0.isEmpty }) {
+                durationFields = ["", "", ""]
+                return
+            }
             isEnteringDuration = false
             return
         }
-        if argumentTarget != nil {
-            argumentTarget = nil
+        if let argumentTarget {
+            // A rename starts from the saved name, so Escape cancels it outright and keeps that name.
+            let isRename = if case .rename = argumentTarget { true } else { false }
+            if !isRename, !argument.isEmpty {
+                argument = ""
+                return
+            }
+            // Only a text field opened over the main list closes Whippet; one opened from a view returns to it.
+            if openedDirectly, mode == .root {
+                onDismiss()
+                return
+            }
+            self.argumentTarget = nil
+            return
+        }
+        if !query.isEmpty || clipboardKind != nil {
+            query = ""
+            clipboardKind = nil
             return
         }
         if mode != .root {
-            reset()
+            if openedDirectly {
+                onDismiss()
+            } else {
+                reset()
+            }
             return
         }
         if isShowingAll {

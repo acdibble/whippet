@@ -7,6 +7,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Escape clears what you've typed before going back, and closes Whippet from a view opened with its own shortcut or
+  the menu bar rather than going back to the main list. Escape while renaming keeps the saved name.
 - Caffeinate carries on after Whippet restarts or updates, until its time runs out or it's turned off.
 
 ## [0.11.0] - 2026-10-26

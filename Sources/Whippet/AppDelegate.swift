@@ -109,12 +109,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         timersStatusItem?.onOpenStopwatch = { [weak self] id in
             guard let self else { return }
             showPanel()
-            model.showStopwatch(id)
+            model.openDirectly { model.showStopwatch(id) }
         }
         timersStatusItem?.onRename = { [weak self] item in
             guard let self else { return }
             showPanel()
-            model.beginArgument(.rename(item), text: item.name)
+            model.openDirectly { model.beginArgument(.rename(item), text: item.name) }
         }
 
         // Navigation keys are handled before they reach the focused view, because text fields treat Escape as "complete"
@@ -269,7 +269,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 }
                 // Counted when it opens with the text.
                 showPanel()
-                model.beginArgument(for: quicklink)
+                model.openDirectly { model.beginArgument(for: quicklink) }
             }
         }
     }
@@ -278,28 +278,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         switch command {
         case .calculator:
             showPanel()
-            model.show(.calculator)
+            model.openDirectly { model.show(.calculator) }
         case .floatingCalculator:
             floatingCalculator.toggle()
         case .clipboardHistory:
             showPanel()
-            model.show(.clipboard)
+            model.openDirectly { model.show(.clipboard) }
         case .settings:
             showSettings()
         case .caffeinate:
             caffeine.toggle()
         case .startTimer:
             showPanel()
-            model.beginArgument(.timerDuration)
+            model.openDirectly { model.beginArgument(.timerDuration) }
         case .startStopwatch:
             showPanel()
-            model.startStopwatch()
+            model.openDirectly { model.startStopwatch() }
         case .stopwatch:
             showPanel()
-            model.showStopwatch()
+            model.openDirectly { model.showStopwatch() }
         case .timers:
             showPanel()
-            model.showTimers()
+            model.openDirectly { model.showTimers() }
         }
     }
 
