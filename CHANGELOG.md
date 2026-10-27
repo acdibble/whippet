@@ -5,6 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Caffeinate carries on after Whippet restarts or updates, until its time runs out or it's turned off.
+
 ## [0.11.0] - 2026-10-26
 
 ### Added
