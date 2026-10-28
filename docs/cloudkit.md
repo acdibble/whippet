@@ -11,7 +11,7 @@ zone's key, so they reveal nothing.
 
 | Record type | Fields | Notes |
 |---|---|---|
-| `Clip` | encrypted: `contentHash`, `kind`, `text`, `ocrText`, `copiedAt`, `updatedAt`, `timesCopied`, `pinnedAt`, `sourceBundleID`, `imageWidth`, `imageHeight`, `imageBytes`; asset: `image` | The image asset is encrypted with AES-GCM before upload. |
+| `Clip` | encrypted: `contentHash`, `kind`, `text`, `ocrText`, `copiedAt`, `updatedAt`, `timesCopied`, `pinnedAt`, `sourceBundleID`, `imageWidth`, `imageHeight`, `imageBytes`; asset: `image` | The image asset is encrypted with AES-GCM before upload. An image copied as a file in Finder has its path in `text`. Copied files (kind `file`) are never uploaded. |
 | `Calc` | encrypted: `expression`, `answer`, `mode`, `calculatedAt`, `updatedAt` | |
 | `SyncKey` | encrypted: `secret` | One record, `sync-key`, holding the key for record names and images. |
 | `Link` | encrypted: `uuid`, `name`, `keyword`, `template`, `appBundleID`, `createdAt`, `updatedAt` | Quicklinks, from 0.8.0. Record names are `link-` and an HMAC of the UUID. |

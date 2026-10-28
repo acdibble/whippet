@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ClipboardKindMenu: View {
     let model: LauncherModel
@@ -187,6 +188,8 @@ private struct ItemDetail: View {
     private var preview: some View {
         if item.kind == .link {
             LinkPreview(item: item, imageURL: imageURL)
+        } else if item.kind == .file {
+            FilesPreview(files: item.fileURLs)
         } else if let imageURL {
             // Enough for the preview pane at 2x, however large the screenshot.
             ThumbnailView(url: imageURL, maxPixelSize: 1600) { ProgressView().controlSize(.small) }
@@ -215,13 +218,17 @@ private struct ItemDetail: View {
         let source = SourceApp(bundleID: item.sourceBundleID)
         var rows = [
             InformationRow("Source", source.name, icon: source.icon),
-            InformationRow("Type", item.kind.title),
+            InformationRow("Type", item.imageType.flatMap { UTType($0)?.localizedDescription } ?? item.kind.title),
         ]
         if item.kind == .image {
+            rows += item.fileURLs.prefix(1).map { InformationRow("Path", $0.path) }
             rows += [
                 InformationRow("Dimensions", "\(item.imageWidth ?? 0)×\(item.imageHeight ?? 0)"),
                 InformationRow("Size", Int64(item.imageBytes ?? 0).formatted(.byteCount(style: .file))),
             ]
+        } else if item.kind == .file {
+            let files = item.fileURLs
+            rows += files.count == 1 ? [InformationRow("Path", files[0].path)] : [InformationRow("Files", files.count.formatted())]
         } else if item.kind == .link {
             rows += [
                 InformationRow("URL", item.text ?? ""),
@@ -237,6 +244,43 @@ private struct ItemDetail: View {
             InformationRow("Times copied", item.timesCopied.formatted()),
             InformationRow("Last copied", item.copiedAt.formatted(date: .abbreviated, time: .shortened)),
         ]
+    }
+}
+
+/// The Finder icons of copied files, fanned out when there are several, above their names. Only the icons are shown,
+/// not the files' contents.
+private struct FilesPreview: View {
+    let files: [URL]
+
+    var body: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                let shown = Array(files.prefix(3).enumerated())
+                ForEach(shown, id: \.offset) { index, file in
+                    let spread = Double(index) - Double(shown.count - 1) / 2
+                    Image(nsImage: Self.icon(for: file))
+                        .resizable()
+                        .frame(width: 128, height: 128)
+                        .rotationEffect(.degrees(spread * 8))
+                        .offset(x: spread * 28)
+                }
+            }
+            Text(files.map(\.lastPathComponent).joined(separator: "\n"))
+                .font(.system(size: 13, weight: .medium))
+                .multilineTextAlignment(.center)
+                .lineLimit(6)
+                .textSelection(.enabled)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// A file that has since moved or been deleted gets the icon for its type.
+    private static func icon(for file: URL) -> NSImage {
+        if FileManager.default.fileExists(atPath: file.path) {
+            return NSWorkspace.shared.icon(forFile: file.path)
+        }
+        return NSWorkspace.shared.icon(for: UTType(filenameExtension: file.pathExtension) ?? .data)
     }
 }
 

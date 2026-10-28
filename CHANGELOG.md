@@ -5,6 +5,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Clipboard history keeps copied files, with their full names and extensions, under a new Files filter. Pasting one
+  pastes the file, and files stay on this Mac rather than syncing.
+- Images copied as files in Finder show their file name, and paste as the file where it still exists. Other images
+  show their format, such as “PNG image (1920×1080)”.
+
 ## [0.11.1] - 2026-10-27
 
 ### Changed

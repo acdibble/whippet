@@ -1,12 +1,15 @@
 import CryptoKit
 import Foundation
 import GRDB
+import UniformTypeIdentifiers
 
 enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
     case text
     case link
     case number
     case image
+    /// Files copied in Finder and other apps, kept on this Mac only since their paths mean nothing on another.
+    case file
 
     var id: Self { self }
 
@@ -16,6 +19,7 @@ enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
         case .link: String(localized: "Link")
         case .number: String(localized: "Number")
         case .image: String(localized: "Image")
+        case .file: String(localized: "File")
         }
     }
 
@@ -25,6 +29,7 @@ enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
         case .link: String(localized: "Links")
         case .number: String(localized: "Numbers")
         case .image: String(localized: "Images")
+        case .file: String(localized: "Files")
         }
     }
 
@@ -34,6 +39,7 @@ enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
         case .link: "link"
         case .number: "number"
         case .image: "photo"
+        case .file: "paperclip"
         }
     }
 
@@ -74,9 +80,29 @@ struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, TableRec
     let linkImageFile: String?
     /// Text recognized in a link's preview image: nil until recognition has run.
     let linkOcrText: String?
+    /// The type identifier of an image as it was copied, such as `public.jpeg`; it is stored as PNG. Nil for images
+    /// copied before 0.11.2 and those from another Mac.
+    let imageType: String?
+
+    /// A file's path is kept in `text`: one per line for files, and for an image copied as a file in Finder, its path.
+    var fileURLs: [URL] {
+        guard kind == .file || kind == .image, let text, !text.isEmpty else { return [] }
+        return text.split(separator: "\n").map { URL(filePath: String($0)) }
+    }
 
     var title: String {
+        if kind == .file {
+            let names = fileURLs.map(\.lastPathComponent)
+            guard let first = names.first else { return "" }
+            return names.count == 1 ? first : String(localized: "\(first) and \(names.count - 1) More")
+        }
         if kind == .image {
+            if let name = fileURLs.first?.lastPathComponent {
+                return name
+            }
+            if let format = imageType.flatMap({ UTType($0) })?.localizedDescription {
+                return String(localized: "\(format) (\(imageWidth ?? 0)×\(imageHeight ?? 0))")
+            }
             return String(localized: "Image (\(imageWidth ?? 0)×\(imageHeight ?? 0))")
         }
         if let linkTitle, !linkTitle.isEmpty {
@@ -201,8 +227,12 @@ final class ClipboardStore: Sendable {
         return .clipboard(contentHash: hash)
     }
 
+    /// `type` is the image's type identifier as copied, and `path` the file it was copied from in Finder, if any. Copying
+    /// the same picture again keeps the name and type it had unless the new copy has its own.
     @discardableResult
-    func recordImage(png: Data, width: Int, height: Int, sourceBundleID: String?) throws -> SyncItem {
+    func recordImage(
+        png: Data, width: Int, height: Int, type: String? = nil, path: String? = nil, sourceBundleID: String?
+    ) throws -> SyncItem {
         let hash = Self.hash(png)
         let file = imagesDirectory.appending(path: "\(hash).png")
         if !FileManager.default.fileExists(atPath: file.path) {
@@ -211,18 +241,45 @@ final class ClipboardStore: Sendable {
         try database.write { db in
             try db.execute(
                 sql: """
-                    INSERT INTO clipboard (contentHash, kind, imageFile, imageWidth, imageHeight, imageBytes, copiedAt, sourceBundleID, updatedAt)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO clipboard (
+                        contentHash, kind, text, imageFile, imageWidth, imageHeight, imageBytes, imageType, copiedAt,
+                        sourceBundleID, updatedAt
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(contentHash) DO UPDATE SET
+                        text = COALESCE(excluded.text, text),
+                        imageType = COALESCE(excluded.imageType, imageType),
                         copiedAt = excluded.copiedAt,
                         sourceBundleID = excluded.sourceBundleID,
                         timesCopied = timesCopied + 1,
                         updatedAt = excluded.updatedAt
                     """,
                 arguments: [
-                    hash, ClipboardKind.image.rawValue, file.lastPathComponent, width, height, png.count, Date.now,
-                    sourceBundleID, Date.now,
+                    hash, ClipboardKind.image.rawValue, path, file.lastPathComponent, width, height, png.count, type,
+                    Date.now, sourceBundleID, Date.now,
                 ]
+            )
+        }
+        return .clipboard(contentHash: hash)
+    }
+
+    /// Records files copied together as one item, by their paths.
+    @discardableResult
+    func recordFiles(_ paths: [String], sourceBundleID: String?) throws -> SyncItem {
+        let text = paths.joined(separator: "\n")
+        // Prefixed, so the same paths copied as text are a separate item.
+        let hash = Self.hash(Data("file\n\(text)".utf8))
+        try database.write { db in
+            try db.execute(
+                sql: """
+                    INSERT INTO clipboard (contentHash, kind, text, copiedAt, sourceBundleID, updatedAt) VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(contentHash) DO UPDATE SET
+                        copiedAt = excluded.copiedAt,
+                        sourceBundleID = excluded.sourceBundleID,
+                        timesCopied = timesCopied + 1,
+                        updatedAt = excluded.updatedAt
+                    """,
+                arguments: [hash, ClipboardKind.file.rawValue, text, Date.now, sourceBundleID, Date.now]
             )
         }
         return .clipboard(contentHash: hash)
@@ -471,8 +528,11 @@ final class ClipboardStore: Sendable {
         try database.read { db in
             let hashes = try String.fetchAll(
                 db,
-                sql: "SELECT contentHash FROM clipboard WHERE (syncedAt IS NULL OR updatedAt > syncedAt) AND (? OR kind != ?)",
-                arguments: [includeImages, ClipboardKind.image.rawValue]
+                sql: """
+                    SELECT contentHash FROM clipboard
+                    WHERE (syncedAt IS NULL OR updatedAt > syncedAt) AND (? OR kind != ?) AND kind != ?
+                    """,
+                arguments: [includeImages, ClipboardKind.image.rawValue, ClipboardKind.file.rawValue]
             )
             let keys = try String.fetchAll(
                 db,
@@ -870,6 +930,12 @@ final class ClipboardStore: Sendable {
         // some sites, so every link's preview is fetched again. The old image stays until the new one replaces it.
         migrator.registerMigration("refetchLinkPreviews") { db in
             try db.execute(sql: "UPDATE clipboard SET linkTitle = NULL WHERE kind = 'link'")
+        }
+        // Added after 0.11.1. Kept on each Mac and never synced.
+        migrator.registerMigration("addImageTypes") { db in
+            try db.alter(table: "clipboard") { table in
+                table.add(column: "imageType", .text)
+            }
         }
         return migrator
     }

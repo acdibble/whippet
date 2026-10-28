@@ -84,6 +84,39 @@ final class ClipboardStoreTests {
         #expect(try items("receipt").map(\.id) == [item.id])
     }
 
+    @Test func imagesShowTheirFileNameOrFormat() throws {
+        try store.recordImage(png: Data([1]), width: 4, height: 2, type: "public.jpeg", sourceBundleID: nil)
+        try store.recordImage(png: Data([2]), width: 4, height: 2, type: "public.png", path: "/tmp/Photo One.jpg", sourceBundleID: nil)
+
+        let titles = Set(try items(kind: .image).map(\.title))
+        #expect(titles.contains("Photo One.jpg"))
+        #expect(titles.contains { $0.localizedCaseInsensitiveContains("JPEG") && $0.hasSuffix("(4×2)") })
+        #expect(try items("photo").count == 1)
+    }
+
+    @Test func copyingAnImageAgainKeepsItsNameUnlessTheNewCopyHasOne() throws {
+        try store.recordImage(png: Data([1]), width: 1, height: 1, path: "/tmp/a.png", sourceBundleID: nil)
+        try store.recordImage(png: Data([1]), width: 1, height: 1, type: "public.tiff", sourceBundleID: nil)
+        #expect(try items(kind: .image).first?.title == "a.png")
+
+        try store.recordImage(png: Data([1]), width: 1, height: 1, path: "/tmp/b.png", sourceBundleID: nil)
+        let item = try #require(try items(kind: .image).first)
+        #expect(item.title == "b.png")
+        #expect(item.imageType == "public.tiff")
+    }
+
+    @Test func filesKeepTheirExtensionsAndStayOnThisMac() throws {
+        try store.recordFiles(["/Users/me/Report.pdf"], sourceBundleID: "com.apple.finder")
+        try store.recordFiles(["/Users/me/a.txt", "/Users/me/b.txt", "/Users/me/Folder"], sourceBundleID: nil)
+        try store.recordText("/Users/me/Report.pdf", sourceBundleID: nil)
+
+        let files = try items(kind: .file)
+        #expect(Set(files.map(\.title)) == ["Report.pdf", "a.txt and 2 More"])
+        #expect(files.first { $0.title == "Report.pdf" }?.fileURLs == [URL(filePath: "/Users/me/Report.pdf")])
+        #expect(try items("report").count == 2)
+        #expect(try store.unsyncedItems(includeImages: true).count == 1)
+    }
+
     @Test func calculationsKeepTheLatestAnswerPerExpression() async throws {
         try store.recordCalculation(expression: "1 + 1", answer: "2", mode: "standard")
         try await pause()

@@ -1,6 +1,26 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ (%lld×%lld)" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (%2$lld×%3$lld)"
+          }
+        }
+      }
+    },
+    "%@ and %lld More" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ و %2$lld مورد دیگر"
+          }
+        }
+      }
+    },
     "%@ in %lld files" : {
       "localizations" : {
         "en" : {
@@ -77,26 +97,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ مانده"
-          }
-        }
-      }
-    },
-    "%@ paused" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ متوقف شد"
-          }
-        }
-      }
-    },
-    "%@ resumed" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ ادامه یافت"
           }
         }
       }
@@ -1311,6 +1311,26 @@
         }
       }
     },
+    "File" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فایل"
+          }
+        }
+      }
+    },
+    "Files" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فایل‌ها"
+          }
+        }
+      }
+    },
     "First Third" : {
       "localizations" : {
         "fa" : {
@@ -2277,6 +2297,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جای‌گذاری در %@"
+          }
+        }
+      }
+    },
+    "Path" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسیر"
           }
         }
       }

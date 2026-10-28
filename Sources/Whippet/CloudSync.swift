@@ -370,6 +370,7 @@ final class CloudSync {
     private func clipboardRecord(from row: Row, id: CKRecord.ID, keys: SyncKeys, store: ClipboardStore) -> CKRecord? {
         let kind: String = row["kind"]
         if kind == ClipboardKind.image.rawValue, !includesImages { return nil }
+        if kind == ClipboardKind.file.rawValue { return nil }
 
         let record = Self.makeRecord(type: Self.clipboardType, id: id, systemFields: row["cloudSystemFields"])
         record.encryptedValues["contentHash"] = row["contentHash"] as String
@@ -416,6 +417,8 @@ final class CloudSync {
             guard let hash = values["contentHash"] as? String, hash.count == 64, hash.allSatisfy(\.isHexDigit) else { return }
             let kind = (values["kind"] as? String).flatMap(ClipboardKind.init(rawValue:)) ?? .text
             if kind == .image, !includesImages { return }
+            // Files are never uploaded, so one can only come from a broken or newer record.
+            if kind == .file { return }
             let imageFile = kind == .image ? saveImage(record["image"] as? CKAsset, hash: hash, key: keys.images, store: store) : nil
             // An image whose file couldn't be saved can't be stored, so it waits until the record changes again.
             if kind == .image, imageFile == nil { return }

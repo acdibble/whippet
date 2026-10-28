@@ -50,6 +50,8 @@ final class ClipboardHistory {
     private static let resultLimit = 100
     /// Larger text copies aren't saved: they're slow to show, and too big for an iCloud record.
     static let maximumTextBytes = 500_000
+    /// A larger image file copied in Finder is kept as a file rather than read into history as a picture.
+    nonisolated private static let maximumImageFileBytes = 50_000_000
 
     /// Password managers mark secrets with these types (see nspasteboard.org), so they never enter history.
     private static let skippedTypes: Set<NSPasteboard.PasteboardType> = [
@@ -162,10 +164,12 @@ final class ClipboardHistory {
     }
 
     /// Puts the item on the pasteboard, or leaves the pasteboard alone and returns false when an image's file is
-    /// missing or unreadable. Images go on as the stored PNG, with TIFF for apps that only read that.
+    /// missing or unreadable, or none of the copied files still exist. Images go on as the stored PNG, with TIFF for
+    /// apps that only read that, and the file they were copied from when it's still there, for pasting into Finder.
     @discardableResult
     func copy(_ item: ClipboardItem) -> Bool {
         let pasteboard = NSPasteboard.general
+        let existingFiles = item.fileURLs.filter { FileManager.default.fileExists(atPath: $0.path) }
         if item.kind == .image {
             guard let file = imageURL(for: item), let png = try? Data(contentsOf: file) else { return false }
             let pasteboardItem = NSPasteboardItem()
@@ -173,8 +177,15 @@ final class ClipboardHistory {
             if let tiff = NSImage(data: png)?.tiffRepresentation {
                 pasteboardItem.setData(tiff, forType: .tiff)
             }
+            if let original = existingFiles.first {
+                pasteboardItem.setString(original.absoluteString, forType: .fileURL)
+            }
             pasteboard.clearContents()
             pasteboard.writeObjects([pasteboardItem])
+        } else if item.kind == .file {
+            guard !existingFiles.isEmpty else { return false }
+            pasteboard.clearContents()
+            pasteboard.writeObjects(existingFiles as [NSURL])
         } else {
             pasteboard.clearContents()
             pasteboard.setString(item.text ?? "", forType: .string)
@@ -217,20 +228,63 @@ final class ClipboardHistory {
         let source = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         if let source, ignoredApps.contains(source) { return }
 
-        // The pasteboard is read here; the slow work happens on the recording queue.
+        // The pasteboard is read here; the slow work happens on the recording queue. Files come before text, which Finder
+        // fills with their names as shown, without any hidden extension.
+        let files = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        if !files.isEmpty {
+            record(recognizesText: true) { store in
+                if files.count == 1, let image = Self.image(at: files[0]) {
+                    return try store.recordImage(
+                        png: image.png, width: image.width, height: image.height, type: image.type, path: files[0].path,
+                        sourceBundleID: source
+                    )
+                }
+                return try store.recordFiles(files.map(\.path), sourceBundleID: source)
+            }
+            return
+        }
         if let text = pasteboard.string(forType: .string), !text.isEmpty {
             guard text.utf8.count <= Self.maximumTextBytes else { return }
             record { try $0.recordText(text, sourceBundleID: source) }
             return
         }
         guard let data = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff) else { return }
+        // The app's first image type is the one it copied; the others are usually conversions of it.
+        let type = pasteboard.types?.lazy.compactMap { UTType($0.rawValue) }.first { $0.conforms(to: .image) }?.identifier
         record(recognizesText: true) { store in
             guard
                 let bitmap = NSBitmapImageRep(data: data),
                 let png = bitmap.representation(using: .png, properties: [:])
             else { return nil }
-            return try store.recordImage(png: png, width: bitmap.pixelsWide, height: bitmap.pixelsHigh, sourceBundleID: source)
+            return try store.recordImage(
+                png: png, width: bitmap.pixelsWide, height: bitmap.pixelsHigh, type: type, sourceBundleID: source
+            )
         }
+    }
+
+    /// An image file at full size as PNG, turned upright as a photo's orientation says, or nil when it isn't an image
+    /// that can be read, or is too large.
+    nonisolated private static func image(at url: URL) -> (png: Data, width: Int, height: Int, type: String)? {
+        guard
+            let values = try? url.resourceValues(forKeys: [.contentTypeKey, .fileSizeKey, .isRegularFileKey]),
+            values.isRegularFile == true,
+            let type = values.contentType, type.conforms(to: .image),
+            (values.fileSize ?? .max) <= maximumImageFileBytes,
+            let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+            let width = properties[kCGImagePropertyPixelWidth] as? Int,
+            let height = properties[kCGImagePropertyPixelHeight] as? Int
+        else { return nil }
+        let options = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: max(width, height),
+        ] as CFDictionary
+        guard
+            let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options),
+            let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
+        else { return nil }
+        return (png, image.width, image.height, type.identifier)
     }
 
     private func record(recognizesText: Bool = false, _ save: @escaping @Sendable (ClipboardStore) throws -> SyncItem?) {
