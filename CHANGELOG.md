@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-10-29
+
 ### Added
 
 - Paste as JPEG and Copy as JPEG for images in clipboard history, in the ⌘K actions. The JPEG goes on the clipboard as
@@ -14,6 +16,7 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 - Images copied from apps that offer only another format, such as HEIC or WebP, are now kept in clipboard history.
 - Photos copied from Photos show their format rather than the name of a file inside the Photos library.
+- Return in the ⌘K actions menu runs the highlighted action rather than always pasting.
 
 ## [0.11.2] - 2026-10-28
 
@@ -273,7 +276,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v0.11.2...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v0.11.3...HEAD
+[0.11.3]: https://github.com/acdibble/whippet/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/acdibble/whippet/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/acdibble/whippet/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/acdibble/whippet/compare/v0.10.6...v0.11.0
