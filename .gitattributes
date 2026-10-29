@@ -1,0 +1,2 @@
+# The source icon artwork is licensed, so it is kept encrypted; unlock with git-crypt.
+assets/** filter=git-crypt diff=git-crypt

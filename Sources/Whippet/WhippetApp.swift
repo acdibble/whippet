@@ -99,53 +99,24 @@ private struct MenuBarMenu: View {
     }
 }
 
-/// A whippet's head in profile, drawn as a template image since SF Symbols has no whippet; macOS tints it to match the menu bar.
+/// A whippet's head in profile, from the MenuBarIcon asset: a template image that macOS tints to match the menu bar.
 enum WhippetIcon {
     static let menuBarImage: NSImage = {
-        let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
-            guard let context = NSGraphicsContext.current?.cgContext else { return false }
-            context.addPath(headPath())
-            context.setLineWidth(1.4)
-            context.setLineJoin(.round)
-            context.setLineCap(.round)
-            context.setStrokeColor(color.cgColor)
-            context.strokePath()
-            context.setFillColor(color.cgColor)
-            context.fillEllipse(in: CGRect(x: 7.1, y: 8.6, width: 1.3, height: 1.3))
+        let template = NSImage(resource: .menuBarIcon)
+        #if DEBUG
+        // Development builds draw the whippet in construction yellow, to tell them apart from the installed release.
+        let image = NSImage(size: template.size, flipped: false) { rect in
+            template.draw(in: rect)
+            NSColor.systemYellow.set()
+            rect.fill(using: .sourceAtop)
             return true
         }
-        image.isTemplate = isTemplate
+        image.isTemplate = false
         return image
+        #else
+        return template
+        #endif
     }()
-
-    /// Development builds draw the whippet in construction yellow, to tell them apart from the installed release, which
-    /// uses a template image that macOS tints to match the menu bar.
-    #if DEBUG
-    private static let color = NSColor.systemYellow
-    private static let isTemplate = false
-    #else
-    private static let color = NSColor.black
-    private static let isTemplate = true
-    #endif
-
-    /// Facing left in an 18-point canvas: the head and neck outline, the underside of the jaw and neck, and a rose ear.
-    private static func headPath() -> CGPath {
-        let path = CGMutablePath()
-        path.move(to: CGPoint(x: 1.7, y: 7.4))
-        path.addCurve(to: CGPoint(x: 1.5, y: 9.0), control1: CGPoint(x: 1.0, y: 7.7), control2: CGPoint(x: 1.0, y: 8.7))
-        path.addCurve(to: CGPoint(x: 6.8, y: 10.6), control1: CGPoint(x: 3.4, y: 9.6), control2: CGPoint(x: 5.4, y: 10.0))
-        path.addCurve(to: CGPoint(x: 12.0, y: 12.0), control1: CGPoint(x: 8.2, y: 12.0), control2: CGPoint(x: 10.6, y: 12.6))
-        path.addCurve(to: CGPoint(x: 15.8, y: 3.0), control1: CGPoint(x: 14.2, y: 10.4), control2: CGPoint(x: 15.4, y: 6.6))
-
-        path.move(to: CGPoint(x: 1.7, y: 7.4))
-        path.addCurve(to: CGPoint(x: 8.8, y: 6.2), control1: CGPoint(x: 4.0, y: 6.8), control2: CGPoint(x: 6.6, y: 6.4))
-        path.addCurve(to: CGPoint(x: 10.8, y: 3.0), control1: CGPoint(x: 10.0, y: 5.4), control2: CGPoint(x: 10.6, y: 4.2))
-
-        path.move(to: CGPoint(x: 10.0, y: 12.2))
-        path.addCurve(to: CGPoint(x: 14.6, y: 13.6), control1: CGPoint(x: 11.4, y: 14.0), control2: CGPoint(x: 13.4, y: 14.4))
-        path.addCurve(to: CGPoint(x: 12.6, y: 11.2), control1: CGPoint(x: 14.4, y: 12.6), control2: CGPoint(x: 13.4, y: 11.8))
-        return path
-    }
 }
 
 extension NSApplication {
