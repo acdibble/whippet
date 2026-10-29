@@ -52,6 +52,13 @@ final class ClipboardHistory {
     static let maximumTextBytes = 500_000
     /// A larger image file copied in Finder is kept as a file rather than read into history as a picture.
     nonisolated private static let maximumImageFileBytes = 50_000_000
+    /// Photos copies a photo along with a link to a file inside its library, named by an internal ID.
+    private static let photosAssetType = NSPasteboard.PasteboardType("com.apple.photos.object-reference.asset")
+    /// Images converted for "Paste as JPEG", each in its own folder so the file keeps the image's name. Emptied at
+    /// launch, by which time anything they were pasted into has its own copy.
+    private static let convertedDirectory = URL.cachesDirectory
+        .appending(path: Bundle.main.bundleIdentifier ?? "Whippet")
+        .appending(path: "Converted")
 
     /// Password managers mark secrets with these types (see nspasteboard.org), so they never enter history.
     private static let skippedTypes: Set<NSPasteboard.PasteboardType> = [
@@ -67,6 +74,7 @@ final class ClipboardHistory {
             NSLog("Clipboard history disabled: \(error)")
             store = nil
         }
+        try? FileManager.default.removeItem(at: Self.convertedDirectory)
     }
 
     func start() {
@@ -190,12 +198,46 @@ final class ClipboardHistory {
             pasteboard.clearContents()
             pasteboard.setString(item.text ?? "", forType: .string)
         }
-        // Polling would record the copy again, and a re-encoded image as a duplicate, so the item moves to the top here
-        // instead.
-        lastChangeCount = pasteboard.changeCount
+        didCopy(item)
+        return true
+    }
+
+    /// Puts an image on the pasteboard as JPEG, both as data and as a file named after it: most apps and web pages read
+    /// pasted image data only as PNG or TIFF, but take a file in whatever format it is. Returns false when the image
+    /// can't be read or converted.
+    func copyAsJPEG(_ item: ClipboardItem) -> Bool {
+        guard
+            item.kind == .image,
+            let file = imageURL(for: item),
+            let png = try? Data(contentsOf: file),
+            let jpeg = ImageConversion.jpeg(from: png)
+        else { return false }
+        let name = item.fileURLs.first?.deletingPathExtension().lastPathComponent ?? String(localized: "Image")
+        let folder = Self.convertedDirectory.appending(path: UUID().uuidString)
+        let output = folder.appending(path: name).appendingPathExtension("jpg")
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try jpeg.write(to: output)
+        } catch {
+            NSLog("Failed to save the converted image: \(error)")
+            return false
+        }
+        let pasteboardItem = NSPasteboardItem()
+        pasteboardItem.setData(jpeg, forType: NSPasteboard.PasteboardType(UTType.jpeg.identifier))
+        pasteboardItem.setString(output.absoluteString, forType: .fileURL)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.writeObjects([pasteboardItem])
+        didCopy(item)
+        return true
+    }
+
+    /// Polling would record the copy again, and a re-encoded image as a duplicate, so the item moves to the top here
+    /// instead.
+    private func didCopy(_ item: ClipboardItem) {
+        lastChangeCount = NSPasteboard.general.changeCount
         let contentHash = item.contentHash
         record { try $0.recordCopy(contentHash: contentHash) }
-        return true
     }
 
     func recordCalculation(expression: String, answer: String, isRPN: Bool) {
@@ -232,11 +274,13 @@ final class ClipboardHistory {
         // fills with their names as shown, without any hidden extension.
         let files = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
         if !files.isEmpty {
+            // A photo's file in the Photos library has an internal name, and isn't something to paste into Finder.
+            let isFromPhotos = pasteboard.types?.contains(Self.photosAssetType) == true
             record(recognizesText: true) { store in
                 if files.count == 1, let image = Self.image(at: files[0]) {
                     return try store.recordImage(
-                        png: image.png, width: image.width, height: image.height, type: image.type, path: files[0].path,
-                        sourceBundleID: source
+                        png: image.png, width: image.width, height: image.height, type: image.type,
+                        path: isFromPhotos ? nil : files[0].path, sourceBundleID: source
                     )
                 }
                 return try store.recordFiles(files.map(\.path), sourceBundleID: source)
@@ -248,29 +292,41 @@ final class ClipboardHistory {
             record { try $0.recordText(text, sourceBundleID: source) }
             return
         }
-        guard let data = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff) else { return }
-        // The app's first image type is the one it copied; the others are usually conversions of it.
-        let type = pasteboard.types?.lazy.compactMap { UTType($0.rawValue) }.first { $0.conforms(to: .image) }?.identifier
+        // The app's first image type is the one it copied; the others are usually conversions of it. PNG and TIFF are
+        // read when offered, as every app's own, and any other format, such as HEIC or WebP on its own, otherwise.
+        let imageTypes = (pasteboard.types ?? []).filter { UTType($0.rawValue)?.conforms(to: .image) == true }
+        guard
+            let copiedType = imageTypes.first,
+            let data = pasteboard.data(forType: [.png, .tiff].first(where: imageTypes.contains) ?? copiedType)
+        else { return }
         record(recognizesText: true) { store in
             guard
-                let bitmap = NSBitmapImageRep(data: data),
-                let png = bitmap.representation(using: .png, properties: [:])
+                let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
+                let image = Self.image(from: imageSource, type: copiedType.rawValue)
             else { return nil }
             return try store.recordImage(
-                png: png, width: bitmap.pixelsWide, height: bitmap.pixelsHigh, type: type, sourceBundleID: source
+                png: image.png, width: image.width, height: image.height, type: image.type, sourceBundleID: source
             )
         }
     }
 
-    /// An image file at full size as PNG, turned upright as a photo's orientation says, or nil when it isn't an image
-    /// that can be read, or is too large.
+    /// An image file at full size as PNG, or nil when it isn't an image that can be read, or is too large.
     nonisolated private static func image(at url: URL) -> (png: Data, width: Int, height: Int, type: String)? {
         guard
             let values = try? url.resourceValues(forKeys: [.contentTypeKey, .fileSizeKey, .isRegularFileKey]),
             values.isRegularFile == true,
             let type = values.contentType, type.conforms(to: .image),
             (values.fileSize ?? .max) <= maximumImageFileBytes,
-            let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+            let source = CGImageSourceCreateWithURL(url as CFURL, nil)
+        else { return nil }
+        return image(from: source, type: type.identifier)
+    }
+
+    /// The image at full size as PNG, turned upright as a photo's orientation says.
+    nonisolated private static func image(
+        from source: CGImageSource, type: String
+    ) -> (png: Data, width: Int, height: Int, type: String)? {
+        guard
             let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
             let width = properties[kCGImagePropertyPixelWidth] as? Int,
             let height = properties[kCGImagePropertyPixelHeight] as? Int
@@ -284,7 +340,7 @@ final class ClipboardHistory {
             let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options),
             let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
         else { return nil }
-        return (png, image.width, image.height, type.identifier)
+        return (png, image.width, image.height, type)
     }
 
     private func record(recognizesText: Bool = false, _ save: @escaping @Sendable (ClipboardStore) throws -> SyncItem?) {

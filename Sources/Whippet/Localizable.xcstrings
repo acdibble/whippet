@@ -891,6 +891,16 @@
         }
       }
     },
+    "Copy as JPEG" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی به‌صورت JPEG"
+          }
+        }
+      }
+    },
     "Copy to Clipboard" : {
       "localizations" : {
         "fa" : {
@@ -2267,6 +2277,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جای‌گذاری و جابه‌جایی پنجره‌ها"
+          }
+        }
+      }
+    },
+    "Paste as JPEG" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جای‌گذاری به‌صورت JPEG"
           }
         }
       }

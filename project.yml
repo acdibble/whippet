@@ -101,6 +101,7 @@ targets:
       - Sources/Whippet/FeedbackImage.swift
       - Sources/Whippet/FeedbackKey.swift
       - Sources/Whippet/FuzzyMatch.swift
+      - Sources/Whippet/ImageConversion.swift
       - Sources/Whippet/PageImage.swift
       - Sources/Whippet/Quicklink.swift
       - Sources/Whippet/Ranking.swift

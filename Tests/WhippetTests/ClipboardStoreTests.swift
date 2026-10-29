@@ -105,6 +105,18 @@ final class ClipboardStoreTests {
         #expect(item.imageType == "public.tiff")
     }
 
+    @Test func photosLibraryPathsAreForgotten() throws {
+        try store.recordImage(png: Data([1]), width: 1, height: 1, path: "/Users/me/Pictures/Photos Library.photoslibrary/resources/derivatives/A_1_c.jpeg", sourceBundleID: nil)
+        try store.recordImage(png: Data([2]), width: 1, height: 1, path: "/Users/me/Pictures/Beach.heic", sourceBundleID: nil)
+        try DatabaseQueue(path: directory.appending(path: "clipboard.sqlite").path).write { db in
+            try db.execute(sql: "DELETE FROM grdb_migrations WHERE identifier = 'forgetPhotosLibraryPaths'")
+        }
+
+        let reopened = try ClipboardStore(directory: directory)
+        let titles = Set(try reopened.search("", kind: .image, limit: 10).map(\.title))
+        #expect(titles == ["Image (1×1)", "Beach.heic"])
+    }
+
     @Test func filesKeepTheirExtensionsAndStayOnThisMac() throws {
         try store.recordFiles(["/Users/me/Report.pdf"], sourceBundleID: "com.apple.finder")
         try store.recordFiles(["/Users/me/a.txt", "/Users/me/b.txt", "/Users/me/Folder"], sourceBundleID: nil)

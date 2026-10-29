@@ -937,6 +937,11 @@ final class ClipboardStore: Sendable {
                 table.add(column: "imageType", .text)
             }
         }
+        // 0.11.2 kept the path of a photo copied from Photos, which names a file inside the Photos library by an internal
+        // ID, so those images showed that ID as their name.
+        migrator.registerMigration("forgetPhotosLibraryPaths") { db in
+            try db.execute(sql: "UPDATE clipboard SET text = NULL WHERE kind = 'image' AND text LIKE '%.photoslibrary/%'")
+        }
         return migrator
     }
 }

@@ -286,6 +286,8 @@ enum ResultAction: CaseIterable {
     case snooze
     case togglePin
     case refreshPreview
+    case pasteAsJPEG
+    case copyAsJPEG
     case copyPath
     case popOut
     case delete
@@ -301,6 +303,7 @@ enum ResultAction: CaseIterable {
         case (.secondary, _): result.pastes
         case (.togglePin, .clipboard), (.delete, .clipboard), (.copyPath, .app): true
         case (.refreshPreview, .clipboard(let item)): item.kind == .link
+        case (.pasteAsJPEG, .clipboard(let item)), (.copyAsJPEG, .clipboard(let item)): item.kind == .image
         case (.popOut, .calculation), (.popOut, .pastCalculation), (.popOut, .calculator): true
         default: false
         }
@@ -324,6 +327,8 @@ enum ResultAction: CaseIterable {
         case .snooze: String(localized: "Snooze")
         case .togglePin: result.isPinned ? String(localized: "Unpin") : String(localized: "Pin")
         case .refreshPreview: String(localized: "Refresh Preview")
+        case .pasteAsJPEG: String(localized: "Paste as JPEG")
+        case .copyAsJPEG: String(localized: "Copy as JPEG")
         case .copyPath: String(localized: "Copy Path")
         case .popOut: String(localized: "Pop Out Calculator")
         case .delete:
@@ -347,6 +352,8 @@ enum ResultAction: CaseIterable {
         case .snooze: "zzz"
         case .togglePin: "pin"
         case .refreshPreview: "arrow.clockwise"
+        case .pasteAsJPEG: "photo"
+        case .copyAsJPEG: "photo.on.rectangle"
         case .copyPath: "link"
         case .popOut: "macwindow.on.rectangle"
         case .delete: "trash"
@@ -361,7 +368,7 @@ enum ResultAction: CaseIterable {
         case .addMinute: ("=", [.command])
         case .lap: ("l", [.command])
         case .restart: ("r", [.command])
-        case .addFiveMinutes, .rename, .snooze, .refreshPreview: nil
+        case .addFiveMinutes, .rename, .snooze, .refreshPreview, .pasteAsJPEG, .copyAsJPEG: nil
         case .togglePin: ("p", [.command, .shift])
         case .copyPath: ("c", [.command, .shift])
         case .popOut: ("o", [.command, .shift])
@@ -736,6 +743,12 @@ final class LauncherModel {
             activate(copyOnly: true)
         case (.refreshPreview, .clipboard(let item)):
             clipboard.refreshPreview(item)
+        case (.pasteAsJPEG, .clipboard(let item)), (.copyAsJPEG, .clipboard(let item)):
+            guard clipboard.copyAsJPEG(item) else {
+                NSSound.beep()
+                return
+            }
+            dismissAndPaste(copyOnly: action == .copyAsJPEG)
         case (.togglePin, .clipboard(let item)):
             clipboard.setPinned(item.pinnedAt == nil, item: item)
             selection = results.firstIndex { $0.id == result.id } ?? 0

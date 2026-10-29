@@ -5,6 +5,16 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Paste as JPEG and Copy as JPEG for images in clipboard history, in the ⌘K actions. The JPEG goes on the clipboard as
+  a file named after the image, so web pages and apps that only take JPEG accept it, and transparency turns white.
+
+### Fixed
+
+- Images copied from apps that offer only another format, such as HEIC or WebP, are now kept in clipboard history.
+- Photos copied from Photos show their format rather than the name of a file inside the Photos library.
+
 ## [0.11.2] - 2026-10-28
 
 ### Added
