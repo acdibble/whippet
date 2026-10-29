@@ -99,12 +99,18 @@ struct SearchView: View {
             .padding(.horizontal, 16)
             .frame(height: 56)
 
+            if let release = model.collapsedWhatsNew {
+                Divider()
+                WhatsNewRow(release: release) { model.activate() }
+            }
+
             if model.isExpanded {
                 switch model.mode {
                 case .root, .calculator: RootResults(model: model)
                 case .clipboard: ClipboardHistoryView(model: model)
                 case .stopwatch: StopwatchView(model: model)
                 case .timers: TimersView(model: model)
+                case .changelog: ChangelogView(model: model)
                 }
             }
         }
@@ -138,6 +144,7 @@ struct SearchView: View {
         case .root: String(localized: "Search apps and commands")
         case .calculator: String(localized: "Type a calculation…")
         case .clipboard: String(localized: "Type to filter entries…")
+        case .changelog: String(localized: "Type to filter changes…")
         case .stopwatch, .timers: ""
         }
     }
@@ -277,6 +284,8 @@ struct ResultRow: View {
         case .sendFeedback: Image(systemName: "bubble.left")
         case .readFeedback: Image(systemName: "tray.full")
         case .changelog: Image(systemName: "list.bullet.rectangle")
+        case .whatsNew: Image(systemName: "sparkles")
+        case .release(let release): Image(systemName: release.since == nil ? "tag" : "sparkles")
         case .shareWhippet: Image(systemName: "square.and.arrow.up")
         case .system(let command): Image(systemName: command.symbol)
         case .window(let command): command.image
@@ -486,5 +495,38 @@ struct AdminBadge: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
             .background(.orange.opacity(0.15), in: Capsule())
+    }
+}
+
+/// What's New under the empty search bar, with the keys that open and dismiss it.
+private struct WhatsNewRow: View {
+    let release: Release
+    let open: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "sparkles")
+                .foregroundStyle(.indigo)
+                .frame(width: 18)
+            Text(LauncherResult.whatsNew(release).title)
+            Text(LauncherResult.whatsNew(release).subtitle)
+                .foregroundStyle(Color.launcherSecondary)
+            Spacer()
+            HStack(spacing: 4) {
+                Text("Open")
+                KeyCap(symbol: "return")
+                Text("Dismiss")
+                    .padding(.leading, 8)
+                KeyCap("⌃")
+                KeyCap("X")
+            }
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(Color.launcherSecondary)
+        }
+        .font(.system(size: 13))
+        .padding(.horizontal, 16)
+        .frame(height: 40)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: open)
     }
 }

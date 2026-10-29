@@ -163,7 +163,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         switch (key, modifiers) {
         case ("p", [.command, .shift]): model.perform(.togglePin)
         case ("c", [.command, .shift]): model.perform(.copyPath)
-        case ("x", [.control]): model.perform(.delete)
+        case ("x", [.control]):
+            let dismisses = model.selectedResult.map(ResultAction.dismiss.isAvailable(for:)) ?? false
+            model.perform(dismisses ? .dismiss : .delete)
         case ("o", [.command, .shift]): model.perform(.popOut)
         case ("=", [.command]): model.perform(.addMinute)
         case ("l", [.command]): model.perform(.lap)

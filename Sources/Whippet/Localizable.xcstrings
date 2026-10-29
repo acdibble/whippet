@@ -241,6 +241,16 @@
         }
       }
     },
+    "Added" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزوده‌شده"
+          }
+        }
+      }
+    },
     "Admin" : {
       "localizations" : {
         "fa" : {
@@ -561,12 +571,32 @@
         }
       }
     },
+    "Changed" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغییرکرده"
+          }
+        }
+      }
+    },
     "Changelog" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "فهرست تغییرات"
+          }
+        }
+      }
+    },
+    "Changes since %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغییرات از %@"
           }
         }
       }
@@ -1091,6 +1121,16 @@
         }
       }
     },
+    "Deprecated" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منسوخ‌شده"
+          }
+        }
+      }
+    },
     "Developer" : {
       "localizations" : {
         "fa" : {
@@ -1127,6 +1167,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "دیسک"
+          }
+        }
+      }
+    },
+    "Dismiss" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نادیده گرفتن"
           }
         }
       }
@@ -1357,6 +1407,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "دوسوم اول"
+          }
+        }
+      }
+    },
+    "Fixed" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رفع‌شده"
           }
         }
       }
@@ -1981,6 +2041,16 @@
         }
       }
     },
+    "No matching changes" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغییری پیدا نشد"
+          }
+        }
+      }
+    },
     "No timers running. Press N to start one." : {
       "localizations" : {
         "fa" : {
@@ -2127,6 +2197,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "یک سال"
+          }
+        }
+      }
+    },
+    "Open" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن"
           }
         }
       }
@@ -2641,6 +2721,16 @@
         }
       }
     },
+    "Removed" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف‌شده"
+          }
+        }
+      }
+    },
     "Rename %@" : {
       "localizations" : {
         "fa" : {
@@ -2851,6 +2941,16 @@
         }
       }
     },
+    "Security" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "امنیت"
+          }
+        }
+      }
+    },
     "Send" : {
       "localizations" : {
         "fa" : {
@@ -2957,6 +3057,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نمایش «بیدار نگه داشتن» در نوار منو"
+          }
+        }
+      }
+    },
+    "Show Changes" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمایش تغییرات"
           }
         }
       }
@@ -3521,6 +3631,16 @@
         }
       }
     },
+    "Type to filter changes…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای فیلتر کردن تغییرات بنویسید…"
+          }
+        }
+      }
+    },
     "Type to filter entries…" : {
       "localizations" : {
         "fa" : {
@@ -3671,6 +3791,26 @@
         }
       }
     },
+    "What's New" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تازه‌ها"
+          }
+        }
+      }
+    },
+    "What's New in %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تازه‌های %@"
+          }
+        }
+      }
+    },
     "What's on your mind?" : {
       "localizations" : {
         "fa" : {
@@ -3701,6 +3841,16 @@
         }
       }
     },
+    "Whippet %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whippet %@"
+          }
+        }
+      }
+    },
     "Whippet Hotkey" : {
       "localizations" : {
         "fa" : {
@@ -3717,6 +3867,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تنظیمات Whippet"
+          }
+        }
+      }
+    },
+    "Whippet Updated" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whippet به‌روز شد"
           }
         }
       }

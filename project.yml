@@ -37,6 +37,9 @@ targets:
     platform: macOS
     sources:
       - Sources/Whippet
+      # Shown in the Changelog command and What's New.
+      - path: CHANGELOG.md
+        buildPhase: resources
     dependencies:
       - package: GRDB
       - package: KeyboardShortcuts
@@ -96,6 +99,7 @@ targets:
     sources:
       - Tests/WhippetTests
       - Sources/Whippet/CaffeineDuration.swift
+      - Sources/Whippet/Changelog.swift
       - Sources/Whippet/Calculator.swift
       - Sources/Whippet/ClipboardStore.swift
       - Sources/Whippet/FeedbackImage.swift

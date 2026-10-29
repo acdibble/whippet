@@ -10,6 +10,10 @@ enum LauncherResult: Identifiable, Hashable {
     case sendFeedback
     case readFeedback
     case changelog
+    /// After an update, every version since gathered into one, at the top of the main list.
+    case whatsNew(Release)
+    /// A version in the changelog view, or every version since an update gathered into one.
+    case release(Release)
     case shareWhippet
     case quit
     case clipboardHistory
@@ -51,6 +55,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .sendFeedback: "command:send-feedback"
         case .readFeedback: "command:read-feedback"
         case .changelog: "command:changelog"
+        case .whatsNew(let release): "whats-new:\(release.id)"
+        case .release(let release): "release:\(release.id)"
         case .shareWhippet: "command:share-whippet"
         case .quit: "command:quit"
         case .clipboardHistory: "command:clipboard-history"
@@ -87,6 +93,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .sendFeedback: String(localized: "Send Feedback")
         case .readFeedback: String(localized: "Read Feedback")
         case .changelog: String(localized: "Changelog")
+        case .whatsNew(let release): String(localized: "What's New in \(release.version)")
+        case .release(let release): release.since == nil ? release.version : String(localized: "What's New")
         case .shareWhippet: String(localized: "Share Whippet with a Friend")
         case .system(let command): command.title
         case .window(let command): command.title
@@ -125,6 +133,9 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog,
              .shareWhippet, .quit:
             String(localized: "Command")
+        case .whatsNew(let release): String(localized: "Changes since \(release.since ?? "")")
+        case .release(let release):
+            release.since.map { String(localized: "Changes since \($0)") } ?? release.date?.formatted(date: .abbreviated, time: .omitted) ?? ""
         case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
         case .caffeinateMenuBar, .system, .createQuicklink, .searchClipboard: String(localized: "Command")
         case .window: String(localized: "Window")
@@ -170,8 +181,11 @@ enum LauncherResult: Identifiable, Hashable {
 
     /// What search matches: a quicklink's keyword as well as its name, otherwise the title.
     var searchText: String {
-        if case .quicklink(let quicklink) = self { return quicklink.searchText }
-        return title
+        switch self {
+        case .quicklink(let quicklink): quicklink.searchText
+        case .release(let release): release.searchText
+        default: title
+        }
     }
 
     /// Return on it asks for text, and the quicklink is only counted as used once it opens with that text.
@@ -190,7 +204,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .searchClipboard: LauncherResult.clipboardHistory.id
         // Counted as using the timer it starts, which then ranks among Recent Timers.
         case .startTimer(let seconds, let name): TimerPreset(name: name, seconds: seconds).launchKey
-        case .calculation, .pastCalculation, .clipboard, .quit, .timer, .ringingTimer: nil
+        case .calculation, .pastCalculation, .clipboard, .quit, .timer, .ringingTimer, .whatsNew, .release: nil
         default: id
         }
     }
@@ -202,7 +216,9 @@ enum LauncherResult: Identifiable, Hashable {
             String(localized: "Open Command")
         case .caffeinate, .decaffeinate, .caffeinateMenuBar: String(localized: "Run Command")
         case .caffeinateFor: String(localized: "Choose Duration")
-        case .changelog: String(localized: "Open in Browser")
+        case .changelog: String(localized: "Open Command")
+        case .whatsNew: String(localized: "Show Changes")
+        case .release: String(localized: "Open in Browser")
         case .shareWhippet: String(localized: "Copy Link")
         case .system: String(localized: "Run Command")
         case .window: String(localized: "Move Window")
@@ -285,6 +301,7 @@ enum ResultAction: CaseIterable {
     case rename
     case snooze
     case togglePin
+    case dismiss
     case refreshPreview
     case pasteAsJPEG
     case copyAsJPEG
@@ -295,7 +312,7 @@ enum ResultAction: CaseIterable {
     func isAvailable(for result: LauncherResult) -> Bool {
         switch (self, result) {
         case (.primary, _): true
-        case (.secondary, .app): true
+        case (.secondary, .app), (.secondary, .changelog), (.dismiss, .whatsNew): true
         case (.secondary, .timer), (.restart, .timer), (.rename, .timer), (.delete, .timer): true
         case (.addMinute, _), (.addFiveMinutes, _): result.isCountdown
         case (.lap, .timer(let item)): item.kind == .stopwatch && !item.isPaused
@@ -316,6 +333,7 @@ enum ResultAction: CaseIterable {
         case .secondary:
             switch result {
             case .app: String(localized: "Show in Finder")
+            case .changelog: String(localized: "Open in Browser")
             case .timer: result.isStopwatch ? String(localized: "Copy Elapsed Time") : String(localized: "Copy Time Left")
             default: String(localized: "Copy")
             }
@@ -326,6 +344,7 @@ enum ResultAction: CaseIterable {
         case .rename: String(localized: "Rename…")
         case .snooze: String(localized: "Snooze")
         case .togglePin: result.isPinned ? String(localized: "Unpin") : String(localized: "Pin")
+        case .dismiss: String(localized: "Dismiss")
         case .refreshPreview: String(localized: "Refresh Preview")
         case .pasteAsJPEG: String(localized: "Paste as JPEG")
         case .copyAsJPEG: String(localized: "Copy as JPEG")
@@ -351,6 +370,7 @@ enum ResultAction: CaseIterable {
         case .rename: "pencil"
         case .snooze: "zzz"
         case .togglePin: "pin"
+        case .dismiss: "xmark"
         case .refreshPreview: "arrow.clockwise"
         case .pasteAsJPEG: "photo"
         case .copyAsJPEG: "photo.on.rectangle"
@@ -372,7 +392,7 @@ enum ResultAction: CaseIterable {
         case .togglePin: ("p", [.command, .shift])
         case .copyPath: ("c", [.command, .shift])
         case .popOut: ("o", [.command, .shift])
-        case .delete: ("x", [.control])
+        case .delete, .dismiss: ("x", [.control])
         }
     }
 }
@@ -386,6 +406,7 @@ final class LauncherModel {
         case clipboard
         case stopwatch
         case timers
+        case changelog
     }
 
     var query = "" {
@@ -423,6 +444,11 @@ final class LauncherModel {
 
     /// The stopwatch the stopwatch view shows.
     private var stopwatchID: UUID?
+    /// The version updated from while What's New is offered at the top of the main list.
+    private(set) var whatsNewSince: String?
+    /// Every version since the update, shown at the top of the changelog view when it was opened from What's New.
+    private var shownWhatsNew: Release?
+    @ObservationIgnored private let whatsNew = WhatsNew()
     /// True when the panel opened straight on this view or text field from a hotkey or the menu bar, rather than from
     /// the main list, so Escape closes Whippet instead of going back to a list you never saw.
     private var openedDirectly = false
@@ -433,6 +459,8 @@ final class LauncherModel {
 
     private static let calculatorColumnLength = 10
     private static let changelogURL = URL(string: "https://github.com/acdibble/whippet/blob/main/CHANGELOG.md")!
+    private static let releasesURL = URL(string: "https://github.com/acdibble/whippet/releases")!
+    static let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
 
     /// The inputs `results` depends on. Reading them registers each with Observation, and comparing them tells whether
     /// the cached results still apply, so a keystroke computes them once however often views and key handling ask.
@@ -449,6 +477,8 @@ final class LauncherModel {
         let caffeinatedUntil: Date?
         let showsCaffeineInMenuBar: Bool
         let isShowingAll: Bool
+        let whatsNewSince: String?
+        let shownWhatsNew: Release?
         let launchRevision: Int
         let quicklinks: [Quicklink]
         /// Compared cheaply, since an unchanged array shares its storage.
@@ -466,6 +496,8 @@ final class LauncherModel {
     @ObservationIgnored private var suggestionCount = 0
     /// How many running and ringing timers lead the empty search, under Timers; set with the results.
     @ObservationIgnored private var timerRowCount = 0
+    /// One while What's New leads the empty search, above the timers; set with the results.
+    @ObservationIgnored private var whatsNewRowCount = 0
     private static let suggestionLimit = 5
     private let clipboard: ClipboardHistory
     private let caffeine: Caffeine
@@ -491,6 +523,8 @@ final class LauncherModel {
         self.history = history
         self.quicklinks = quicklinks
         timers.onChange = { [weak self] in self?.keepSelectedTimer() }
+        whatsNew.recordLaunch(of: Self.currentVersion)
+        whatsNewSince = whatsNew.pending()
     }
 
     /// Timers move between sections as they finish and stop, so a selected timer is found again by its ID rather than
@@ -545,6 +579,15 @@ final class LauncherModel {
         }
     }
 
+    /// What's New, shown under the empty search bar while the list is hidden. It leads the results, so Return opens it
+    /// and ⌃X dismisses it.
+    var collapsedWhatsNew: Release? {
+        guard mode == .root, query.isEmpty, argumentTarget == nil, !isEnteringDuration, !isExpanded,
+              case .whatsNew(let release)? = results.first
+        else { return nil }
+        return release
+    }
+
     var isExpanded: Bool {
         guard argumentTarget == nil else { return false }
         return mode != .root || isShowingAll || (!query.isEmpty && !isCalculatingInline)
@@ -589,6 +632,8 @@ final class LauncherModel {
             caffeinatedUntil: caffeine.endsAt,
             showsCaffeineInMenuBar: caffeine.showsInMenuBar,
             isShowingAll: isShowingAll,
+            whatsNewSince: whatsNewSince,
+            shownWhatsNew: shownWhatsNew,
             launchRevision: history.revision,
             quicklinks: quicklinks.items,
             apps: appIndex.apps
@@ -620,22 +665,28 @@ final class LauncherModel {
                 + [.createQuicklink, .newTimer, .timersView, .newStopwatch, .stopwatch]
                 + WindowCommand.allCases.map(LauncherResult.window)
             let timerRows = timers.ringing.map(LauncherResult.ringingTimer) + timers.items.map(LauncherResult.timer)
-            let candidates = commands
+            let whatsNewRows = whatsNewSince
+                .flatMap { Changelog.changes(after: $0, upTo: Self.currentVersion, in: Changelog.shipped) }
+                .map { [LauncherResult.whatsNew($0)] } ?? []
+            let candidates = whatsNewRows + commands
                 + quicklinks.items.map(LauncherResult.quicklink)
                 + timers.presets.map(LauncherResult.timerPreset)
                 + appIndex.apps.map(LauncherResult.app)
             guard query.isEmpty else {
                 suggestionCount = 0
                 timerRowCount = 0
+                whatsNewRowCount = 0
                 let typedTimer = TimerDuration.parse(query).map { LauncherResult.startTimer(seconds: $0.seconds, name: $0.name) }
                 let ranked = Ranking.rank(timerRows + candidates, query: query, title: \.searchText, frecency: frecency(of:))
                 return (typedTimer.map { [$0] } ?? []) + ranked + textFallbacks
             }
-            let suggestions = Ranking.suggestions(candidates, limit: Self.suggestionLimit, frecency: frecency(of:))
+            let others = Array(candidates.dropFirst(whatsNewRows.count))
+            let suggestions = Ranking.suggestions(others, limit: Self.suggestionLimit, frecency: frecency(of:))
             let suggestedIDs = Set(suggestions.map(\.id))
             suggestionCount = suggestions.count
             timerRowCount = timerRows.count
-            return timerRows + suggestions + candidates.filter { !suggestedIDs.contains($0.id) }
+            whatsNewRowCount = whatsNewRows.count
+            return whatsNewRows + timerRows + suggestions + others.filter { !suggestedIDs.contains($0.id) }
         case .calculator:
             return calculatorResults(Calculator.calculate(query))
         case .clipboard:
@@ -646,6 +697,12 @@ final class LauncherModel {
             return timers.ringing.map(LauncherResult.ringingTimer)
                 + timers.items.filter { $0.kind == .timer }.map(LauncherResult.timer)
                 + timers.presets.map(LauncherResult.timerPreset)
+        case .changelog:
+            let releases = (shownWhatsNew.map { [$0] } ?? []) + Changelog.shipped
+            let words = query.split(whereSeparator: \.isWhitespace)
+            return releases
+                .filter { release in words.allSatisfy { release.searchText.localizedStandardContains($0) } }
+                .map(LauncherResult.release)
         }
     }
 
@@ -675,8 +732,10 @@ final class LauncherModel {
         clipboard.imageURL(for: item)
     }
 
+    /// Also notices What's New's week running out while Whippet stays open.
     func reset() {
         open(.root)
+        whatsNewSince = whatsNew.pending()
     }
 
     var showsCalculatorLayout: Bool {
@@ -737,10 +796,16 @@ final class LauncherModel {
         case (.secondary, .app(let app)):
             NSWorkspace.shared.activateFileViewerSelecting([app.url])
             onDismiss()
+        case (.secondary, .changelog):
+            NSWorkspace.shared.open(Self.changelogURL)
+            onDismiss()
         case (.secondary, .timer(let item)):
             copyTime(of: item)
         case (.secondary, _):
             activate(copyOnly: true)
+        case (.dismiss, .whatsNew):
+            dismissWhatsNew()
+            clampSelection()
         case (.refreshPreview, .clipboard(let item)):
             clipboard.refreshPreview(item)
         case (.pasteAsJPEG, .clipboard(let item)), (.copyAsJPEG, .clipboard(let item)):
@@ -892,6 +957,7 @@ final class LauncherModel {
         isShowingAll = false
         argumentTarget = nil
         stopwatchID = nil
+        shownWhatsNew = nil
         openedDirectly = false
         resetSelection()
     }
@@ -967,7 +1033,16 @@ final class LauncherModel {
             onDismiss()
             ShareLink.copy(using: clipboard)
         case .changelog:
-            NSWorkspace.shared.open(Self.changelogURL)
+            open(.changelog)
+        case .whatsNew(let release):
+            dismissWhatsNew()
+            open(.changelog)
+            shownWhatsNew = release
+            selection = 0
+        case .release(let release):
+            NSWorkspace.shared.open(
+                release.since == nil ? Self.releasesURL.appending(path: "tag/v\(release.version)") : Self.releasesURL
+            )
             onDismiss()
         case .caffeinate:
             caffeine.start(seconds: nil)
@@ -1155,6 +1230,11 @@ final class LauncherModel {
         Toast.shared.show(String(localized: "Copied to Clipboard"), symbol: "doc.on.doc")
     }
 
+    private func dismissWhatsNew() {
+        whatsNew.dismiss()
+        whatsNewSince = nil
+    }
+
     /// Starts "Caffeinate for…" with the typed duration; blank fields count as zero, and a zero or invalid duration beeps.
     func startTimedCaffeinate() {
         guard let seconds = CaffeineDuration.seconds(
@@ -1265,8 +1345,9 @@ final class LauncherModel {
             return String(localized: "Timers")
         }
         guard mode == .root, query.isEmpty else { return String(localized: "Results") }
-        if index < timerRowCount { return String(localized: "Timers") }
-        if index < timerRowCount + suggestionCount { return String(localized: "Suggestions") }
+        if index < whatsNewRowCount { return String(localized: "Whippet Updated") }
+        if index < whatsNewRowCount + timerRowCount { return String(localized: "Timers") }
+        if index < whatsNewRowCount + timerRowCount + suggestionCount { return String(localized: "Suggestions") }
         switch results[index] {
         case .app: return String(localized: "Applications")
         case .quicklink: return String(localized: "Quicklinks")

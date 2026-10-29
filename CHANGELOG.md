@@ -5,6 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The Changelog command shows every version's changes in the launcher, and ⌘↩ still opens it on GitHub.
+- After an update, What's New at the top of the launcher gathers the changes since the version you had, for a week or
+  until you open or dismiss it.
+
 ## [0.11.3] - 2026-10-29
 
 ### Added
