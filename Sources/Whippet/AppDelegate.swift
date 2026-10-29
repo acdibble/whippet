@@ -313,7 +313,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self?.model.perform(action)
             }
             item.image = NSImage(systemSymbolName: action.symbol, accessibilityDescription: nil)
-            if let shortcut = model.shortcut(for: action) {
+            // Return without modifiers is left to the menu, which runs the highlighted action with it; as a key equivalent it
+            // would run the primary action whichever is highlighted. The footer shows that Return runs it.
+            if let shortcut = model.shortcut(for: action), !(shortcut.key == "\r" && shortcut.modifiers.isEmpty) {
                 item.keyEquivalent = shortcut.key
                 item.keyEquivalentModifierMask = shortcut.modifiers
             }
