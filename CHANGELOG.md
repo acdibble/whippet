@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-29
+
 ### Added
 
 - The Changelog command shows every version's changes in the launcher, and ⌘↩ still opens it on GitHub.
@@ -282,7 +284,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v0.11.3...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/acdibble/whippet/compare/v0.11.3...v0.12.0
 [0.11.3]: https://github.com/acdibble/whippet/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/acdibble/whippet/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/acdibble/whippet/compare/v0.11.0...v0.11.1
