@@ -15,6 +15,8 @@ struct Conversion: Hashable {
     let outputLong: String
     /// What's measured, such as Length.
     let kind: String
+    /// The number copied, when it isn't the value to `UnitConversion.significantDigits`, such as money in cents.
+    var answer: String?
 }
 
 /// Converts `<number or calculation> <unit> to|in <unit>`, such as `5 km to mi`, `72 f in c` or `2 * 3 hogsheads to l`.
@@ -113,7 +115,7 @@ enum UnitConversion {
 
     // MARK: - Parsing
 
-    private static let keywords: Set<String> = ["to", "in", "into", "as"]
+    static let keywords: Set<String> = ["to", "in", "into", "as"]
 
     private static func isUnitStart(_ character: Character) -> Bool {
         character.isLetter || "°\"'μ".contains(character)
@@ -122,7 +124,7 @@ enum UnitConversion {
     /// Each way to split the text into an amount and a target at a keyword, from the last keyword. The space after the
     /// keyword is only looked at, so `12 in to cm` finds both ` in` and ` to`. The target is empty when the text ends at
     /// the keyword.
-    private static func splits(_ text: String) -> [(String, String)] {
+    static func splits(_ text: String) -> [(String, String)] {
         let pattern = /\s+(?i:to|in|into|as)(?=\s|$)/
         return text.matches(of: pattern).reversed().compactMap { match in
             let amount = text[..<match.range.lowerBound].trimmingCharacters(in: .whitespaces)
@@ -401,9 +403,10 @@ enum UnitConversion {
 }
 
 extension Calculator {
-    /// A calculation, a plain number or a unit conversion, in that order.
-    static func calculate(_ input: String) -> Calculation? {
+    /// A calculation, a plain number, a unit conversion or, with `rates`, a currency conversion, in that order.
+    static func calculate(_ input: String, rates: ExchangeRates? = nil) -> Calculation? {
         evaluate(input) ?? evaluateNumber(input) ?? UnitConversion.convert(input)
+            ?? rates.flatMap { CurrencyConversion.convert(input, rates: $0) }
     }
 
     /// The value of a number or calculation, such as the amount in a conversion.
@@ -415,9 +418,14 @@ extension Calculator {
 
 extension CalculationRecord {
     /// The answer as shown in history, with its unit for a conversion. History keeps the number alone, which is what
-    /// copying it gives, so the unit is read again from the expression.
+    /// copying it gives, so the unit is read again from the expression. Money is shown as it was converted rather
+    /// than at today's rates.
     var displayAnswer: String {
-        UnitConversion.convert(expression)?.displayAnswer ?? answer
+        if let calculation = UnitConversion.convert(expression) { return calculation.displayAnswer }
+        if let currency = CurrencyConversion.targetCurrency(of: expression), let value = Double(answer) {
+            return value.formatted(.currency(code: currency))
+        }
+        return answer
     }
 }
 

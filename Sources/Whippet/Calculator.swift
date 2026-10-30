@@ -9,7 +9,8 @@ struct Calculation: Hashable {
 
     /// The number copied or pasted.
     var answer: String {
-        conversion == nil ? Calculator.format(value) : Calculator.format(value, significantDigits: UnitConversion.significantDigits)
+        guard let conversion else { return Calculator.format(value) }
+        return conversion.answer ?? Calculator.format(value, significantDigits: UnitConversion.significantDigits)
     }
 
     /// The answer as shown, with its unit for a conversion.

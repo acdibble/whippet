@@ -481,6 +481,7 @@ final class LauncherModel {
         let shownWhatsNew: Release?
         let launchRevision: Int
         let quicklinks: [Quicklink]
+        let exchangeRates: ExchangeRates?
         /// Compared cheaply, since an unchanged array shares its storage.
         let apps: [AppEntry]
     }
@@ -502,6 +503,7 @@ final class LauncherModel {
     private let clipboard: ClipboardHistory
     private let caffeine: Caffeine
     private let timers: Timers
+    private let exchangeRates: ExchangeRateStore
 
     /// True while the Hours, Minutes and Seconds fields of "Caffeinate for…" are shown beside the search field.
     private(set) var isEnteringDuration = false
@@ -514,7 +516,8 @@ final class LauncherModel {
         caffeine: Caffeine,
         timers: Timers,
         history: LaunchHistory,
-        quicklinks: Quicklinks
+        quicklinks: Quicklinks,
+        exchangeRates: ExchangeRateStore
     ) {
         self.caffeine = caffeine
         self.timers = timers
@@ -522,6 +525,7 @@ final class LauncherModel {
         self.clipboard = clipboard
         self.history = history
         self.quicklinks = quicklinks
+        self.exchangeRates = exchangeRates
         timers.onChange = { [weak self] in self?.keepSelectedTimer() }
         whatsNew.recordLaunch(of: Self.currentVersion)
         whatsNewSince = whatsNew.pending()
@@ -564,11 +568,12 @@ final class LauncherModel {
         return calculation
     }
 
-    /// A calculation or unit conversion still being typed. Text that's also a named timer, such as `10 min to feed`,
-    /// stays a timer unless what follows `to` starts a unit that fits, such as `10 min to s`.
+    /// A calculation, unit conversion or currency conversion still being typed. Text that's also a named timer, such
+    /// as `10 min to feed`, stays a timer unless what follows `to` starts a unit that fits, such as `10 min to s`.
     private func looksLikeCalculation(_ query: String) -> Bool {
         Calculator.looksLikeCalculation(query)
             || UnitConversion.looksLikeConversion(query, requiresTarget: TimerDuration.parse(query) != nil)
+            || CurrencyConversion.looksLikeConversion(query)
     }
 
     private func rememberInlineAnswer() {
@@ -636,6 +641,7 @@ final class LauncherModel {
             shownWhatsNew: shownWhatsNew,
             launchRevision: history.revision,
             quicklinks: quicklinks.items,
+            exchangeRates: exchangeRates.rates,
             apps: appIndex.apps
         )
         if let cachedResults, cachedResults.key == key {
@@ -649,7 +655,7 @@ final class LauncherModel {
     private func computeResults() -> [LauncherResult] {
         switch mode {
         case .root:
-            if let calculation = Calculator.calculate(query) {
+            if let calculation = Calculator.calculate(query, rates: exchangeRates.rates) {
                 return calculatorResults(calculation)
             }
             // A calculation still being typed, such as "2+", gets the calculator's history rather than search results.
@@ -688,7 +694,7 @@ final class LauncherModel {
             whatsNewRowCount = whatsNewRows.count
             return whatsNewRows + timerRows + suggestions + others.filter { !suggestedIDs.contains($0.id) }
         case .calculator:
-            return calculatorResults(Calculator.calculate(query))
+            return calculatorResults(Calculator.calculate(query, rates: exchangeRates.rates))
         case .clipboard:
             return clipboard.search(query, kind: clipboardKind).map(LauncherResult.clipboard)
         case .stopwatch:

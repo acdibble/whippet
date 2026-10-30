@@ -981,6 +981,16 @@
         }
       }
     },
+    "Currency · %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ارز · %@"
+          }
+        }
+      }
+    },
     "Dark" : {
       "localizations" : {
         "fa" : {

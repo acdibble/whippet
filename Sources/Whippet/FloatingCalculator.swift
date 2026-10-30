@@ -14,10 +14,12 @@ final class FloatingCalculator {
 
     private let state = State()
     private let clipboard: ClipboardHistory
+    private let exchangeRates: ExchangeRateStore
     private lazy var panel = makePanel()
 
-    init(clipboard: ClipboardHistory) {
+    init(clipboard: ClipboardHistory, exchangeRates: ExchangeRateStore) {
         self.clipboard = clipboard
+        self.exchangeRates = exchangeRates
     }
 
     var isVisible: Bool {
@@ -57,7 +59,7 @@ final class FloatingCalculator {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.minSize = NSSize(width: 240, height: 220)
         panel.contentView = NSHostingView(
-            rootView: FloatingCalculatorView(state: state, clipboard: clipboard) { [weak panel] in panel?.performClose(nil) }
+            rootView: FloatingCalculatorView(state: state, clipboard: clipboard, exchangeRates: exchangeRates) { [weak panel] in panel?.performClose(nil) }
         )
         panel.center()
         panel.setFrameAutosaveName("FloatingCalculator")
@@ -68,11 +70,12 @@ final class FloatingCalculator {
 private struct FloatingCalculatorView: View {
     @Bindable var state: FloatingCalculator.State
     let clipboard: ClipboardHistory
+    let exchangeRates: ExchangeRateStore
     let close: () -> Void
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
-        let calculation = Calculator.calculate(state.expression)
+        let calculation = Calculator.calculate(state.expression, rates: exchangeRates.rates)
 
         VStack(spacing: 0) {
             VStack(alignment: .trailing, spacing: 4) {

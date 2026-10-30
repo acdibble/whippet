@@ -20,8 +20,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let feedbackStore = FeedbackStore()
     let settingsNavigation = SettingsNavigation()
     let quicklinks: Quicklinks
+    let exchangeRates = ExchangeRateStore()
     private var registeredQuicklinkHotkeys: Set<String> = []
-    private lazy var floatingCalculator = FloatingCalculator(clipboard: clipboard)
+    private lazy var floatingCalculator = FloatingCalculator(clipboard: clipboard, exchangeRates: exchangeRates)
     /// Created with the delegate, as Sparkle recommends, so its scheduled checks start at launch.
     let updater = Updater()
     private var model: LauncherModel!
@@ -42,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         AppAppearance.current.apply()
         appIndex.refresh()
         clipboard.start()
+        exchangeRates.start()
 
         clipboard.onLocalChange = { [weak self] in self?.cloudSync.recordChanged($0) }
         clipboard.onLocalDelete = { [weak self] in self?.cloudSync.recordDeleted($0) }
@@ -59,7 +61,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             caffeine: caffeine,
             timers: timers,
             history: launchHistory,
-            quicklinks: quicklinks
+            quicklinks: quicklinks,
+            exchangeRates: exchangeRates
         )
         model.onDismiss = { [weak self] in self?.dismissPanel() }
         model.onOpenSettings = { [weak self] in self?.showSettings() }

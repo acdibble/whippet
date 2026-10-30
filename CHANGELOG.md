@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Currency conversion, such as `10 usd to eur`, `$20 in €`, `€1,000 to pounds` or `2 * 3 GBP as yen`, with the
+  European Central Bank's daily reference rates. Rates are fetched a few times a day and kept for when you're offline.
+
 ## [1.0.1] - 2026-10-30
 
 ### Added
