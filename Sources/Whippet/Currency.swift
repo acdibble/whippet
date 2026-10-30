@@ -7,12 +7,15 @@ struct ExchangeRates: Codable, Hashable, Sendable {
     let date: String
     /// How much of each currency one euro buys, by ISO code, with the euro itself as 1.
     let perEuro: [String: Double]
+    /// When Whippet last fetched them, shown with a conversion.
+    var fetchedAt: Date?
 
     static let sourceURL = URL(string: "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")!
 
-    init(date: String, perEuro: [String: Double]) {
+    init(date: String, perEuro: [String: Double], fetchedAt: Date? = nil) {
         self.date = date
         self.perEuro = perEuro
+        self.fetchedAt = fetchedAt
     }
 
     /// Reads the ECB's daily file, whose rates are attributes such as `<Cube currency='USD' rate='1.1130'/>` inside a
@@ -34,13 +37,13 @@ struct ExchangeRates: Codable, Hashable, Sendable {
         return amount / sourceRate * targetRate
     }
 
-    /// The day the rates are for as shown, such as `29 Oct 2026`, or the date as published if it can't be read.
-    var displayDate: String {
-        let parts = date.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3,
-              let day = Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
-        else { return date }
-        return day.formatted(date: .abbreviated, time: .omitted)
+    /// What a conversion is labelled with: when the rates were last fetched, as `Currency · Updated 14:10`, or with the
+    /// day too when that wasn't today.
+    var kind: String {
+        guard let fetchedAt else { return String(localized: "Currency") }
+        let isToday = Calendar.current.isDateInToday(fetchedAt)
+        let time = fetchedAt.formatted(date: isToday ? .omitted : .abbreviated, time: .shortened)
+        return String(localized: "Currency · Updated \(time)")
     }
 }
 
@@ -67,7 +70,7 @@ enum CurrencyConversion {
                 input: amount.formatted(.currency(code: source)),
                 output: converted.formatted(.currency(code: target)),
                 outputLong: converted.formatted(.currency(code: target).presentation(.fullName)),
-                kind: String(localized: "Currency · \(rates.displayDate)"),
+                kind: rates.kind,
                 answer: Calculator.format(converted, fractionDigits: fractionDigits(of: target))
             )
             return Calculation(tokens: [], value: converted, isRPN: false, conversion: conversion)

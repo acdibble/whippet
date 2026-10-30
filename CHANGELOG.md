@@ -5,6 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Currency conversions show when the exchange rates were last updated, instead of the day they're for.
+
 ## [1.1.0] - 2026-10-30
 
 ### Added

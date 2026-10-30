@@ -981,12 +981,22 @@
         }
       }
     },
-    "Currency · %@" : {
+    "Currency" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ارز · %@"
+            "value" : "ارز"
+          }
+        }
+      }
+    },
+    "Currency · Updated %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ارز · به‌روزرسانی %@"
           }
         }
       }

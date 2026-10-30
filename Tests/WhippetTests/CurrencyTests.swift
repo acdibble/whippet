@@ -38,9 +38,17 @@ struct CurrencyTests {
         #expect(Calculator.calculate("10 usd to eur") == nil)
     }
 
-    @Test func keepsTheRatesDateAndShowsCurrencies() throws {
+    @Test func showsWhenTheRatesWereUpdatedAndTheCurrencies() throws {
+        var rates = rates
+        #expect(Calculator.calculate("10 usd to eur", rates: rates)?.conversion?.kind == "Currency")
+        let today = Date.now
+        rates.fetchedAt = today
         let conversion = try #require(Calculator.calculate("10 usd to eur", rates: rates)?.conversion)
-        #expect(conversion.kind.hasPrefix("Currency · "))
+        #expect(conversion.kind == "Currency · Updated \(today.formatted(date: .omitted, time: .shortened))")
+        // An older update names the day.
+        let earlier = today.addingTimeInterval(-3 * 86400)
+        rates.fetchedAt = earlier
+        #expect(rates.kind == "Currency · Updated \(earlier.formatted(date: .abbreviated, time: .shortened))")
         #expect(conversion.output.contains("5"))
         #expect(conversion.output.contains("€") || conversion.output.contains("EUR"))
     }

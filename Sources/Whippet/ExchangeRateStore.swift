@@ -8,9 +8,9 @@ import Observation
 @Observable
 final class ExchangeRateStore {
     private(set) var rates: ExchangeRates?
-    @ObservationIgnored private var fetchedAt: Date?
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
 
+    /// Saved with the time apart from the rates, as 1.1.0 did.
     private struct Saved: Codable {
         let rates: ExchangeRates
         let fetchedAt: Date
@@ -27,7 +27,7 @@ final class ExchangeRateStore {
         if let data = UserDefaults.standard.data(forKey: Self.defaultsKey),
            let saved = try? JSONDecoder().decode(Saved.self, from: data) {
             rates = saved.rates
-            fetchedAt = saved.fetchedAt
+            rates?.fetchedAt = saved.fetchedAt
         }
     }
 
@@ -43,17 +43,17 @@ final class ExchangeRateStore {
 
     private func refreshIfDue() async {
         let interval = TimeInterval(Self.refreshInterval.components.seconds)
-        if let fetchedAt, Date.now.timeIntervalSince(fetchedAt) < interval { return }
+        if let fetchedAt = rates?.fetchedAt, Date.now.timeIntervalSince(fetchedAt) < interval { return }
         let request = URLRequest(url: ExchangeRates.sourceURL, timeoutInterval: 30)
         guard
             let (data, response) = try? await Self.session.data(for: request),
             (response as? HTTPURLResponse)?.statusCode == 200,
-            let rates = ExchangeRates(ecbXML: String(decoding: data, as: UTF8.self))
+            var rates = ExchangeRates(ecbXML: String(decoding: data, as: UTF8.self))
         else { return }
-        let saved = Saved(rates: rates, fetchedAt: .now)
+        let fetchedAt = Date.now
+        rates.fetchedAt = fetchedAt
         self.rates = rates
-        fetchedAt = saved.fetchedAt
-        if let data = try? JSONEncoder().encode(saved) {
+        if let data = try? JSONEncoder().encode(Saved(rates: rates, fetchedAt: fetchedAt)) {
             UserDefaults.standard.set(data, forKey: Self.defaultsKey)
         }
     }
