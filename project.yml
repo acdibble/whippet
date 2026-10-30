@@ -108,6 +108,7 @@ targets:
       - Sources/Whippet/FuzzyMatch.swift
       - Sources/Whippet/ImageConversion.swift
       - Sources/Whippet/PageImage.swift
+      - Sources/Whippet/QuantityExpression.swift
       - Sources/Whippet/Quicklink.swift
       - Sources/Whippet/Ranking.swift
       - Sources/Whippet/SystemCommand.swift

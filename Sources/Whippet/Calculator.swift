@@ -138,7 +138,7 @@ enum Calculator {
     }
 
     /// Finds the end of a number literal: a radix-prefixed run like `0xFF_FF`, or digits with `.`, `,` and `_` separators.
-    private static func numberEnd(in input: String, from start: String.Index) -> String.Index {
+    static func numberEnd(in input: String, from start: String.Index) -> String.Index {
         // Only the first two characters, since lowercasing the whole rest for every number is quadratic in long input.
         let prefix = input[start...].prefix(2).lowercased()
         let isPrefixed = ["0x", "0b", "0o"].contains(prefix)
@@ -201,7 +201,7 @@ enum Calculator {
         return stack[0]
     }
 
-    fileprivate static func apply(_ operation: Character, _ lhs: Double, _ rhs: Double) -> Double {
+    static func apply(_ operation: Character, _ lhs: Double, _ rhs: Double) -> Double {
         switch operation {
         case "+": lhs + rhs
         case "-": lhs - rhs

@@ -92,6 +92,77 @@ struct UnitConversionTests {
     }
 
     @Test(arguments: [
+        ("2100 seconds / 3 in minutes", "11.66666667"),
+        ("2100 s / 3 in m", "11.66666667"),
+        ("1 h + 30 min to min", "90"),
+        ("1 h 30 min to min", "90"),
+        ("5 ft 10 in to cm", "177.8"),
+        ("5' 10\" to cm", "177.8"),
+        ("1 + 1 hogsheads to gallons", "126"),
+        ("2 km - 500 m in m", "1500"),
+        ("(1 km + 1 mi) * 2 to m", "5218.688"),
+        ("100 km / 2 h to mph", "31.06855961"),
+        ("100 km / 2 h in minutes", "0.8333333333"),
+        ("60 mph * 30 min to km", "48.28032"),
+        ("6 m2 / 2 m to cm", "300"),
+        ("(3 m)^2 to ft2", "96.87519375"),
+        ("1 / 2 s to Hz", "0.5"),
+        ("20 items / 2 seconds in minutes", "600"),
+        ("10 items/s * 2 to per min", "1200"),
+    ])
+    func arithmeticWithUnits(_ input: String, _ expected: String) {
+        #expect(answer(input) == expected, "got \(answer(input) ?? "nil")")
+    }
+
+    @Test(arguments: [
+        "5 km + 2 kg", "5 km + 2 kg to g", "5 km + 2 apples", "5 items/s * 2 kg", "2 km ^ 1 m", "(2 km) m to m",
+        "1 / 2 apples",
+    ])
+    func unitsThatDontFitTogether(_ input: String) {
+        #expect(Calculator.calculate(input) == nil, "got \(Calculator.calculate(input)?.displayAnswer ?? "")")
+    }
+
+    @Test(arguments: [
+        ("2100 seconds / 3", "700", "Time"),
+        ("2100 seconds / 3 in", "700", "Time"),
+        ("2100 seconds / 3 in mi", "700", "Time"),
+        ("20 items / second", "20", "Rate"),
+        ("20 items/s", "20", "Rate"),
+        ("100 km / 2 h", "50", "Speed"),
+        ("1 h + 30 min", "1.5", "Time"),
+        ("20 items / second * 1 h", "72000", "Count"),
+        ("2 apples * 3", "6", "Count"),
+    ])
+    func workedOutWithoutATarget(_ input: String, _ expected: String, _ kind: String) throws {
+        let calculation = try #require(UnitConversion.workOut(input))
+        #expect(calculation.answer == expected)
+        #expect(calculation.conversion?.kind == kind)
+        #expect(calculation.conversion?.input == input.replacing(/\s+in.*/, with: ""))
+    }
+
+    @Test func workedOutAmountsShowTheirUnit() throws {
+        let rate = try #require(UnitConversion.workOut("20 items / second")?.conversion)
+        #expect(rate.output.hasSuffix(" items/s"), "got \(rate.output)")
+        let speed = try #require(UnitConversion.workOut("100 km / 2 h")?.conversion)
+        #expect(speed.output.contains("km/h"), "got \(speed.output)")
+        let count = try #require(UnitConversion.workOut("20 items / second * 1 h")?.conversion)
+        #expect(count.output.hasSuffix(" items"), "got \(count.output)")
+    }
+
+    @Test(arguments: [
+        "5 km", "-5 km", "2 f", "60 mph", "1 h 30 min", "2 apples", "10 min to feed", "3pm in london", "1password",
+    ])
+    func loneAmountsWaitForATarget(_ input: String) {
+        #expect(UnitConversion.convert(input) == nil)
+        #expect(UnitConversion.workOut(input) == nil, "got \(UnitConversion.workOut(input)?.displayAnswer ?? "")")
+    }
+
+    @Test func moneyIsntACount() {
+        let rates = ExchangeRates(date: "2026-10-30", perEuro: ["EUR": 1, "GBP": 0.5])
+        #expect(Calculator.calculate("2 * 3 euros as pounds", rates: rates)?.conversion?.kind.hasPrefix("Currency") == true)
+    }
+
+    @Test(arguments: [
         ("9.35 items per second in hours", "33660"),
         ("9.35 items per second to per hour", "33660"),
         ("9.35 items/s to items per hour", "33660"),
@@ -172,6 +243,7 @@ struct UnitConversionTests {
     @Test(arguments: [
         "5 km t", "5 km to", "5 km to m", "5km to", "5 km i", "72 f in", "12 in to", "12 in to c", "1.5 light years to p",
         "5 km to light y", "9 items per second in h", "9 items per second to per", "9 items per second to per ho",
+        "2100 seconds /", "2100 seconds / 3 i", "1 h + (",
     ])
     func recognisesConversionsBeingTyped(_ input: String) {
         #expect(UnitConversion.looksLikeConversion(input))
@@ -179,7 +251,7 @@ struct UnitConversionTests {
 
     @Test(arguments: [
         "1p", "1password", "5k", "5 k", "5 km", "2 apples", "km", "safari", "3 d", "2 f", "1 pa", "5 km to kg",
-        "5 km to banana", "5 km to per",
+        "5 km to banana", "5 km to per", "2 apples +", "5 apples t",
     ])
     func leavesOtherSearchesAlone(_ input: String) {
         #expect(!UnitConversion.looksLikeConversion(input))

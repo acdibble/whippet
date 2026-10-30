@@ -941,6 +941,16 @@
         }
       }
     },
+    "Count" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعداد"
+          }
+        }
+      }
+    },
     "Couldn't check the iCloud account." : {
       "localizations" : {
         "fa" : {

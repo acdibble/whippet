@@ -10,6 +10,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 - The time somewhere else, such as `time in tokyo`, `3pm pst in london` or `15:30 to new york`, by city, country,
   time zone abbreviation or offset.
 - The time since or until a date, such as `time until dec 25`, `time since 5 may 1990 10am` or `days until friday`.
+- Arithmetic with units and rates, such as `2100 seconds / 3 in minutes`, `1 h + 30 min`, `5 ft 10 in to cm`,
+  `100 km / 2 h to mph` or `20 items / second * 1 h`. Arithmetic or a rate shows its answer straight away, such as
+  `20 items / second` as 20 items/s, before you type what to convert it to.
 
 ### Changed
 
