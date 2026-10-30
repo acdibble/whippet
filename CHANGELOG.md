@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-30
+
 ### Added
 
 - Currency conversion, such as `10 usd to eur`, `$20 in €`, `€1,000 to pounds` or `2 * 3 GBP as yen`, with the
@@ -306,7 +308,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/acdibble/whippet/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/acdibble/whippet/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/acdibble/whippet/compare/v0.12.0...v1.0.0
 [0.12.0]: https://github.com/acdibble/whippet/compare/v0.11.3...v0.12.0
