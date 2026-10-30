@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-30
+
 ### Added
 
 - Percentages in the calculator, such as `20% of 50`, `50 + 20%`, `80 - 15%`, `15% off 80` or `15% on 80`. A `%`
@@ -330,7 +332,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/acdibble/whippet/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/acdibble/whippet/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/acdibble/whippet/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/acdibble/whippet/compare/v1.0.0...v1.0.1
