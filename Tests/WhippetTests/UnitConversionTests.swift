@@ -92,7 +92,36 @@ struct UnitConversionTests {
     }
 
     @Test(arguments: [
-        "5 km", "5 km to kg", "5 to km", "km to mi", "5 apples to pears", "5 km to", "to mi", "72 f to",
+        ("9.35 items per second in hours", "33660"),
+        ("9.35 items per second to per hour", "33660"),
+        ("9.35 items/s to items per hour", "33660"),
+        ("120 page views per hour to minutes", "2"),
+        ("60 km per hour to minutes", "1"),
+        ("60 km/h to per min", "1"),
+        ("10 m/s in minutes", "600"),
+        ("5 km per hour to mph", "3.106855961"),
+        ("2 cups per day to weeks", "14"),
+        ("60 mph in minutes", "1"),
+        ("60 mph to per min", "1"),
+        ("36 kph to seconds", "0.01"),
+        ("60 knots to minutes", "1"),
+    ])
+    func rates(_ input: String, _ expected: String) {
+        #expect(answer(input) == expected, "got \(answer(input) ?? "nil")")
+    }
+
+    @Test func ratesShowWhatTheyCount() throws {
+        let calculation = try #require(UnitConversion.convert("9.35 items per second in hours"))
+        let conversion = try #require(calculation.conversion)
+        #expect(conversion.kind == "Rate")
+        #expect(conversion.input.hasSuffix(" items/s"), "got \(conversion.input)")
+        #expect(conversion.output.hasSuffix(" items/h"), "got \(conversion.output)")
+        #expect(conversion.outputLong.hasSuffix(" items per hour"), "got \(conversion.outputLong)")
+    }
+
+    @Test(arguments: [
+        "5 km", "5 km to kg", "5 items per second to km", "5 items per second to requests per hour", "5 per second to h",
+        "5 items per banana to h", "5 to km", "km to mi", "5 apples to pears", "5 km to", "to mi", "72 f to",
         String(repeating: "1", count: 200) + " m to ft",
     ])
     func notConversions(_ input: String) {
@@ -142,7 +171,7 @@ struct UnitConversionTests {
 
     @Test(arguments: [
         "5 km t", "5 km to", "5 km to m", "5km to", "5 km i", "72 f in", "12 in to", "12 in to c", "1.5 light years to p",
-        "5 km to light y",
+        "5 km to light y", "9 items per second in h", "9 items per second to per", "9 items per second to per ho",
     ])
     func recognisesConversionsBeingTyped(_ input: String) {
         #expect(UnitConversion.looksLikeConversion(input))
@@ -150,7 +179,7 @@ struct UnitConversionTests {
 
     @Test(arguments: [
         "1p", "1password", "5k", "5 k", "5 km", "2 apples", "km", "safari", "3 d", "2 f", "1 pa", "5 km to kg",
-        "5 km to banana",
+        "5 km to banana", "5 km to per",
     ])
     func leavesOtherSearchesAlone(_ input: String) {
         #expect(!UnitConversion.looksLikeConversion(input))

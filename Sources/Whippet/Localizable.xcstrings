@@ -2611,6 +2611,16 @@
         }
       }
     },
+    "Rate" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نرخ"
+          }
+        }
+      }
+    },
     "Read Feedback" : {
       "localizations" : {
         "fa" : {

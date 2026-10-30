@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Unit conversion handles rates, such as `9.35 items per second in hours`, `60 km/h to per minute` or
+  `2 cups per day to weeks`, or for units that are rates already, `60 mph in minutes`.
+
 ## [1.0.0] - 2026-10-29
 
 ### Added

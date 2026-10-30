@@ -39,27 +39,46 @@ enum UnitConversion {
     }
 
     private static func convert(_ amountText: String, to targetText: String) -> Calculation? {
-        let targets = units(named: targetText)
-        guard !targets.isEmpty else { return nil }
+        let named = readings(named: targetText)
+        let pers = units(named: targetText.replacing(/^(?i:per)(?:\s+|$)/, with: ""))
+        guard !named.isEmpty || !pers.isEmpty else { return nil }
 
         for (amount, sources) in amounts(in: amountText) {
             for source in sources {
-                for target in targets where source.isDimensionallyEquivalent(to: target) {
+                for target in targets(for: source, named: named, pers: pers) {
                     guard
-                        let converted = try? PhysicalMeasurement(value: amount, unit: source).convert(to: target),
+                        let converted = try? PhysicalMeasurement(value: amount, unit: source.unit).convert(to: target.unit),
                         converted.value.isFinite
                     else { continue }
                     let conversion = Conversion(
                         input: UnitDisplay.format(amount, source, style: .medium),
                         output: UnitDisplay.format(converted.value, target, style: .medium),
                         outputLong: UnitDisplay.format(converted.value, target, style: .long),
-                        kind: UnitDisplay.kind(of: target)
+                        kind: target.counted == nil ? UnitDisplay.kind(of: target.unit) : String(localized: "Rate")
                     )
                     return Calculation(tokens: [], value: converted.value, isRPN: false, conversion: conversion)
                 }
             }
         }
         return nil
+    }
+
+    /// What a source can be converted to: a unit of the same kind the target names, or for a rate, the same rate per
+    /// what the target names, as in `9.35 items per second in hours` or `60 km/h to per minute`.
+    private static func targets(for source: Reading, named: [Reading], pers: [PhysicalUnit]) -> [Reading] {
+        var targets: [Reading] = []
+        if let per = source.per {
+            let numerator = source.unit * per
+            for unit in pers where unit.isDimensionallyEquivalent(to: per) {
+                targets.append(Reading(unit: numerator / unit, per: unit, counted: source.counted))
+            }
+        }
+        for target in named where target.unit.isDimensionallyEquivalent(to: source.unit) {
+            // `items per second to requests per hour` changes what's counted, which isn't a conversion.
+            if let counted = target.counted, counted.lowercased() != source.counted?.lowercased() { continue }
+            targets.append(target)
+        }
+        return targets
     }
 
     /// True for a conversion on its way, such as `5 km to` or `5 km to m`, so the launcher keeps the calculator showing
@@ -81,9 +100,12 @@ enum UnitConversion {
             let sources = amounts(in: amountText).flatMap(\.1)
             guard !sources.isEmpty else { continue }
             if targetText.isEmpty { return !requiresTarget }
-            let typed = normalized(targetText)
+            // A rate's target can name only what it's per: `5 items per s to per h` or `to h`.
+            let typed = normalized(targetText.replacing(/^(?i:per)(?:\s+|$)/, with: ""))
+            if typed.isEmpty { return !requiresTarget && sources.contains { $0.per != nil } }
+            let kinds = sources.flatMap { [$0.unit] + ($0.per.map { [$0] } ?? []) }
             return vocabularyUnits.contains { word, units in
-                word.hasPrefix(typed) && units.contains { unit in sources.contains { $0.isDimensionallyEquivalent(to: unit) } }
+                word.hasPrefix(typed) && units.contains { unit in kinds.contains { $0.isDimensionallyEquivalent(to: unit) } }
             }
         }
         return false
@@ -111,8 +133,8 @@ enum UnitConversion {
 
     /// Every way to read the amount as a number or calculation followed by a unit, longest unit first. A unit can only
     /// start after a space, a digit, `)` or `.`, so only a few places are tried.
-    private static func amounts(in text: String) -> [(Double, [PhysicalUnit])] {
-        var readings: [(Double, [PhysicalUnit])] = []
+    private static func amounts(in text: String) -> [(Double, [Reading])] {
+        var amounts: [(Double, [Reading])] = []
         var previous: Character?
         for index in text.indices {
             defer { previous = text[index] }
@@ -122,9 +144,44 @@ enum UnitConversion {
             else { continue }
             let number = text[..<index].trimmingCharacters(in: .whitespaces)
             guard let value = Calculator.number(number) else { continue }
-            let units = units(named: String(text[index...]))
-            if !units.isEmpty {
-                readings.append((value, units))
+            let readings = readings(named: String(text[index...]))
+            if !readings.isEmpty {
+                amounts.append((value, readings))
+            }
+        }
+        return amounts
+    }
+
+    /// A unit an amount is in. A rate, such as `km per h` or `items/s`, keeps what it's per, so a target can name only
+    /// that.
+    struct Reading {
+        let unit: PhysicalUnit
+        /// What a rate is per, such as hours.
+        var per: PhysicalUnit?
+        /// What a rate counts when it isn't a unit, such as `items`, which is kept as typed for showing.
+        var counted: String?
+    }
+
+    /// What a unit's text could mean, as `units(named:)`, then as a rate: `<unit or word> per <unit>`, or with `/`.
+    private static func readings(named text: String) -> [Reading] {
+        // A unit that's a rate itself, such as `mph` (`mi/hr`), is per what follows its last `/`.
+        var readings = units(named: text).map { unit in
+            let perSymbol = unit.symbol.split(separator: "/").dropFirst().last.map(String.init) ?? perSymbols[unit.symbol]
+            return Reading(unit: unit, per: perSymbol.flatMap { try? PhysicalUnit(fromSymbol: $0, registry: registry) })
+        }
+        for match in text.matches(of: /\s+(?i:per)\s+|\s*\/\s*/) {
+            let numeratorText = text[..<match.range.lowerBound].trimmingCharacters(in: .whitespaces)
+            let pers = units(named: String(text[match.range.upperBound...]))
+            guard !numeratorText.isEmpty, !pers.isEmpty else { continue }
+            let numerators = units(named: numeratorText)
+            if numerators.isEmpty {
+                // Anything counted, such as `items` or `page views`, but not a number or a calculation.
+                guard numeratorText.allSatisfy({ $0.isLetter || $0 == " " }) else { continue }
+                readings += pers.map { Reading(unit: PhysicalUnit.none / $0, per: $0, counted: numeratorText) }
+            } else {
+                for numerator in numerators {
+                    readings += pers.map { Reading(unit: numerator / $0, per: $0) }
+                }
             }
         }
         return readings
@@ -180,6 +237,9 @@ enum UnitConversion {
         }
         return builder.registry()
     }()
+
+    /// Rates whose symbol doesn't say what they're per.
+    private static let perSymbols = ["knot": "hr"]
 
     /// The package's degree is 180/π radians rather than π/180, so it's replaced by `deg`.
     private static let replacedSymbols: Set<String> = ["°"]
@@ -364,6 +424,26 @@ extension CalculationRecord {
 /// Shows a converted amount with Foundation's units where there is one, which are localized, and the unit's own symbol
 /// otherwise.
 enum UnitDisplay {
+    /// A rate of something counted shows it with the unit it's per, such as `33,660 items/h`.
+    static func format(_ value: Double, _ reading: UnitConversion.Reading, style: Formatter.UnitStyle) -> String {
+        guard let counted = reading.counted, let per = reading.per else { return format(value, reading.unit, style: style) }
+        let formatter = style == .long ? longFormatter : mediumFormatter
+        let number = formatter.numberFormatter.string(from: NSNumber(value: value))
+            ?? Calculator.format(value, significantDigits: UnitConversion.significantDigits)
+        return style == .long
+            ? "\(number) \(counted) per \(name(of: per, style: .long))"
+            : "\(number) \(counted)/\(name(of: per, style: .short))"
+    }
+
+    /// One of a unit as shown without the number, such as `hour`, or `h` when short.
+    private static func name(of unit: PhysicalUnit, style: Formatter.UnitStyle) -> String {
+        guard let foundationUnit = foundationUnits[unit.symbol] else { return symbol(of: unit, plural: false) }
+        let formatter = style == .long ? longFormatter : shortFormatter
+        return formatter.string(from: Foundation.Measurement(value: 1, unit: foundationUnit))
+            .replacingOccurrences(of: "1", with: "")
+            .trimmingCharacters(in: .whitespaces)
+    }
+
     static func format(_ value: Double, _ unit: PhysicalUnit, style: Formatter.UnitStyle) -> String {
         let formatter = style == .long ? longFormatter : mediumFormatter
         if let foundationUnit = foundationUnits[unit.symbol] {
@@ -380,6 +460,7 @@ enum UnitDisplay {
     /// Formatters are slow to make and are only read once set up, which Foundation allows from any thread.
     nonisolated(unsafe) private static let mediumFormatter = makeFormatter(style: .medium)
     nonisolated(unsafe) private static let longFormatter = makeFormatter(style: .long)
+    nonisolated(unsafe) private static let shortFormatter = makeFormatter(style: .short)
 
     private static func makeFormatter(style: Formatter.UnitStyle) -> MeasurementFormatter {
         let formatter = MeasurementFormatter()
