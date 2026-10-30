@@ -1,6 +1,7 @@
 import AppKit
 import KeyboardShortcuts
 import SwiftUI
+import WhippetCore
 
 /// The launcher shell. The search field stays mounted across every mode so it keeps keyboard focus when switching views.
 struct SearchView: View {

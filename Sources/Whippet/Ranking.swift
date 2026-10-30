@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import WhippetCore
 
 /// How often and how recently each app and command was opened from Whippet, which ranks search results and fills the
 /// Suggestions section. Apps are keyed by bundle identifier, commands by their result identifier.

@@ -2,19 +2,19 @@ import Foundation
 import Units
 
 /// The Units package's types, named apart from Foundation's.
-typealias PhysicalUnit = Units.Unit
-typealias PhysicalMeasurement = Units.Measurement
+public typealias PhysicalUnit = Units.Unit
+public typealias PhysicalMeasurement = Units.Measurement
 
 /// A unit conversion's input and result as shown, alongside its value in `Calculation`.
-struct Conversion: Hashable {
+public struct Conversion: Hashable, Sendable {
     /// The amount converted, such as `5 km`.
-    let input: String
+    public let input: String
     /// The result with its unit, such as `3.106855961 mi`.
     let output: String
     /// The result with the unit spelled out, such as `3.106855961 miles`.
-    let outputLong: String
+    public let outputLong: String
     /// What's measured, such as Length.
-    let kind: String
+    public let kind: String
     /// The number copied, when it isn't the value to `UnitConversion.significantDigits`, such as money in cents.
     var answer: String?
 }
@@ -23,7 +23,7 @@ struct Conversion: Hashable {
 /// `100 km / 2 h to mph`, where the amount is arithmetic on numbers with units (`QuantityExpression`). Units come from
 /// the Units package, plus a few of our own, with aliases for what people type. A unit that could mean two things, such
 /// as `m` (metres or minutes), takes the meaning that matches the other unit.
-enum UnitConversion {
+public enum UnitConversion {
     /// Pasted text is never a conversion, and splitting it at every position would be slow.
     private static let maximumLength = 100
     /// Floating-point arithmetic leaves noise past this, such as 72 °F → 22.222222222224616 °C.
@@ -120,7 +120,7 @@ enum UnitConversion {
     /// True for a conversion on its way, such as `5 km to` or `5 km to m`, so the launcher keeps the calculator showing
     /// while the target is typed. Until `to` or `in` follows a unit, the text could be a search, such as `2 f`.
     /// With `requiresTarget`, as for text that's also a named timer, the target must have begun with a unit that fits.
-    static func looksLikeConversion(_ input: String, requiresTarget: Bool = false) -> Bool {
+    public static func looksLikeConversion(_ input: String, requiresTarget: Bool = false) -> Bool {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard text.count <= maximumLength else { return false }
 
@@ -445,7 +445,7 @@ enum UnitConversion {
 extension Calculator {
     /// A calculation, a plain number, a number in another base, a unit conversion, a currency conversion with
     /// `rates`, a time calculation, or an amount worked out without a target, in that order.
-    static func calculate(_ input: String, rates: ExchangeRates? = nil) -> Calculation? {
+    public static func calculate(_ input: String, rates: ExchangeRates? = nil) -> Calculation? {
         evaluate(input) ?? evaluateNumber(input) ?? BaseConversion.convert(input) ?? UnitConversion.convert(input)
             ?? rates.flatMap { CurrencyConversion.convert(input, rates: $0) } ?? TimeCalculation.calculate(input)
             ?? UnitConversion.workOut(input)
@@ -462,7 +462,7 @@ extension CalculationRecord {
     /// The answer as shown in history, with its unit for a conversion. History keeps the number alone, which is what
     /// copying it gives, so the unit is read again from the expression. Money is shown as it was converted rather
     /// than at today's rates.
-    var displayAnswer: String {
+    public var displayAnswer: String {
         if let calculation = UnitConversion.convert(expression) { return calculation.displayAnswer }
         if let currency = CurrencyConversion.targetCurrency(of: expression), let value = Double(answer) {
             return value.formatted(.currency(code: currency))
@@ -474,7 +474,7 @@ extension CalculationRecord {
 
 /// Shows a converted amount with Foundation's units where there is one, which are localized, and the unit's own symbol
 /// otherwise.
-enum UnitDisplay {
+public enum UnitDisplay {
     /// A rate of something counted shows it with the unit it's per, such as `33,660 items/h`, and a count shows it
     /// alone, such as `72,000 items`.
     static func format(_ value: Double, _ reading: UnitConversion.Reading, style: Formatter.UnitStyle) -> String {
@@ -543,26 +543,26 @@ enum UnitDisplay {
 
     static func kind(of reading: UnitConversion.Reading) -> String {
         guard reading.counted != nil else { return kind(of: reading.unit) }
-        return reading.per == nil ? String(localized: "Count") : String(localized: "Rate")
+        return reading.per == nil ? String(localized: "Count", bundle: .module) : String(localized: "Rate", bundle: .module)
     }
 
     static func kind(of unit: PhysicalUnit) -> String {
         let dimension = unit.dimension
         switch dimension {
-        case [.length: 1]: return String(localized: "Length")
-        case [.length: 2]: return String(localized: "Area")
-        case [.length: 3]: return String(localized: "Volume")
-        case [.mass: 1]: return String(localized: "Mass")
-        case [.time: 1]: return String(localized: "Time")
-        case [.temperature: 1]: return String(localized: "Temperature")
-        case [.data: 1]: return String(localized: "Data")
-        case [.angle: 1]: return String(localized: "Angle")
-        case [.time: -1]: return String(localized: "Frequency")
-        case [.length: 1, .time: -1]: return String(localized: "Speed")
-        case [.mass: 1, .length: 2, .time: -2]: return String(localized: "Energy")
-        case [.mass: 1, .length: 2, .time: -3]: return String(localized: "Power")
-        case [.mass: 1, .length: -1, .time: -2]: return String(localized: "Pressure")
-        default: return String(localized: "Conversion")
+        case [.length: 1]: return String(localized: "Length", bundle: .module)
+        case [.length: 2]: return String(localized: "Area", bundle: .module)
+        case [.length: 3]: return String(localized: "Volume", bundle: .module)
+        case [.mass: 1]: return String(localized: "Mass", bundle: .module)
+        case [.time: 1]: return String(localized: "Time", bundle: .module)
+        case [.temperature: 1]: return String(localized: "Temperature", bundle: .module)
+        case [.data: 1]: return String(localized: "Data", bundle: .module)
+        case [.angle: 1]: return String(localized: "Angle", bundle: .module)
+        case [.time: -1]: return String(localized: "Frequency", bundle: .module)
+        case [.length: 1, .time: -1]: return String(localized: "Speed", bundle: .module)
+        case [.mass: 1, .length: 2, .time: -2]: return String(localized: "Energy", bundle: .module)
+        case [.mass: 1, .length: 2, .time: -3]: return String(localized: "Power", bundle: .module)
+        case [.mass: 1, .length: -1, .time: -2]: return String(localized: "Pressure", bundle: .module)
+        default: return String(localized: "Conversion", bundle: .module)
         }
     }
 

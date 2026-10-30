@@ -32,7 +32,7 @@ builds and opens Whippet Dev, `just test` runs the tests, and `just` lists the r
 
 The project signs with the Dibble Codes team and its iCloud container. To build your own copy, change
 `DEVELOPMENT_TEAM`, the bundle identifier and the iCloud container in `project.yml`,
-`Resources/*.entitlements` and `Sources/Whippet/CloudSync.swift`.
+`Resources/*.entitlements` and `Packages/WhippetCore/Sources/WhippetCore/CloudSync.swift`.
 
 Debug builds are a separate app, Whippet Dev (`codes.dibble.whippet.dev`), with a yellow menu bar icon, its own
 settings and data in `~/Library/Application Support/Whippet Dev`, and CloudKit's Development environment, so it runs

@@ -1,49 +1,49 @@
 import Foundation
 
-struct Calculation: Hashable {
-    let tokens: [Calculator.Token]
-    let value: Double
-    let isRPN: Bool
+public struct Calculation: Hashable, Sendable {
+    public let tokens: [Calculator.Token]
+    public let value: Double
+    public let isRPN: Bool
     /// Set for a unit conversion, whose value is in the target unit.
-    var conversion: Conversion?
+    public var conversion: Conversion?
 
     /// The number copied or pasted.
-    var answer: String {
+    public var answer: String {
         guard let conversion else { return Calculator.format(value) }
         return conversion.answer ?? Calculator.format(value, significantDigits: UnitConversion.significantDigits)
     }
 
     /// The answer as shown, with its unit for a conversion.
-    var displayAnswer: String {
+    public var displayAnswer: String {
         conversion?.output ?? answer
     }
 
     /// A number on its own, such as `0xFF`, shown with its value but not kept in calculator history.
-    var isPlainNumber: Bool {
+    public var isPlainNumber: Bool {
         conversion == nil && !tokens.contains { if case .number = $0 { false } else { $0 != .open && $0 != .close } }
     }
 
     /// Names the operation when the input uses a single kind of operator, or what a conversion measures.
-    var operationName: String {
+    public var operationName: String {
         if let conversion { return conversion.kind }
-        if !isRPN, tokens.contains(.percent) { return String(localized: "Percentage") }
+        if !isRPN, tokens.contains(.percent) { return String(localized: "Percentage", bundle: .module) }
         let operations = Set(tokens.compactMap { token -> Character? in
             guard case .operation(let operation) = token else { return nil }
             return operation
         })
-        if operations.isEmpty { return String(localized: "Number") }
-        guard operations.count == 1, let operation = operations.first else { return String(localized: "Expression") }
+        if operations.isEmpty { return String(localized: "Number", bundle: .module) }
+        guard operations.count == 1, let operation = operations.first else { return String(localized: "Expression", bundle: .module) }
         switch operation {
-        case "+": return String(localized: "Sum")
-        case "-": return String(localized: "Difference")
-        case "*": return String(localized: "Product")
-        case "/": return String(localized: "Quotient")
-        case "%": return String(localized: "Remainder")
-        default: return String(localized: "Power")
+        case "+": return String(localized: "Sum", bundle: .module)
+        case "-": return String(localized: "Difference", bundle: .module)
+        case "*": return String(localized: "Product", bundle: .module)
+        case "/": return String(localized: "Quotient", bundle: .module)
+        case "%": return String(localized: "Remainder", bundle: .module)
+        default: return String(localized: "Power", bundle: .module)
         }
     }
 
-    var spelledAnswer: String {
+    public var spelledAnswer: String {
         if let conversion { return conversion.outputLong }
         let formatter = NumberFormatter()
         formatter.numberStyle = .spellOut
@@ -52,7 +52,7 @@ struct Calculation: Hashable {
     }
 }
 
-enum Calculator {
+public enum Calculator {
     /// Evaluates `input` as standard notation, falling back to reverse Polish notation, or returns nil when it is neither.
     /// The two cannot both succeed: standard notation puts an operator between operands, which underflows the RPN stack.
     /// Input without an operator, such as a bare number, is not a calculation.
@@ -72,7 +72,7 @@ enum Calculator {
 
     /// True for input that is, or is on its way to being, a calculation, such as `2+` or `(3`, so the launcher can
     /// treat it as one while it's typed instead of switching to search results between keystrokes.
-    static func looksLikeCalculation(_ input: String) -> Bool {
+    public static func looksLikeCalculation(_ input: String) -> Bool {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard let first = text.first, first.isASCIIDigit || "(.-+".contains(first) else { return false }
         // Letters only belong to radix literals such as 0xFF and to a percentage's word, as in `20% of`, or the word
@@ -91,14 +91,14 @@ enum Calculator {
     }
 
     /// Without grouping, and to `significantDigits`, which conversions lower to hide floating-point noise.
-    static func format(_ value: Double, significantDigits: Int = 15) -> String {
+    public static func format(_ value: Double, significantDigits: Int = 15) -> String {
         value.formatted(
             .number.locale(Locale(identifier: "en_US_POSIX")).grouping(.never)
                 .precision(.significantDigits(1...significantDigits))
         )
     }
 
-    enum Token: Hashable {
+    public enum Token: Hashable, Sendable {
         case number(Double, literal: String)
         case operation(Character)
         /// A `%` after a number that isn't followed by another, as in `20%` or `50 + 20%`, rather than a remainder.
@@ -236,12 +236,12 @@ enum Calculator {
 
 /// Shows a number or calculation in another base: `255 in hex`, `0xFF to binary`, `0b1010 as decimal` or
 /// `(12 + 4) in octal`, as a literal that can be typed back in, such as `0xFF`.
-enum BaseConversion {
+public enum BaseConversion {
     private static let bases: [String: (radix: Int, prefix: String, kind: String)] = {
-        let hex = (16, "0x", String(localized: "Hexadecimal"))
-        let binary = (2, "0b", String(localized: "Binary"))
-        let octal = (8, "0o", String(localized: "Octal"))
-        let decimal = (10, "", String(localized: "Decimal"))
+        let hex = (16, "0x", String(localized: "Hexadecimal", bundle: .module))
+        let binary = (2, "0b", String(localized: "Binary", bundle: .module))
+        let octal = (8, "0o", String(localized: "Octal", bundle: .module))
+        let decimal = (10, "", String(localized: "Decimal", bundle: .module))
         return [
             "hex": hex, "hexadecimal": hex, "binary": binary, "bin": binary, "octal": octal, "oct": octal,
             "decimal": decimal, "dec": decimal,
@@ -266,7 +266,7 @@ enum BaseConversion {
     }
 
     /// True while the base is typed after a number, such as `255 in h`, so the calculator stays showing.
-    static func looksLikeConversion(_ input: String) -> Bool {
+    public static func looksLikeConversion(_ input: String) -> Bool {
         let text = input.trimmingCharacters(in: .whitespaces)
         return UnitConversion.splits(text).contains { amountText, targetText in
             let typed = targetText.lowercased()
@@ -404,7 +404,7 @@ private extension Character {
 extension String {
     /// Wraps the text in Unicode left-to-right isolate marks, so a maths expression keeps its order and its brackets
     /// unmirrored inside a right-to-left interface.
-    var leftToRightIsolated: String {
+    public var leftToRightIsolated: String {
         "\u{2066}\(self)\u{2069}"
     }
 }

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+@testable import WhippetCore
 
 struct UnitConversionTests {
     private func answer(_ input: String) -> String? {

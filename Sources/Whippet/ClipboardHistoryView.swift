@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
+import WhippetCore
 
 struct ClipboardKindMenu: View {
     let model: LauncherModel

@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import WhippetCore
 
 enum LauncherResult: Identifiable, Hashable {
     case calculation(Calculation)

@@ -2,6 +2,7 @@ import AppKit
 import KeyboardShortcuts
 import SwiftUI
 import UniformTypeIdentifiers
+import WhippetCore
 
 /// Settings › Quicklinks: the saved links, with an editor for adding and changing them.
 struct QuicklinksPane: View {

@@ -5,7 +5,7 @@ import Units
 /// `5 ft 10 in`, `100 km / 2 h` or `20 items / second * 1 h`. A unit follows a number or a bracket and applies to it
 /// alone, so `2 * 3 km` is 6 km and `(1 + 1) gal` is 2 gal. A word that isn't a unit, such as `items`, is something
 /// counted, which can be added to more of the same or divided into a rate.
-enum QuantityExpression {
+public enum QuantityExpression {
     enum Token: Equatable {
         case number(Double)
         /// A unit as typed, such as `km`, `light years` or `items per second`.

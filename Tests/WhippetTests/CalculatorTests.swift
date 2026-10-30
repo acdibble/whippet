@@ -1,4 +1,5 @@
 import Testing
+@testable import WhippetCore
 
 struct CalculatorTests {
     @Test(arguments: [

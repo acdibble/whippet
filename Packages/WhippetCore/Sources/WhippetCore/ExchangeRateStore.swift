@@ -6,8 +6,8 @@ import Observation
 /// fetch the same rates again.
 @MainActor
 @Observable
-final class ExchangeRateStore {
-    private(set) var rates: ExchangeRates?
+public final class ExchangeRateStore {
+    public private(set) var rates: ExchangeRates?
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
 
     /// Saved with the time apart from the rates, as 1.1.0 did.
@@ -23,7 +23,7 @@ final class ExchangeRateStore {
     /// Fetched without cookies, as the ECB needs none.
     private static let session = URLSession(configuration: .ephemeral)
 
-    init() {
+    public init() {
         if let data = UserDefaults.standard.data(forKey: Self.defaultsKey),
            let saved = try? JSONDecoder().decode(Saved.self, from: data) {
             rates = saved.rates
@@ -31,7 +31,7 @@ final class ExchangeRateStore {
         }
     }
 
-    func start() {
+    public func start() {
         guard refreshTask == nil else { return }
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {

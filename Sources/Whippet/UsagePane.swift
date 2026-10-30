@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WhippetCore
 
 /// Disk and memory figures, read fresh each time the pane appears. Item counts are in the Clipboard History pane.
 struct UsagePane: View {

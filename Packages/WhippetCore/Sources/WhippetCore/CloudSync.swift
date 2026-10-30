@@ -8,7 +8,7 @@ import GRDB
 /// nothing readable without the key, which is itself end-to-end encrypted in the zone.
 @MainActor
 @Observable
-final class CloudSync {
+public final class CloudSync {
     enum Status: Equatable {
         case off
         case checkingAccount
@@ -19,12 +19,12 @@ final class CloudSync {
     }
 
     private(set) var status = Status.off
-    private(set) var pendingChanges = 0
+    public private(set) var pendingChanges = 0
     private(set) var lastSyncedAt = UserDefaults.standard.object(forKey: "cloudLastSyncedAt") as? Date {
         didSet { UserDefaults.standard.set(lastSyncedAt, forKey: "cloudLastSyncedAt") }
     }
 
-    var isEnabled = UserDefaults.standard.bool(forKey: "cloudSyncEnabled") {
+    public var isEnabled = UserDefaults.standard.bool(forKey: "cloudSyncEnabled") {
         didSet {
             UserDefaults.standard.set(isEnabled, forKey: "cloudSyncEnabled")
             if isEnabled {
@@ -35,7 +35,7 @@ final class CloudSync {
         }
     }
 
-    var includesImages = UserDefaults.standard.object(forKey: "cloudSyncIncludesImages") as? Bool ?? true {
+    public var includesImages = UserDefaults.standard.object(forKey: "cloudSyncIncludesImages") as? Bool ?? true {
         didSet {
             UserDefaults.standard.set(includesImages, forKey: "cloudSyncIncludesImages")
             enqueueUnsyncedRecords()
@@ -46,9 +46,11 @@ final class CloudSync {
     }
 
     /// Called after changes from another Mac were merged into the local store.
-    @ObservationIgnored var onRemoteChanges: () -> Void = {}
+    @ObservationIgnored public var onRemoteChanges: () -> Void = {}
 
     @ObservationIgnored private let store: ClipboardStore?
+    /// Where the key and the engine's state are saved, beside the store.
+    @ObservationIgnored private let directory: URL
     @ObservationIgnored private var engine: CKSyncEngine?
     @ObservationIgnored private var keys: SyncKeys?
     /// Checks the account and loads the key before creating the engine. Only the latest start may finish, so toggling
@@ -63,45 +65,46 @@ final class CloudSync {
     private static let keyType = "SyncKey"
     private static let keyRecordID = CKRecord.ID(recordName: "sync-key", zoneID: zoneID)
 
-    init(store: ClipboardStore?) {
+    public init(store: ClipboardStore?, directory: URL) {
         self.store = store
+        self.directory = directory
         if isEnabled {
             start()
         }
     }
 
-    var statusDescription: String {
+    public var statusDescription: String {
         switch status {
-        case .off: return String(localized: "Off")
-        case .checkingAccount: return String(localized: "Checking iCloud account…")
+        case .off: return String(localized: "Off", bundle: .module)
+        case .checkingAccount: return String(localized: "Checking iCloud account…", bundle: .module)
         case .unavailable(let reason): return reason
-        case .syncing: return String(localized: "Syncing…")
+        case .syncing: return String(localized: "Syncing…", bundle: .module)
         case .failed(let message): return message
         case .upToDate:
-            guard let lastSyncedAt else { return String(localized: "Up to date") }
-            return String(localized: "Up to date, last synced \(lastSyncedAt.formatted(.relative(presentation: .named)))")
+            guard let lastSyncedAt else { return String(localized: "Up to date", bundle: .module) }
+            return String(localized: "Up to date, last synced \(lastSyncedAt.formatted(.relative(presentation: .named)))", bundle: .module)
         }
     }
 
     /// The CloudKit user record ID of the account signed into iCloud on this Mac, which is the record to give a role
     /// to in the CloudKit Console.
-    func userRecordName() async -> String? {
+    public func userRecordName() async -> String? {
         try? await container.userRecordID().recordName
     }
 
     /// Queues an item changed on this Mac for upload.
-    func recordChanged(_ item: SyncItem) {
+    public func recordChanged(_ item: SyncItem) {
         enqueue([item])
     }
 
     /// Queues the deletion of a record removed on this Mac.
-    func recordDeleted(_ recordName: String) {
+    public func recordDeleted(_ recordName: String) {
         guard let engine else { return }
         engine.state.add(pendingRecordZoneChanges: [.deleteRecord(Self.recordID(recordName))])
         updatePendingChanges()
     }
 
-    func syncNow() async {
+    public func syncNow() async {
         guard let engine else { return }
         status = .syncing
         do {
@@ -149,7 +152,7 @@ final class CloudSync {
     }
 
     /// Deletes the iCloud copy of everything and turns sync off; history on this Mac is kept.
-    func deleteCloudData() async {
+    public func deleteCloudData() async {
         guard let engine else { return }
         status = .syncing
         engine.state.remove(pendingRecordZoneChanges: engine.state.pendingRecordZoneChanges)
@@ -169,7 +172,7 @@ final class CloudSync {
 
     private func start() {
         guard let store else {
-            status = .unavailable(String(localized: "History could not be opened, so there is nothing to sync."))
+            status = .unavailable(String(localized: "History could not be opened, so there is nothing to sync.", bundle: .module))
             return
         }
         status = .checkingAccount
@@ -258,10 +261,10 @@ final class CloudSync {
 
     private static func describe(_ accountStatus: CKAccountStatus?) -> String {
         switch accountStatus {
-        case .noAccount: String(localized: "Sign in to iCloud to sync.")
-        case .restricted: String(localized: "iCloud is restricted on this Mac.")
-        case .temporarilyUnavailable: String(localized: "iCloud is temporarily unavailable.")
-        default: String(localized: "Couldn't check the iCloud account.")
+        case .noAccount: String(localized: "Sign in to iCloud to sync.", bundle: .module)
+        case .restricted: String(localized: "iCloud is restricted on this Mac.", bundle: .module)
+        case .temporarilyUnavailable: String(localized: "iCloud is temporarily unavailable.", bundle: .module)
+        default: String(localized: "Couldn't check the iCloud account.", bundle: .module)
         }
     }
 
@@ -310,13 +313,13 @@ final class CloudSync {
     }
 
     private var keyURL: URL {
-        ClipboardStore.defaultDirectory.appending(path: "cloud-sync-key-\(container.containerIdentifier ?? "default")")
+        directory.appending(path: "cloud-sync-key-\(container.containerIdentifier ?? "default")")
     }
 
     // MARK: - Saved engine state
 
     private var stateURL: URL {
-        ClipboardStore.defaultDirectory.appending(path: "cloud-sync-state-\(container.containerIdentifier ?? "default").json")
+        directory.appending(path: "cloud-sync-state-\(container.containerIdentifier ?? "default").json")
     }
 
     private func loadSavedState() -> CKSyncEngine.State.Serialization? {
@@ -563,7 +566,7 @@ final class CloudSync {
 }
 
 extension CloudSync: CKSyncEngineDelegate {
-    func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
+    public func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
         switch event {
         case .stateUpdate(let update):
             save(update.stateSerialization)
@@ -601,7 +604,7 @@ extension CloudSync: CKSyncEngineDelegate {
         }
     }
 
-    func nextRecordZoneChangeBatch(
+    public func nextRecordZoneChangeBatch(
         _ context: CKSyncEngine.SendChangesContext,
         syncEngine: CKSyncEngine
     ) async -> CKSyncEngine.RecordZoneChangeBatch? {
@@ -650,6 +653,6 @@ private struct SyncKeys {
 
 private struct MissingKeyError: LocalizedError {
     var errorDescription: String? {
-        String(localized: "The key for iCloud sync is missing or damaged.")
+        String(localized: "The key for iCloud sync is missing or damaged.", bundle: .module)
     }
 }

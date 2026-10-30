@@ -3,7 +3,7 @@ import Foundation
 import GRDB
 import UniformTypeIdentifiers
 
-enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
+public enum ClipboardKind: String, Codable, CaseIterable, Identifiable, Sendable {
     case text
     case link
     case number
@@ -11,29 +11,29 @@ enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
     /// Files copied in Finder and other apps, kept on this Mac only since their paths mean nothing on another.
     case file
 
-    var id: Self { self }
+    public var id: Self { self }
 
-    var title: String {
+    public var title: String {
         switch self {
-        case .text: String(localized: "Text")
-        case .link: String(localized: "Link")
-        case .number: String(localized: "Number")
-        case .image: String(localized: "Image")
-        case .file: String(localized: "File")
+        case .text: String(localized: "Text", bundle: .module)
+        case .link: String(localized: "Link", bundle: .module)
+        case .number: String(localized: "Number", bundle: .module)
+        case .image: String(localized: "Image", bundle: .module)
+        case .file: String(localized: "File", bundle: .module)
         }
     }
 
-    var pluralTitle: String {
+    public var pluralTitle: String {
         switch self {
-        case .text: String(localized: "Text")
-        case .link: String(localized: "Links")
-        case .number: String(localized: "Numbers")
-        case .image: String(localized: "Images")
-        case .file: String(localized: "Files")
+        case .text: String(localized: "Text", bundle: .module)
+        case .link: String(localized: "Links", bundle: .module)
+        case .number: String(localized: "Numbers", bundle: .module)
+        case .image: String(localized: "Images", bundle: .module)
+        case .file: String(localized: "Files", bundle: .module)
         }
     }
 
-    var symbolName: String {
+    public var symbolName: String {
         switch self {
         case .text: "doc"
         case .link: "link"
@@ -57,23 +57,23 @@ enum ClipboardKind: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, TableRecord {
-    static let databaseTableName = "clipboard"
+public struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, TableRecord, Sendable {
+    public static let databaseTableName = "clipboard"
 
-    let id: Int64
-    let contentHash: String
-    let kind: ClipboardKind
-    let text: String?
+    public let id: Int64
+    public let contentHash: String
+    public let kind: ClipboardKind
+    public let text: String?
     let imageFile: String?
-    let imageWidth: Int?
-    let imageHeight: Int?
-    let imageBytes: Int?
+    public let imageWidth: Int?
+    public let imageHeight: Int?
+    public let imageBytes: Int?
     /// Nil until text recognition has run; empty when the image contains no text.
     let ocrText: String?
-    let copiedAt: Date
-    let sourceBundleID: String?
-    let timesCopied: Int
-    let pinnedAt: Date?
+    public let copiedAt: Date
+    public let sourceBundleID: String?
+    public let timesCopied: Int
+    public let pinnedAt: Date?
     /// A link's page title: nil until its preview has been fetched, empty when the page has none.
     let linkTitle: String?
     /// A link's preview image, in the images folder.
@@ -82,28 +82,28 @@ struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, TableRec
     let linkOcrText: String?
     /// The type identifier of an image as it was copied, such as `public.jpeg`; it is stored as PNG. Nil for images
     /// copied before 0.11.2 and those from another Mac.
-    let imageType: String?
+    public let imageType: String?
 
     /// A file's path is kept in `text`: one per line for files, and for an image copied as a file in Finder, its path.
-    var fileURLs: [URL] {
+    public var fileURLs: [URL] {
         guard kind == .file || kind == .image, let text, !text.isEmpty else { return [] }
         return text.split(separator: "\n").map { URL(filePath: String($0)) }
     }
 
-    var title: String {
+    public var title: String {
         if kind == .file {
             let names = fileURLs.map(\.lastPathComponent)
             guard let first = names.first else { return "" }
-            return names.count == 1 ? first : String(localized: "\(first) and \(names.count - 1) More")
+            return names.count == 1 ? first : String(localized: "\(first) and \(names.count - 1) More", bundle: .module)
         }
         if kind == .image {
             if let name = fileURLs.first?.lastPathComponent {
                 return name
             }
             if let format = imageType.flatMap({ UTType($0) })?.localizedDescription {
-                return String(localized: "\(format) (\(imageWidth ?? 0)×\(imageHeight ?? 0))")
+                return String(localized: "\(format) (\(imageWidth ?? 0)×\(imageHeight ?? 0))", bundle: .module)
             }
-            return String(localized: "Image (\(imageWidth ?? 0)×\(imageHeight ?? 0))")
+            return String(localized: "Image (\(imageWidth ?? 0)×\(imageHeight ?? 0))", bundle: .module)
         }
         if let linkTitle, !linkTitle.isEmpty {
             return linkTitle
@@ -114,20 +114,20 @@ struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, TableRec
     }
 
     /// A link's site, shown beside its page title.
-    var linkHost: String? {
+    public var linkHost: String? {
         guard kind == .link, let text else { return nil }
         let host = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines))?.host()
         return host.map { $0.hasPrefix("www.") ? String($0.dropFirst(4)) : $0 }
     }
 
     /// True once a link has a page title to show.
-    var hasLinkTitle: Bool {
+    public var hasLinkTitle: Bool {
         linkTitle.map { !$0.isEmpty } ?? false
     }
 }
 
 /// How long unpinned clipboard history is kept.
-enum ClipboardRetention: String, CaseIterable, Identifiable {
+public enum ClipboardRetention: String, CaseIterable, Identifiable, Sendable {
     case day
     case week
     case month
@@ -135,21 +135,21 @@ enum ClipboardRetention: String, CaseIterable, Identifiable {
     case year
     case forever
 
-    var id: Self { self }
+    public var id: Self { self }
 
-    var title: String {
+    public var title: String {
         switch self {
-        case .day: String(localized: "One Day")
-        case .week: String(localized: "One Week")
-        case .month: String(localized: "One Month")
-        case .threeMonths: String(localized: "Three Months")
-        case .year: String(localized: "One Year")
-        case .forever: String(localized: "Forever")
+        case .day: String(localized: "One Day", bundle: .module)
+        case .week: String(localized: "One Week", bundle: .module)
+        case .month: String(localized: "One Month", bundle: .module)
+        case .threeMonths: String(localized: "Three Months", bundle: .module)
+        case .year: String(localized: "One Year", bundle: .module)
+        case .forever: String(localized: "Forever", bundle: .module)
         }
     }
 
     /// Items copied before this date are removed, or none when nil.
-    func cutoff(from now: Date) -> Date? {
+    public func cutoff(from now: Date) -> Date? {
         let calendar = Calendar.current
         switch self {
         case .day: return calendar.date(byAdding: .day, value: -1, to: now)
@@ -162,43 +162,37 @@ enum ClipboardRetention: String, CaseIterable, Identifiable {
     }
 }
 
-struct CalculationRecord: Identifiable, Hashable, Codable, FetchableRecord, TableRecord {
-    static let databaseTableName = "calculation"
+public struct CalculationRecord: Identifiable, Hashable, Codable, FetchableRecord, TableRecord, Sendable {
+    public static let databaseTableName = "calculation"
 
-    let id: Int64
-    let expression: String
-    let answer: String
+    public let id: Int64
+    public let expression: String
+    public let answer: String
     let mode: String
-    let calculatedAt: Date
+    public let calculatedAt: Date
 }
 
-struct ClipboardUsage {
-    let directory: URL
-    let databaseBytes: Int
-    let imageBytes: Int
-    let imageFiles: Int
-    let counts: [ClipboardKind: Int]
-    let imagesAwaitingRecognition: Int
-    let calculations: Int
+public struct ClipboardUsage: Sendable {
+    public let directory: URL
+    public let databaseBytes: Int
+    public let imageBytes: Int
+    public let imageFiles: Int
+    public let counts: [ClipboardKind: Int]
+    public let imagesAwaitingRecognition: Int
+    public let calculations: Int
 }
 
 /// Clipboard history in a SQLite database in Application Support, with an FTS5 index over copied and recognized text
 /// and link titles. Images live beside it as PNG files named by their content hash, and links' preview images as
 /// `link-` followed by the link's hash.
-final class ClipboardStore: Sendable {
-    /// Development builds keep their own history, sync state and key, which belong to CloudKit's Development environment.
-    #if DEBUG
-    static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet Dev")
-    #else
-    static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet")
-    #endif
-
+public final class ClipboardStore: Sendable {
     let directory: URL
     let imagesDirectory: URL
     private let databaseURL: URL
     private let database: DatabaseQueue
 
-    init(directory: URL = defaultDirectory) throws {
+    /// Opens or creates the store in `directory`, which the app chooses, such as its Application Support folder.
+    public init(directory: URL) throws {
         self.directory = directory
         imagesDirectory = directory.appending(path: "Images")
         try FileManager.default.createDirectory(at: imagesDirectory, withIntermediateDirectories: true)
@@ -209,7 +203,7 @@ final class ClipboardStore: Sendable {
 
     /// Records a copy, moving content that is already in history to the top, and returns it for syncing.
     @discardableResult
-    func recordText(_ text: String, sourceBundleID: String?) throws -> SyncItem {
+    public func recordText(_ text: String, sourceBundleID: String?) throws -> SyncItem {
         let hash = Self.hash(Data(text.utf8))
         try database.write { db in
             try db.execute(
@@ -230,7 +224,7 @@ final class ClipboardStore: Sendable {
     /// `type` is the image's type identifier as copied, and `path` the file it was copied from in Finder, if any. Copying
     /// the same picture again keeps the name and type it had unless the new copy has its own.
     @discardableResult
-    func recordImage(
+    public func recordImage(
         png: Data, width: Int, height: Int, type: String? = nil, path: String? = nil, sourceBundleID: String?
     ) throws -> SyncItem {
         let hash = Self.hash(png)
@@ -265,7 +259,7 @@ final class ClipboardStore: Sendable {
 
     /// Records files copied together as one item, by their paths.
     @discardableResult
-    func recordFiles(_ paths: [String], sourceBundleID: String?) throws -> SyncItem {
+    public func recordFiles(_ paths: [String], sourceBundleID: String?) throws -> SyncItem {
         let text = paths.joined(separator: "\n")
         // Prefixed, so the same paths copied as text are a separate item.
         let hash = Self.hash(Data("file\n\(text)".utf8))
@@ -288,7 +282,7 @@ final class ClipboardStore: Sendable {
     /// Moves an item copied again from history to the top and counts the copy, without recording its content again.
     /// Returns nil when the item no longer exists.
     @discardableResult
-    func recordCopy(contentHash: String) throws -> SyncItem? {
+    public func recordCopy(contentHash: String) throws -> SyncItem? {
         let changed = try database.write { db in
             try db.execute(
                 sql: "UPDATE clipboard SET copiedAt = ?, timesCopied = timesCopied + 1, updatedAt = ? WHERE contentHash = ?",
@@ -300,7 +294,7 @@ final class ClipboardStore: Sendable {
     }
 
     /// The newest copied image or link preview image whose text hasn't been recognized yet.
-    func nextImageAwaitingRecognition() throws -> (hash: String, file: URL, isLinkPreview: Bool)? {
+    public func nextImageAwaitingRecognition() throws -> (hash: String, file: URL, isLinkPreview: Bool)? {
         try database.read { db in
             let row = try Row.fetchOne(
                 db,
@@ -322,7 +316,7 @@ final class ClipboardStore: Sendable {
 
     /// Returns nil when the item was deleted while its text was being recognized, so nothing syncs it back.
     @discardableResult
-    func setRecognizedText(_ text: String, hash: String) throws -> SyncItem? {
+    public func setRecognizedText(_ text: String, hash: String) throws -> SyncItem? {
         let changed = try database.write { db in
             try db.execute(
                 sql: "UPDATE clipboard SET ocrText = ?, updatedAt = ? WHERE contentHash = ?",
@@ -334,7 +328,7 @@ final class ClipboardStore: Sendable {
     }
 
     /// Link previews stay on this Mac, so this doesn't change `updatedAt` and nothing syncs.
-    func setLinkPreviewRecognizedText(_ text: String, hash: String) throws {
+    public func setLinkPreviewRecognizedText(_ text: String, hash: String) throws {
         try database.write { db in
             try db.execute(sql: "UPDATE clipboard SET linkOcrText = ? WHERE contentHash = ?", arguments: [text, hash])
         }
@@ -343,7 +337,7 @@ final class ClipboardStore: Sendable {
     // MARK: - Link previews
 
     /// The newest link whose preview hasn't been fetched yet, leaving out sites that asked for a pause.
-    func nextLinkAwaitingPreview(skippingHosts: Set<String> = []) throws -> (hash: String, url: URL)? {
+    public func nextLinkAwaitingPreview(skippingHosts: Set<String> = []) throws -> (hash: String, url: URL)? {
         try database.read { db in
             let rows = try Row.fetchAll(
                 db,
@@ -363,7 +357,7 @@ final class ClipboardStore: Sendable {
 
     /// Saves a fetched preview. An empty title marks a link whose page had none, or couldn't be fetched, so it isn't
     /// fetched again. Local only, like recognized text in previews.
-    func setLinkPreview(title: String, imagePNG: Data?, hash: String) throws {
+    public func setLinkPreview(title: String, imagePNG: Data?, hash: String) throws {
         // Each image gets a new name, as thumbnails are cached by file, so one fetched again isn't shown stale.
         var imageFile: String?
         if let imagePNG {
@@ -385,7 +379,7 @@ final class ClipboardStore: Sendable {
     }
 
     /// Forgets a link's preview, so it's fetched again.
-    func clearLinkPreview(hash: String) throws {
+    public func clearLinkPreview(hash: String) throws {
         let file = try database.write { db in
             let file = try String.fetchOne(db, sql: "SELECT linkImageFile FROM clipboard WHERE contentHash = ?", arguments: [hash])
             try db.execute(
@@ -402,7 +396,7 @@ final class ClipboardStore: Sendable {
     /// Records a calculation, moving an expression already in history to the top with its latest answer,
     /// and returns it for syncing.
     @discardableResult
-    func recordCalculation(expression: String, answer: String, mode: String) throws -> SyncItem {
+    public func recordCalculation(expression: String, answer: String, mode: String) throws -> SyncItem {
         let key = Self.calculationKey(expression: expression, mode: mode)
         try database.write { db in
             try db.execute(
@@ -419,19 +413,19 @@ final class ClipboardStore: Sendable {
         return .calculation(key: key)
     }
 
-    func recentCalculations(limit: Int) throws -> [CalculationRecord] {
+    public func recentCalculations(limit: Int) throws -> [CalculationRecord] {
         try database.read { db in
             try CalculationRecord.order(Column("calculatedAt").desc).limit(limit).fetchAll(db)
         }
     }
 
     /// A copied image's file, or a link's preview image.
-    func imageURL(for item: ClipboardItem) -> URL? {
+    public func imageURL(for item: ClipboardItem) -> URL? {
         (item.imageFile ?? item.linkImageFile).map { imagesDirectory.appending(path: $0) }
     }
 
     /// Returns the item for syncing, or nil when it no longer exists.
-    func setPinned(_ pinned: Bool, id: Int64) throws -> SyncItem? {
+    public func setPinned(_ pinned: Bool, id: Int64) throws -> SyncItem? {
         let hash = try database.write { db in
             try String.fetchOne(
                 db,
@@ -443,7 +437,7 @@ final class ClipboardStore: Sendable {
     }
 
     /// Pinned items first in the order they were pinned, then newest first; an empty query returns everything.
-    func search(_ query: String, kind: ClipboardKind?, limit: Int) throws -> [ClipboardItem] {
+    public func search(_ query: String, kind: ClipboardKind?, limit: Int) throws -> [ClipboardItem] {
         try database.read { db in
             var request = ClipboardItem.order(sql: "pinnedAt IS NULL, pinnedAt, copiedAt DESC").limit(limit)
             if let kind {
@@ -459,7 +453,7 @@ final class ClipboardStore: Sendable {
         }
     }
 
-    func usage() throws -> ClipboardUsage {
+    public func usage() throws -> ClipboardUsage {
         let (counts, awaiting, calculations) = try database.read { db in
             let rows = try Row.fetchAll(db, sql: "SELECT kind, COUNT(*) AS count FROM clipboard GROUP BY kind")
             let counts: [ClipboardKind: Int] = Dictionary(
@@ -602,13 +596,13 @@ final class ClipboardStore: Sendable {
 
     /// Deletes an item and returns its iCloud record name, or nil when it was never synced. The name is kept until the
     /// deletion reaches iCloud, since sync may be off or still starting.
-    func delete(contentHash: String) throws -> String? {
+    public func delete(contentHash: String) throws -> String? {
         try delete(SyncTarget(.clipboard(contentHash: contentHash)), remembersDeletion: true)
     }
 
     // MARK: - Quicklinks
 
-    func quicklinks() throws -> [Quicklink] {
+    public func quicklinks() throws -> [Quicklink] {
         try database.read { db in
             try Quicklink.order(sql: "name COLLATE NOCASE").fetchAll(db)
         }
@@ -616,7 +610,7 @@ final class ClipboardStore: Sendable {
 
     /// Adds a quicklink, or updates the one with the same UUID, and returns it for syncing.
     @discardableResult
-    func saveQuicklink(_ quicklink: Quicklink) throws -> SyncItem {
+    public func saveQuicklink(_ quicklink: Quicklink) throws -> SyncItem {
         try database.write { db in
             try db.execute(
                 sql: """
@@ -640,7 +634,7 @@ final class ClipboardStore: Sendable {
 
     /// Adds a quicklink unless one with its UUID already exists, such as a starter that synced from another Mac.
     /// Returns it for syncing when it was added.
-    func addQuicklinkIfMissing(_ quicklink: Quicklink) throws -> SyncItem? {
+    public func addQuicklinkIfMissing(_ quicklink: Quicklink) throws -> SyncItem? {
         let added = try database.write { db in
             try db.execute(
                 sql: """
@@ -658,7 +652,7 @@ final class ClipboardStore: Sendable {
     }
 
     /// Deletes a quicklink and returns its iCloud record name, or nil when it never synced.
-    func deleteQuicklink(uuid: String) throws -> String? {
+    public func deleteQuicklink(uuid: String) throws -> String? {
         try delete(SyncTarget(.quicklink(uuid: uuid)), remembersDeletion: true)
     }
 
@@ -702,7 +696,7 @@ final class ClipboardStore: Sendable {
     /// Deletes items copied before `cutoff`, or all of them when it's nil, keeping pinned items unless `includingPinned`.
     /// Returns the iCloud record names of the deleted items that had synced, which are kept until the deletions reach
     /// iCloud, like single deletions.
-    func deleteItems(copiedBefore cutoff: Date?, includingPinned: Bool = false) throws -> [String] {
+    public func deleteItems(copiedBefore cutoff: Date?, includingPinned: Bool = false) throws -> [String] {
         var conditions: [String] = []
         var arguments: StatementArguments = []
         if let cutoff {
@@ -947,7 +941,7 @@ final class ClipboardStore: Sendable {
 }
 
 /// A clipboard item as it arrived from another Mac, ready to merge.
-struct RemoteClipboardItem {
+public struct RemoteClipboardItem: Sendable {
     let hash: String
     let kind: ClipboardKind
     let text: String?
@@ -966,7 +960,7 @@ struct RemoteClipboardItem {
 }
 
 /// A calculation as it arrived from another Mac, ready to merge.
-struct RemoteCalculation {
+public struct RemoteCalculation: Sendable {
     let key: String
     let expression: String
     let answer: String
@@ -978,7 +972,7 @@ struct RemoteCalculation {
 }
 
 /// A quicklink as it arrived from another Mac, ready to merge.
-struct RemoteQuicklink {
+public struct RemoteQuicklink: Sendable {
     let uuid: String
     let name: String
     let keyword: String?
@@ -992,7 +986,7 @@ struct RemoteQuicklink {
 
 /// A row that syncs to iCloud, identified by its content on this Mac. Its iCloud record name is a keyed hash of this,
 /// so the name doesn't reveal the content.
-enum SyncItem: Hashable, Sendable {
+public enum SyncItem: Hashable, Sendable {
     case clipboard(contentHash: String)
     case calculation(key: String)
     case quicklink(uuid: String)

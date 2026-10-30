@@ -2,7 +2,7 @@ import Foundation
 
 /// The European Central Bank's euro reference rates, which it publishes once each working day at about 16:00 CET for
 /// around 30 currencies. They're free, need no key, and are fetched as a whole, so nothing reveals what's converted.
-struct ExchangeRates: Codable, Hashable, Sendable {
+public struct ExchangeRates: Codable, Hashable, Sendable {
     /// The day the rates are for, such as `2026-10-29`.
     let date: String
     /// How much of each currency one euro buys, by ISO code, with the euro itself as 1.
@@ -12,7 +12,7 @@ struct ExchangeRates: Codable, Hashable, Sendable {
 
     static let sourceURL = URL(string: "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")!
 
-    init(date: String, perEuro: [String: Double], fetchedAt: Date? = nil) {
+    public init(date: String, perEuro: [String: Double], fetchedAt: Date? = nil) {
         self.date = date
         self.perEuro = perEuro
         self.fetchedAt = fetchedAt
@@ -40,17 +40,17 @@ struct ExchangeRates: Codable, Hashable, Sendable {
     /// What a conversion is labelled with: when the rates were last fetched, as `Currency · Updated 14:10`, or with the
     /// day too when that wasn't today.
     var kind: String {
-        guard let fetchedAt else { return String(localized: "Currency") }
+        guard let fetchedAt else { return String(localized: "Currency", bundle: .module) }
         let isToday = Calendar.current.isDateInToday(fetchedAt)
         let time = fetchedAt.formatted(date: isToday ? .omitted : .abbreviated, time: .shortened)
-        return String(localized: "Currency · Updated \(time)")
+        return String(localized: "Currency · Updated \(time)", bundle: .module)
     }
 }
 
 /// Converts `<amount> <currency> to|in <currency>`, such as `5 usd to eur`, `$20 in €`, `€1,000 to pounds` or
 /// `2 * 3 GBP as yen`. A currency is its ISO code, its symbol, or a name for it that's not shared with another one, so
 /// `peso` and `krone` need their codes.
-enum CurrencyConversion {
+public enum CurrencyConversion {
     /// Pasted text is never a conversion, as for units.
     private static let maximumLength = 100
     /// The longest currency name or symbol, so an amount is only split near its ends.
@@ -80,7 +80,7 @@ enum CurrencyConversion {
 
     /// True for a conversion on its way, such as `$5 t` or `5 usd to e`, so the launcher keeps the calculator showing
     /// while the target is typed.
-    static func looksLikeConversion(_ input: String) -> Bool {
+    public static func looksLikeConversion(_ input: String) -> Bool {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard text.count <= maximumLength else { return false }
 
@@ -200,7 +200,7 @@ enum CurrencyConversion {
 
 extension Calculator {
     /// Without grouping, to a fixed number of decimal places, as money is copied.
-    static func format(_ value: Double, fractionDigits: Int) -> String {
+    public static func format(_ value: Double, fractionDigits: Int) -> String {
         value.formatted(
             .number.locale(Locale(identifier: "en_US_POSIX")).grouping(.never).precision(.fractionLength(fractionDigits))
         )

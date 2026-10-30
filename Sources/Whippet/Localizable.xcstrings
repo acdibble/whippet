@@ -1,26 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ (%lld×%lld)" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ (%2$lld×%3$lld)"
-          }
-        }
-      }
-    },
-    "%@ and %lld More" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ و %2$lld مورد دیگر"
-          }
-        }
-      }
-    },
     "%@ in %lld files" : {
       "localizations" : {
         "en" : {
@@ -311,16 +291,6 @@
         }
       }
     },
-    "Angle" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "زاویه"
-          }
-        }
-      }
-    },
     "Another quicklink already uses this keyword." : {
       "localizations" : {
         "fa" : {
@@ -391,16 +361,6 @@
         }
       }
     },
-    "Area" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مساحت"
-          }
-        }
-      }
-    },
     "Awake until %@" : {
       "localizations" : {
         "fa" : {
@@ -417,16 +377,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بیدار تا زمان خاموش کردن"
-          }
-        }
-      }
-    },
-    "Binary" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "دودویی"
           }
         }
       }
@@ -661,16 +611,6 @@
         }
       }
     },
-    "Checking iCloud account…" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "در حال بررسی حساب iCloud…"
-          }
-        }
-      }
-    },
     "Choose Duration" : {
       "localizations" : {
         "fa" : {
@@ -797,16 +737,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "فرمان‌ها"
-          }
-        }
-      }
-    },
-    "Conversion" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تبدیل"
           }
         }
       }
@@ -951,26 +881,6 @@
         }
       }
     },
-    "Count" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تعداد"
-          }
-        }
-      }
-    },
-    "Couldn't check the iCloud account." : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "بررسی حساب iCloud ممکن نشد."
-          }
-        }
-      }
-    },
     "Create Issue…" : {
       "localizations" : {
         "fa" : {
@@ -1001,42 +911,12 @@
         }
       }
     },
-    "Currency" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ارز"
-          }
-        }
-      }
-    },
-    "Currency · Updated %@" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ارز · به‌روزرسانی %@"
-          }
-        }
-      }
-    },
     "Dark" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تیره"
-          }
-        }
-      }
-    },
-    "Data" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "داده"
           }
         }
       }
@@ -1061,16 +941,6 @@
         }
       }
     },
-    "Date" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تاریخ"
-          }
-        }
-      }
-    },
     "Decaffeinate" : {
       "localizations" : {
         "fa" : {
@@ -1087,16 +957,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بیدار نگه داشتن پایان یافت"
-          }
-        }
-      }
-    },
-    "Decimal" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ده‌دهی"
           }
         }
       }
@@ -1201,16 +1061,6 @@
         }
       }
     },
-    "Difference" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تفاضل"
-          }
-        }
-      }
-    },
     "Dimensions" : {
       "localizations" : {
         "fa" : {
@@ -1311,16 +1161,6 @@
         }
       }
     },
-    "Energy" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "انرژی"
-          }
-        }
-      }
-    },
     "Enter Duration" : {
       "localizations" : {
         "fa" : {
@@ -1357,16 +1197,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "همهٔ داده‌هایی که همگام‌سازی می‌شوند، از جمله تصاویر، به‌صورت سرتاسری رمزگذاری می‌شوند. Apple فقط تعداد موارد، اندازهٔ آن‌ها و زمان تغییرشان را می‌بیند."
-          }
-        }
-      }
-    },
-    "Expression" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عبارت"
           }
         }
       }
@@ -1431,16 +1261,6 @@
         }
       }
     },
-    "File" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فایل"
-          }
-        }
-      }
-    },
     "Files" : {
       "localizations" : {
         "fa" : {
@@ -1491,26 +1311,6 @@
         }
       }
     },
-    "Forever" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "برای همیشه"
-          }
-        }
-      }
-    },
-    "Frequency" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "بسامد"
-          }
-        }
-      }
-    },
     "From" : {
       "localizations" : {
         "fa" : {
@@ -1551,16 +1351,6 @@
         }
       }
     },
-    "Hexadecimal" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "هگزادسیمال"
-          }
-        }
-      }
-    },
     "Hide Caffeinate in Menu Bar" : {
       "localizations" : {
         "fa" : {
@@ -1577,16 +1367,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تاریخچه"
-          }
-        }
-      }
-    },
-    "History could not be opened, so there is nothing to sync." : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تاریخچه باز نشد، بنابراین چیزی برای همگام‌سازی وجود ندارد."
           }
         }
       }
@@ -1627,16 +1407,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تصویر"
-          }
-        }
-      }
-    },
-    "Image (%lld×%lld)" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تصویر (%1$lld×%2$lld)"
           }
         }
       }
@@ -1891,16 +1661,6 @@
         }
       }
     },
-    "Length" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "طول"
-          }
-        }
-      }
-    },
     "Light" : {
       "localizations" : {
         "fa" : {
@@ -1917,16 +1677,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "پیوند"
-          }
-        }
-      }
-    },
-    "Links" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "پیوندها"
           }
         }
       }
@@ -1967,16 +1717,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "علامت‌گذاری به‌عنوان رسیدگی‌نشده"
-          }
-        }
-      }
-    },
-    "Mass" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "جرم"
           }
         }
       }
@@ -2171,16 +1911,6 @@
         }
       }
     },
-    "Number" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عدد"
-          }
-        }
-      }
-    },
     "Numbers" : {
       "localizations" : {
         "fa" : {
@@ -2201,26 +1931,6 @@
         }
       }
     },
-    "Octal" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "هشت‌هشتی"
-          }
-        }
-      }
-    },
-    "Off" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خاموش"
-          }
-        }
-      }
-    },
     "On this Mac" : {
       "localizations" : {
         "fa" : {
@@ -2237,46 +1947,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "روی این Mac، اما این نسخه از کلید دیگری استفاده می‌کند"
-          }
-        }
-      }
-    },
-    "One Day" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "یک روز"
-          }
-        }
-      }
-    },
-    "One Month" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "یک ماه"
-          }
-        }
-      }
-    },
-    "One Week" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "یک هفته"
-          }
-        }
-      }
-    },
-    "One Year" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "یک سال"
           }
         }
       }
@@ -2521,16 +2191,6 @@
         }
       }
     },
-    "Percentage" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "درصد"
-          }
-        }
-      }
-    },
     "Pin" : {
       "localizations" : {
         "fa" : {
@@ -2571,16 +2231,6 @@
         }
       }
     },
-    "Power" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "توان"
-          }
-        }
-      }
-    },
     "Press L to take a lap" : {
       "localizations" : {
         "fa" : {
@@ -2601,32 +2251,12 @@
         }
       }
     },
-    "Pressure" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فشار"
-          }
-        }
-      }
-    },
     "Private key" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "کلید خصوصی"
-          }
-        }
-      }
-    },
-    "Product" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "حاصل‌ضرب"
           }
         }
       }
@@ -2687,26 +2317,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "خروج از Whippet"
-          }
-        }
-      }
-    },
-    "Quotient" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خارج‌قسمت"
-          }
-        }
-      }
-    },
-    "Rate" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نرخ"
           }
         }
       }
@@ -2777,16 +2387,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "برای استفاده از زبان جدید، Whippet را دوباره راه‌اندازی کنید"
-          }
-        }
-      }
-    },
-    "Remainder" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "باقی‌مانده"
           }
         }
       }
@@ -3241,16 +2841,6 @@
         }
       }
     },
-    "Sign in to iCloud to sync." : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "برای همگام‌سازی وارد iCloud شوید."
-          }
-        }
-      }
-    },
     "Size" : {
       "localizations" : {
         "fa" : {
@@ -3297,16 +2887,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "منبع"
-          }
-        }
-      }
-    },
-    "Speed" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "سرعت"
           }
         }
       }
@@ -3421,16 +3001,6 @@
         }
       }
     },
-    "Sum" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مجموع"
-          }
-        }
-      }
-    },
     "Sync Now" : {
       "localizations" : {
         "fa" : {
@@ -3451,42 +3021,12 @@
         }
       }
     },
-    "Syncing…" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "در حال همگام‌سازی…"
-          }
-        }
-      }
-    },
     "System" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "سیستم"
-          }
-        }
-      }
-    },
-    "Temperature" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "دما"
-          }
-        }
-      }
-    },
-    "Text" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "متن"
           }
         }
       }
@@ -3517,16 +3057,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "رکورد کاربر CloudKit برای حساب Apple که در این Mac وارد iCloud شده است. در CloudKit Console به آن نقشی مانند Admin بدهید."
-          }
-        }
-      }
-    },
-    "The key for iCloud sync is missing or damaged." : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "کلید همگام‌سازی iCloud وجود ندارد یا آسیب دیده است."
           }
         }
       }
@@ -3567,46 +3097,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "این کار نسخهٔ موجود در iCloud را حذف و همگام‌سازی را خاموش می‌کند. تاریخچهٔ این Mac حفظ می‌شود."
-          }
-        }
-      }
-    },
-    "Three Months" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "سه ماه"
-          }
-        }
-      }
-    },
-    "Time" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "زمان"
-          }
-        }
-      }
-    },
-    "Time Since" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "زمان سپری‌شده"
-          }
-        }
-      }
-    },
-    "Time Until" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "زمان باقی‌مانده"
           }
         }
       }
@@ -3811,26 +3301,6 @@
         }
       }
     },
-    "Up to date" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "به‌روز است"
-          }
-        }
-      }
-    },
-    "Up to date, last synced %@" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "به‌روز است، آخرین همگام‌سازی %@"
-          }
-        }
-      }
-    },
     "Updates" : {
       "localizations" : {
         "fa" : {
@@ -3887,16 +3357,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نسخه"
-          }
-        }
-      }
-    },
-    "Volume" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "حجم"
           }
         }
       }
@@ -4057,26 +3517,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "کاربر iCloud"
-          }
-        }
-      }
-    },
-    "iCloud is restricted on this Mac." : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iCloud در این Mac محدود شده است."
-          }
-        }
-      }
-    },
-    "iCloud is temporarily unavailable." : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iCloud موقتاً در دسترس نیست."
           }
         }
       }

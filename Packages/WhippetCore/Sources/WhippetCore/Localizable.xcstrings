@@ -1,0 +1,616 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ (%lld×%lld)" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (%2$lld×%3$lld)"
+          }
+        }
+      }
+    },
+    "%@ and %lld More" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ و %2$lld مورد دیگر"
+          }
+        }
+      }
+    },
+    "Angle" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زاویه"
+          }
+        }
+      }
+    },
+    "Area" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مساحت"
+          }
+        }
+      }
+    },
+    "Binary" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دودویی"
+          }
+        }
+      }
+    },
+    "Checking iCloud account…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در حال بررسی حساب iCloud…"
+          }
+        }
+      }
+    },
+    "Conversion" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تبدیل"
+          }
+        }
+      }
+    },
+    "Couldn't check the iCloud account." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بررسی حساب iCloud ممکن نشد."
+          }
+        }
+      }
+    },
+    "Count" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعداد"
+          }
+        }
+      }
+    },
+    "Currency" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ارز"
+          }
+        }
+      }
+    },
+    "Currency · Updated %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ارز · به‌روزرسانی %@"
+          }
+        }
+      }
+    },
+    "Data" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "داده"
+          }
+        }
+      }
+    },
+    "Date" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخ"
+          }
+        }
+      }
+    },
+    "Decimal" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ده‌دهی"
+          }
+        }
+      }
+    },
+    "Difference" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفاضل"
+          }
+        }
+      }
+    },
+    "Energy" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انرژی"
+          }
+        }
+      }
+    },
+    "Expression" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عبارت"
+          }
+        }
+      }
+    },
+    "File" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فایل"
+          }
+        }
+      }
+    },
+    "Files" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فایل‌ها"
+          }
+        }
+      }
+    },
+    "Forever" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای همیشه"
+          }
+        }
+      }
+    },
+    "Frequency" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بسامد"
+          }
+        }
+      }
+    },
+    "Hexadecimal" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هگزادسیمال"
+          }
+        }
+      }
+    },
+    "History could not be opened, so there is nothing to sync." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخچه باز نشد، بنابراین چیزی برای همگام‌سازی وجود ندارد."
+          }
+        }
+      }
+    },
+    "Image" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصویر"
+          }
+        }
+      }
+    },
+    "Image (%lld×%lld)" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصویر (%1$lld×%2$lld)"
+          }
+        }
+      }
+    },
+    "Images" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصاویر"
+          }
+        }
+      }
+    },
+    "Length" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طول"
+          }
+        }
+      }
+    },
+    "Link" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوند"
+          }
+        }
+      }
+    },
+    "Links" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوندها"
+          }
+        }
+      }
+    },
+    "Mass" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جرم"
+          }
+        }
+      }
+    },
+    "Number" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عدد"
+          }
+        }
+      }
+    },
+    "Numbers" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعداد"
+          }
+        }
+      }
+    },
+    "Octal" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هشت‌هشتی"
+          }
+        }
+      }
+    },
+    "Off" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خاموش"
+          }
+        }
+      }
+    },
+    "One Day" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک روز"
+          }
+        }
+      }
+    },
+    "One Month" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک ماه"
+          }
+        }
+      }
+    },
+    "One Week" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک هفته"
+          }
+        }
+      }
+    },
+    "One Year" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک سال"
+          }
+        }
+      }
+    },
+    "Percentage" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "درصد"
+          }
+        }
+      }
+    },
+    "Power" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توان"
+          }
+        }
+      }
+    },
+    "Pressure" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فشار"
+          }
+        }
+      }
+    },
+    "Product" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حاصل‌ضرب"
+          }
+        }
+      }
+    },
+    "Quotient" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خارج‌قسمت"
+          }
+        }
+      }
+    },
+    "Rate" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نرخ"
+          }
+        }
+      }
+    },
+    "Remainder" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باقی‌مانده"
+          }
+        }
+      }
+    },
+    "Sign in to iCloud to sync." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای همگام‌سازی وارد iCloud شوید."
+          }
+        }
+      }
+    },
+    "Speed" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سرعت"
+          }
+        }
+      }
+    },
+    "Sum" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مجموع"
+          }
+        }
+      }
+    },
+    "Syncing…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در حال همگام‌سازی…"
+          }
+        }
+      }
+    },
+    "Temperature" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دما"
+          }
+        }
+      }
+    },
+    "Text" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن"
+          }
+        }
+      }
+    },
+    "The key for iCloud sync is missing or damaged." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلید همگام‌سازی iCloud وجود ندارد یا آسیب دیده است."
+          }
+        }
+      }
+    },
+    "Three Months" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سه ماه"
+          }
+        }
+      }
+    },
+    "Time" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زمان"
+          }
+        }
+      }
+    },
+    "Time Since" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زمان سپری‌شده"
+          }
+        }
+      }
+    },
+    "Time Until" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زمان باقی‌مانده"
+          }
+        }
+      }
+    },
+    "Up to date" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به‌روز است"
+          }
+        }
+      }
+    },
+    "Up to date, last synced %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به‌روز است، آخرین همگام‌سازی %@"
+          }
+        }
+      }
+    },
+    "Volume" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حجم"
+          }
+        }
+      }
+    },
+    "iCloud is restricted on this Mac." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud در این Mac محدود شده است."
+          }
+        }
+      }
+    },
+    "iCloud is temporarily unavailable." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud موقتاً در دسترس نیست."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
