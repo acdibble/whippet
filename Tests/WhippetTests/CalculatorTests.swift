@@ -136,6 +136,73 @@ struct CalculatorTests {
     }
 
     @Test(arguments: [
+        ("20%", "0.2"),
+        ("50 + 20%", "60"),
+        ("80 - 15%", "68"),
+        ("50 + 20% + 10%", "66"),
+        ("50 * 20%", "10"),
+        ("20% of 50", "10"),
+        ("15% off 80", "68"),
+        ("15% on 80", "92"),
+        ("200 - 10% of 50", "195"),
+        ("(10 + 10)% of 50", "10"),
+        ("10 % 3", "1"),
+        ("10 % (3)", "1"),
+    ])
+    func percentages(_ input: String, _ expected: String) throws {
+        let calculation = try #require(Calculator.evaluate(input))
+        #expect(calculation.answer == expected)
+        #expect(!calculation.isRPN)
+        #expect(!calculation.isPlainNumber)
+    }
+
+    @Test func aPercentageNamesItselfAndRPNKeepsTheRemainder() throws {
+        #expect(try #require(Calculator.evaluate("20% of 50")).operationName == "Percentage")
+        #expect(try #require(Calculator.evaluate("10 % 3")).operationName == "Remainder")
+        let rpn = try #require(Calculator.evaluate("7 3 %"))
+        #expect(rpn.value == 1)
+        #expect(rpn.isRPN)
+    }
+
+    @Test(arguments: ["20% of", "of 50", "50 of 20", "20 off 5", "20% of of 5", "20% for 5", "%"])
+    func notAPercentage(_ input: String) {
+        #expect(Calculator.evaluate(input) == nil)
+    }
+
+    @Test(arguments: ["20% o", "20% of", "20% of 5", "50 + 20%", "15% off 8"])
+    func percentagesBeingTyped(_ input: String) {
+        #expect(Calculator.looksLikeCalculation(input))
+    }
+
+    @Test(arguments: [
+        ("255 in hex", "0xFF"),
+        ("0xFF to binary", "0b11111111"),
+        ("0b1010 as decimal", "10"),
+        ("(12 + 4) in octal", "0o20"),
+        ("-255 in hex", "-0xFF"),
+        ("1,000 in hex", "0x3E8"),
+        ("255 to HEX", "0xFF"),
+    ])
+    func otherBases(_ input: String, _ expected: String) throws {
+        let calculation = try #require(Calculator.calculate(input))
+        #expect(calculation.answer == expected)
+        #expect(calculation.displayAnswer == expected)
+    }
+
+    @Test(arguments: ["2.5 in hex", "255 in hexes", "abc in hex", "255 in", "1e30 in hex"])
+    func notAnotherBase(_ input: String) {
+        #expect(BaseConversion.convert(input) == nil)
+    }
+
+    @Test func basesBeingTyped() {
+        #expect(BaseConversion.looksLikeConversion("255 in h"))
+        #expect(BaseConversion.looksLikeConversion("0xFF to bin"))
+        #expect(!BaseConversion.looksLikeConversion("255 in"))
+        #expect(!BaseConversion.looksLikeConversion("255 in x"))
+        #expect(!BaseConversion.looksLikeConversion("apples in h"))
+    }
+
+    @Test(arguments: [
         ("$1,234.50", 1234.5 as Double?),
         ("-12", -12),
         ("+0x10", 16),

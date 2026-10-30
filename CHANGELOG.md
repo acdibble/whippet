@@ -5,6 +5,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Percentages in the calculator, such as `20% of 50`, `50 + 20%`, `80 - 15%`, `15% off 80` or `15% on 80`. A `%`
+  followed by a number is still the remainder, as in `10 % 3`.
+- Adding time to a date, such as `today + 3 weeks`, `dec 25 - 10 days`, `now + 90 min` or `tomorrow 9am + 2 h`.
+- Numbers in another base, such as `255 in hex`, `0xFF to binary`, `0b1010 as decimal` or `(12 + 4) in octal`.
+
 ## [1.2.0] - 2026-10-30
 
 ### Added

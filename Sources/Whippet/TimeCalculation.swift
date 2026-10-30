@@ -1,4 +1,5 @@
 import Foundation
+import RegexBuilder
 
 /// The time somewhere else and the time between now and a date: `time in tokyo`, `3pm pst in london`,
 /// `15:30 to new york`, `time until dec 25` or `days since 5 may 1990`.
@@ -23,17 +24,107 @@ enum TimeCalculation {
     static func calculate(_ input: String, context: Context = Context()) -> Calculation? {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard text.count <= maximumLength, text.first?.isLetter == true || text.first?.isNumber == true else { return nil }
-        return interval(text, context) ?? zoneConversion(text, context)
+        return interval(text, context) ?? dateArithmetic(text, context) ?? zoneConversion(text, context)
     }
 
-    /// True for a time calculation on its way, such as `time in` or `3pm in tok`, so the launcher keeps the calculator
-    /// showing while the place or date is typed.
+    /// True for a time calculation on its way, such as `time in`, `3pm in tok` or `today +`, so the launcher keeps the
+    /// calculator showing while the place, date or time to add is typed.
     static func looksLikeTimeCalculation(_ input: String) -> Bool {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard text.count <= maximumLength else { return false }
         if text.contains(/^(?i:time|now)\s+(?i:in|to)(?:\s|$)/) || text.contains(intervalStart) { return true }
+        if let sign = text.firstMatch(of: /\s[+-]/), startDate(in: String(text[..<sign.range.lowerBound]), Context()) != nil {
+            return true
+        }
         return UnitConversion.splits(text).contains { moment(in: $0.0, Context()) != nil }
     }
+
+    // MARK: - Date arithmetic
+
+    /// A date with time added or taken away, such as `today + 3 weeks`, `dec 25 - 10 days`, `now + 90 min` or
+    /// `tomorrow 9am + 2 h 30 min`. Amounts without a sign take the one before, so `+ 2 h 30 min` adds both.
+    private static func dateArithmetic(_ text: String, _ context: Context) -> Calculation? {
+        // The first sign with a number after it, since a date such as `2026-12-25` has its own.
+        guard let start = text.firstMatch(of: /\s[+-]\s*\d/), let (date, hasDateTime) = startDate(
+            in: String(text[..<start.range.lowerBound]), context
+        ) else { return nil }
+
+        let calendar = context.calendar
+        let steps = text[start.range.lowerBound...]
+        guard isDuration(steps) else { return nil }
+        var result = date
+        var isAdding = true
+        var addsTime = false
+        for match in steps.matches(of: durationStep) {
+            if let sign = match.output.1 { isAdding = sign == "+" }
+            guard let amount = Double(match.output.2), let unit = durationUnits[match.output.3.lowercased()] else {
+                return nil
+            }
+            let signed = isAdding ? amount : -amount
+            if let seconds = unit.seconds {
+                result.addTimeInterval(signed * seconds)
+                addsTime = true
+            } else {
+                // Days, weeks, months and years follow the calendar, so they're whole.
+                guard amount == amount.rounded(), let added = calendar.date(byAdding: unit.component, value: Int(signed), to: result)
+                else { return nil }
+                result = added
+            }
+        }
+
+        let showsTime = hasDateTime || addsTime
+        func style(_ width: Date.FormatStyle.Symbol.Weekday, _ month: Date.FormatStyle.Symbol.Month) -> Date.FormatStyle {
+            let style = Date.FormatStyle(locale: context.locale, calendar: calendar, timeZone: context.timeZone)
+                .weekday(width).day().month(month).year()
+            return showsTime ? style.hour().minute() : style
+        }
+        let output = result.formatted(style(.abbreviated, .abbreviated))
+        let conversion = Conversion(
+            input: date.formatted(style(.abbreviated, .abbreviated)),
+            output: output,
+            outputLong: result.formatted(style(.wide, .wide)),
+            kind: String(localized: "Date"),
+            answer: output
+        )
+        return Calculation(tokens: [], value: result.timeIntervalSince1970, isRPN: false, conversion: conversion)
+    }
+
+    /// The date that time is added to: `now`, or a date such as `today`, `dec 25` or `tomorrow 9am`, and whether it
+    /// has a time.
+    private static func startDate(in rawText: String, _ context: Context) -> (Date, hasTime: Bool)? {
+        let text = rawText.trimmingCharacters(in: .whitespaces)
+        // The detector reads `1 h` as a time of day, but `1 h + 30 min` is an amount of time.
+        guard !text.isEmpty, !isDuration(text[...]) else { return nil }
+        if text.lowercased() == "now" { return (context.now, true) }
+        return date(in: text, future: true, context)
+    }
+
+    /// One amount of time, with the sign that applies from it on, such as `+ 2 h` or `30 min`.
+    private static var durationStep: Regex<(Substring, Substring?, Substring, Substring)> {
+        /\s*([+-])?\s*(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/
+    }
+
+    /// True for text made only of amounts of time, such as `+ 2 h 30 min` or `1 h`, but not `25 dec`.
+    private static func isDuration(_ text: Substring) -> Bool {
+        text.wholeMatch(of: Regex { OneOrMore(durationStep) }) != nil
+            && text.matches(of: durationStep).allSatisfy { durationUnits[$0.output.3.lowercased()] != nil }
+    }
+
+    /// Units of time to add, by what people type: the calendar's for days and longer, and seconds for shorter.
+    private static let durationUnits: [String: (component: Calendar.Component, seconds: Double?)] = {
+        var units: [String: (component: Calendar.Component, seconds: Double?)] = [:]
+        func add(_ keys: [String], _ component: Calendar.Component, _ seconds: Double? = nil) {
+            for key in keys { units[key] = (component, seconds) }
+        }
+        add(["y", "yr", "yrs", "year", "years"], .year)
+        add(["mo", "mos", "month", "months"], .month)
+        add(["w", "wk", "wks", "week", "weeks"], .weekOfYear)
+        add(["d", "day", "days"], .day)
+        add(["h", "hr", "hrs", "hour", "hours"], .hour, 3600)
+        add(["m", "min", "mins", "minute", "minutes"], .minute, 60)
+        add(["s", "sec", "secs", "second", "seconds"], .second, 1)
+        return units
+    }()
 
     // MARK: - Time since and until
 

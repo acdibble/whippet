@@ -20,12 +20,13 @@ struct Calculation: Hashable {
 
     /// A number on its own, such as `0xFF`, shown with its value but not kept in calculator history.
     var isPlainNumber: Bool {
-        conversion == nil && !tokens.contains { if case .operation = $0 { true } else { false } }
+        conversion == nil && !tokens.contains { if case .number = $0 { false } else { $0 != .open && $0 != .close } }
     }
 
     /// Names the operation when the input uses a single kind of operator, or what a conversion measures.
     var operationName: String {
         if let conversion { return conversion.kind }
+        if !isRPN, tokens.contains(.percent) { return String(localized: "Percentage") }
         let operations = Set(tokens.compactMap { token -> Character? in
             guard case .operation(let operation) = token else { return nil }
             return operation
@@ -74,13 +75,12 @@ enum Calculator {
     static func looksLikeCalculation(_ input: String) -> Bool {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard let first = text.first, first.isASCIIDigit || "(.-+".contains(first) else { return false }
-        // Letters only belong to radix literals such as 0xFF, so those are set aside first.
-        let withoutRadixLiterals = text.replacingOccurrences(
-            of: "0[xX][0-9a-fA-F_]*|0[bB][01_]*|0[oO][0-7_]*",
-            with: "0",
-            options: .regularExpression
-        )
-        return withoutRadixLiterals.allSatisfy { $0.isASCIIDigit || $0.isWhitespace || "+-*/%^().,_".contains($0) }
+        // Letters only belong to radix literals such as 0xFF and to a percentage's word, as in `20% of`, or the word
+        // being typed, as in `20% o`, so those are set aside first.
+        let withoutLetters = text
+            .replacingOccurrences(of: "0[xX][0-9a-fA-F_]*|0[bB][01_]*|0[oO][0-7_]*", with: "0", options: .regularExpression)
+            .replacingOccurrences(of: #"%\s*(?i:off?|on?)\b"#, with: "%", options: .regularExpression)
+        return withoutLetters.allSatisfy { $0.isASCIIDigit || $0.isWhitespace || "+-*/%^().,_".contains($0) }
     }
 
     /// A plain number, read like a copied one, so `0xFF`, `1,000.5` and `-4` show their value.
@@ -101,13 +101,19 @@ enum Calculator {
     enum Token: Hashable {
         case number(Double, literal: String)
         case operation(Character)
+        /// A `%` after a number that isn't followed by another, as in `20%` or `50 + 20%`, rather than a remainder.
+        case percent
+        /// What a percentage is of: `of`, `off` or `on`, as in `20% of 50`, `15% off 80` or `15% on 80`.
+        case word(String)
         case open
         case close
     }
 
     private static let operators: Set<Character> = ["+", "-", "*", "/", "%", "^"]
+    private static let words: Set<String> = ["of", "off", "on"]
 
     /// With `signedNumbers`, a `-` that starts a word and is followed by a digit belongs to the number, as RPN needs for `3 -2 *`.
+    /// A `%` is a remainder when a number or bracket follows it, as in `10 % 3`, and a percentage otherwise.
     private static func tokenize(_ input: String, signedNumbers: Bool = false) -> [Token]? {
         var tokens: [Token] = []
         var index = input.startIndex
@@ -125,8 +131,21 @@ enum Calculator {
                 continue
             }
 
+            if char.isLetter {
+                let end = input[index...].firstIndex { !$0.isLetter } ?? input.endIndex
+                let word = input[index..<end].lowercased()
+                guard words.contains(word) else { return nil }
+                tokens.append(.word(word))
+                index = end
+                continue
+            }
+
             switch char {
             case _ where char.isWhitespace: break
+            case "%":
+                let following = input[next...].first { !$0.isWhitespace }
+                let isRemainder = following.map { $0.isASCIIDigit || ".(".contains($0) } ?? false
+                tokens.append(isRemainder ? .operation(char) : .percent)
             case _ where operators.contains(char): tokens.append(.operation(char))
             case "(": tokens.append(.open)
             case ")": tokens.append(.close)
@@ -187,13 +206,15 @@ enum Calculator {
             switch token {
             case .number(let value, _):
                 stack.append(value)
-            case .operation(let operation):
+            case .operation, .percent:
+                // A `%` at the end, as in `7 3 %`, is still the remainder.
                 guard stack.count >= 2 else { return nil }
                 let rhs = stack.removeLast()
                 let lhs = stack.removeLast()
+                let operation: Character = if case .operation(let operation) = token { operation } else { "%" }
                 stack.append(apply(operation, lhs, rhs))
                 appliedOperator = true
-            case .open, .close:
+            case .word, .open, .close:
                 return nil
             }
         }
@@ -213,12 +234,60 @@ enum Calculator {
     }
 }
 
-/// Recursive descent over `expression := term (+|- term)*`, `term := unary (*|/|% unary)*`,
-/// `unary := (+|-) unary | power` and right-associative `power := primary (^ unary)?`.
+/// Shows a number or calculation in another base: `255 in hex`, `0xFF to binary`, `0b1010 as decimal` or
+/// `(12 + 4) in octal`, as a literal that can be typed back in, such as `0xFF`.
+enum BaseConversion {
+    private static let bases: [String: (radix: Int, prefix: String, kind: String)] = {
+        let hex = (16, "0x", String(localized: "Hexadecimal"))
+        let binary = (2, "0b", String(localized: "Binary"))
+        let octal = (8, "0o", String(localized: "Octal"))
+        let decimal = (10, "", String(localized: "Decimal"))
+        return [
+            "hex": hex, "hexadecimal": hex, "binary": binary, "bin": binary, "octal": octal, "oct": octal,
+            "decimal": decimal, "dec": decimal,
+        ]
+    }()
+
+    static func convert(_ input: String) -> Calculation? {
+        let text = input.trimmingCharacters(in: .whitespaces)
+        for (amountText, targetText) in UnitConversion.splits(text) {
+            guard
+                let base = bases[targetText.lowercased()],
+                let value = Calculator.number(amountText),
+                value == value.rounded(), abs(value) < 0x1p63
+            else { continue }
+            let integer = Int64(value)
+            let digits = String(integer.magnitude, radix: base.radix, uppercase: true)
+            let output = (integer < 0 ? "-" : "") + base.prefix + digits
+            let conversion = Conversion(input: amountText, output: output, outputLong: output, kind: base.kind, answer: output)
+            return Calculation(tokens: [], value: value, isRPN: false, conversion: conversion)
+        }
+        return nil
+    }
+
+    /// True while the base is typed after a number, such as `255 in h`, so the calculator stays showing.
+    static func looksLikeConversion(_ input: String) -> Bool {
+        let text = input.trimmingCharacters(in: .whitespaces)
+        return UnitConversion.splits(text).contains { amountText, targetText in
+            let typed = targetText.lowercased()
+            return !typed.isEmpty && bases.keys.contains { $0.hasPrefix(typed) } && Calculator.number(amountText) != nil
+        }
+    }
+}
+
+/// Recursive descent over `expression := term (+|- term)*`, `term := unary (*|/|%|of|off|on unary)*`,
+/// `unary := (+|-) unary | power`, right-associative `power := percentage (^ unary)?` and `percentage := primary %?`.
+/// Adding or taking away a percentage changes by that share, so `50 + 20%` is 60, and `20% of 50` is 10.
 private struct InfixParser {
     /// Every recursion, through brackets, signs or exponents, passes through `unary`, so limiting its depth keeps
     /// pasted input like thousands of `(` from overflowing the main thread's stack.
     private static let maxDepth = 100
+
+    /// A value, and whether it was written as a percentage, which `+`, `-` and `of` treat as a share of the other side.
+    private struct Operand {
+        var value: Double
+        var isPercent = false
+    }
 
     let tokens: [Calculator.Token]
     private var position = 0
@@ -230,55 +299,84 @@ private struct InfixParser {
     }
 
     mutating func parse() -> Double? {
-        guard let value = expression(), position == tokens.count, sawBinaryOperator else { return nil }
-        return value
+        guard let operand = expression(), position == tokens.count, sawBinaryOperator else { return nil }
+        return operand.value
     }
 
     private var next: Calculator.Token? {
         tokens.indices.contains(position) ? tokens[position] : nil
     }
 
-    private mutating func expression() -> Double? {
-        guard var value = term() else { return nil }
+    private mutating func expression() -> Operand? {
+        guard var lhs = term() else { return nil }
         while case .operation(let operation)? = next, operation == "+" || operation == "-" {
             position += 1
             sawBinaryOperator = true
             guard let rhs = term() else { return nil }
-            value = Calculator.apply(operation, value, rhs)
+            if rhs.isPercent, !lhs.isPercent {
+                lhs = Operand(value: lhs.value * Calculator.apply(operation, 1, rhs.value))
+            } else {
+                lhs = Operand(value: Calculator.apply(operation, lhs.value, rhs.value), isPercent: lhs.isPercent && rhs.isPercent)
+            }
         }
-        return value
+        return lhs
     }
 
-    private mutating func term() -> Double? {
-        guard var value = unary() else { return nil }
-        while case .operation(let operation)? = next, operation == "*" || operation == "/" || operation == "%" {
-            position += 1
-            sawBinaryOperator = true
-            guard let rhs = unary() else { return nil }
-            value = Calculator.apply(operation, value, rhs)
+    private mutating func term() -> Operand? {
+        guard var lhs = unary() else { return nil }
+        while true {
+            switch next {
+            case .operation(let operation)? where operation == "*" || operation == "/" || operation == "%":
+                position += 1
+                sawBinaryOperator = true
+                guard let rhs = unary() else { return nil }
+                lhs = Operand(value: Calculator.apply(operation, lhs.value, rhs.value))
+            case .word(let word)?:
+                // Only a percentage is of something: `20% of 50`, `15% off 80` or `15% on 80`.
+                guard lhs.isPercent else { return nil }
+                position += 1
+                guard let rhs = unary() else { return nil }
+                let share = switch word {
+                case "off": 1 - lhs.value
+                case "on": 1 + lhs.value
+                default: lhs.value
+                }
+                lhs = Operand(value: rhs.value * share)
+            default:
+                return lhs
+            }
         }
-        return value
     }
 
-    private mutating func unary() -> Double? {
+    private mutating func unary() -> Operand? {
         guard depth < Self.maxDepth else { return nil }
         depth += 1
         defer { depth -= 1 }
         if case .operation(let operation)? = next, operation == "-" || operation == "+" {
             position += 1
-            guard let value = unary() else { return nil }
-            return operation == "-" ? -value : value
+            guard var operand = unary() else { return nil }
+            if operation == "-" { operand.value = -operand.value }
+            return operand
         }
         return power()
     }
 
-    private mutating func power() -> Double? {
-        guard let base = primary() else { return nil }
+    private mutating func power() -> Operand? {
+        guard let base = percentage() else { return nil }
         guard case .operation("^")? = next else { return base }
         position += 1
         sawBinaryOperator = true
         guard let exponent = unary() else { return nil }
-        return pow(base, exponent)
+        return Operand(value: pow(base.value, exponent.value))
+    }
+
+    /// A number or bracket, as a share of one when `%` follows it, so `20%` on its own is 0.2.
+    private mutating func percentage() -> Operand? {
+        guard let value = primary() else { return nil }
+        guard case .percent? = next else { return Operand(value: value) }
+        position += 1
+        sawBinaryOperator = true
+        return Operand(value: value / 100, isPercent: true)
     }
 
     private mutating func primary() -> Double? {
@@ -288,9 +386,9 @@ private struct InfixParser {
             return value
         case .open?:
             position += 1
-            guard let value = expression(), case .close? = next else { return nil }
+            guard let operand = expression(), case .close? = next else { return nil }
             position += 1
-            return value
+            return operand.value
         default:
             return nil
         }

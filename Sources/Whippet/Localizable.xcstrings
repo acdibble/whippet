@@ -421,6 +421,16 @@
         }
       }
     },
+    "Binary" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دودویی"
+          }
+        }
+      }
+    },
     "Bottom Half" : {
       "localizations" : {
         "fa" : {
@@ -1051,6 +1061,16 @@
         }
       }
     },
+    "Date" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخ"
+          }
+        }
+      }
+    },
     "Decaffeinate" : {
       "localizations" : {
         "fa" : {
@@ -1067,6 +1087,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بیدار نگه داشتن پایان یافت"
+          }
+        }
+      }
+    },
+    "Decimal" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ده‌دهی"
           }
         }
       }
@@ -1517,6 +1547,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "رسیدگی‌شده"
+          }
+        }
+      }
+    },
+    "Hexadecimal" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هگزادسیمال"
           }
         }
       }
@@ -2161,6 +2201,16 @@
         }
       }
     },
+    "Octal" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هشت‌هشتی"
+          }
+        }
+      }
+    },
     "Off" : {
       "localizations" : {
         "fa" : {
@@ -2467,6 +2517,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "متوقف · %@"
+          }
+        }
+      }
+    },
+    "Percentage" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "درصد"
           }
         }
       }

@@ -113,7 +113,9 @@ struct CalculationCard: View {
         var expression = AttributedString()
         var previous: Calculator.Token?
         for token in calculation.tokens {
-            if previous != nil, previous != .open, token != .close {
+            // A percentage keeps its `%` beside the number, as in `20%`, but in RPN it's the remainder.
+            let isAttached = token == .close || (token == .percent && !calculation.isRPN)
+            if previous != nil, previous != .open, !isAttached {
                 expression += AttributedString(" ")
             }
             switch token {
@@ -123,6 +125,14 @@ struct CalculationCard: View {
                 var symbol = AttributedString(Self.symbol(for: operation))
                 symbol.foregroundColor = Color.launcherSecondary
                 expression += symbol
+            case .percent:
+                var symbol = AttributedString("%")
+                symbol.foregroundColor = Color.launcherSecondary
+                expression += symbol
+            case .word(let word):
+                var text = AttributedString(word)
+                text.foregroundColor = Color.launcherSecondary
+                expression += text
             case .open:
                 expression += AttributedString("(")
             case .close:

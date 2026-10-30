@@ -573,6 +573,7 @@ final class LauncherModel {
     private func looksLikeCalculation(_ query: String) -> Bool {
         Calculator.looksLikeCalculation(query)
             || UnitConversion.looksLikeConversion(query, requiresTarget: TimerDuration.parse(query) != nil)
+            || BaseConversion.looksLikeConversion(query)
             || CurrencyConversion.looksLikeConversion(query)
             || TimeCalculation.looksLikeTimeCalculation(query)
     }
