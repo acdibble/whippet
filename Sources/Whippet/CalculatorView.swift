@@ -1,4 +1,5 @@
 import SwiftUI
+import WhippetCore
 
 /// The calculator layout: the current calculation as a card, with past calculations and numeric clipboard items in two columns below.
 struct CalculatorResults: View {

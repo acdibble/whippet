@@ -1,6 +1,7 @@
 import AppKit
 import Carbon.HIToolbox
 import KeyboardShortcuts
+import WhippetCore
 
 /// Owns the search panel, the global hotkey and the services shared with the SwiftUI scenes in `WhippetApp`.
 @MainActor
@@ -33,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     override init() {
         clipboard = ClipboardHistory()
-        cloudSync = CloudSync(store: clipboard.store)
+        cloudSync = CloudSync(store: clipboard.store, directory: ClipboardStore.defaultDirectory)
         appIndex = AppIndex(history: launchHistory)
         quicklinks = Quicklinks(store: clipboard.store)
         super.init()

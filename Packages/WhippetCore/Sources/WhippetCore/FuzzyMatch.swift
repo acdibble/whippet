@@ -1,8 +1,8 @@
-enum FuzzyMatch {
+public enum FuzzyMatch {
     /// Scores `candidate` against `query` as an in-order subsequence, or returns nil when it does not match.
     /// Of every way the query's characters could line up with the candidate's, the best one counts: word starts and
     /// consecutive characters score higher, and longer candidates score slightly lower.
-    static func score(_ query: String, in candidate: String) -> Int? {
+    public static func score(_ query: String, in candidate: String) -> Int? {
         if query.isEmpty { return 0 }
 
         let queryChars = Array(query.lowercased())

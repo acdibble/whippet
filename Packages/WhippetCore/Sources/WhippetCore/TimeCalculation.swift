@@ -3,17 +3,23 @@ import RegexBuilder
 
 /// The time somewhere else and the time between now and a date: `time in tokyo`, `3pm pst in london`,
 /// `15:30 to new york`, `time until dec 25` or `days since 5 may 1990`.
-enum TimeCalculation {
+public enum TimeCalculation {
     /// Pasted text is never a time calculation, as for unit conversion.
     private static let maximumLength = 100
 
     /// The clock, time zone and language to calculate with, which tests set.
-    struct Context {
-        var now = Date.now
-        var timeZone = TimeZone.current
-        var locale = Locale.current
+    public struct Context: Sendable {
+        public var now: Date
+        public var timeZone: TimeZone
+        public var locale: Locale
 
-        var calendar: Calendar {
+        public init(now: Date = .now, timeZone: TimeZone = .current, locale: Locale = .current) {
+            self.now = now
+            self.timeZone = timeZone
+            self.locale = locale
+        }
+
+        public var calendar: Calendar {
             var calendar = Calendar.current
             calendar.timeZone = timeZone
             calendar.locale = locale
@@ -21,7 +27,7 @@ enum TimeCalculation {
         }
     }
 
-    static func calculate(_ input: String, context: Context = Context()) -> Calculation? {
+    public static func calculate(_ input: String, context: Context = Context()) -> Calculation? {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard text.count <= maximumLength, text.first?.isLetter == true || text.first?.isNumber == true else { return nil }
         return interval(text, context) ?? dateArithmetic(text, context) ?? zoneConversion(text, context)
@@ -29,7 +35,7 @@ enum TimeCalculation {
 
     /// True for a time calculation on its way, such as `time in`, `3pm in tok` or `today +`, so the launcher keeps the
     /// calculator showing while the place, date or time to add is typed.
-    static func looksLikeTimeCalculation(_ input: String) -> Bool {
+    public static func looksLikeTimeCalculation(_ input: String) -> Bool {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard text.count <= maximumLength else { return false }
         if text.contains(/^(?i:time|now)\s+(?i:in|to)(?:\s|$)/) || text.contains(intervalStart) { return true }
@@ -83,7 +89,7 @@ enum TimeCalculation {
             input: date.formatted(style(.abbreviated, .abbreviated)),
             output: output,
             outputLong: result.formatted(style(.wide, .wide)),
-            kind: String(localized: "Date"),
+            kind: String(localized: "Date", bundle: .module),
             answer: output
         )
         return Calculation(tokens: [], value: result.timeIntervalSince1970, isRPN: false, conversion: conversion)
@@ -173,7 +179,7 @@ enum TimeCalculation {
             input: target.formatted(style),
             output: output,
             outputLong: long,
-            kind: isSince ? String(localized: "Time Since") : String(localized: "Time Until"),
+            kind: isSince ? String(localized: "Time Since", bundle: .module) : String(localized: "Time Until", bundle: .module),
             answer: answer
         )
         return Calculation(tokens: [], value: value, isRPN: false, conversion: conversion)
@@ -320,7 +326,7 @@ enum TimeCalculation {
     /// A time zone by city, such as `tokyo` or `new york`, its identifier, such as `Asia/Tokyo`, a nickname or country
     /// with one time zone, such as `nyc` or `japan`, an abbreviation, such as `pst` or `cet`, or an offset, such as
     /// `utc+2`.
-    static func zone(named rawText: String) -> TimeZone? {
+    public static func zone(named rawText: String) -> TimeZone? {
         let text = rawText.trimmingCharacters(in: .whitespaces)
         let key = normalized(text)
         guard !key.isEmpty else { return nil }

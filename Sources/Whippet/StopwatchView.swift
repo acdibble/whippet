@@ -1,4 +1,5 @@
 import SwiftUI
+import WhippetCore
 
 /// A stopwatch filling the launcher panel: the elapsed time, the current lap, every lap so far, and its controls.
 struct StopwatchView: View {

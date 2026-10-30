@@ -1,4 +1,5 @@
 import SwiftUI
+import WhippetCore
 
 /// Every timer in one list, managed in place: ringing timers first, then running and paused ones, then recent timers to
 /// start again. Keys act on the selected row, and each row has buttons for the mouse.

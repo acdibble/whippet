@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+@testable import WhippetCore
 
 struct TimeCalculationTests {
     /// Friday 30 October 2026 at 13:00 in Berlin, after Europe's clocks went back but before America's.

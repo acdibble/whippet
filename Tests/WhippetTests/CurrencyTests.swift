@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+@testable import WhippetCore
 
 struct CurrencyTests {
     /// Round numbers, so answers are easy to check: a euro buys 2 dollars, half a pound or 100 yen.

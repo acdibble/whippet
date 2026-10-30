@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+@testable import WhippetCore
 
 struct ClipboardRetentionTests {
     @Test func cutoffs() throws {

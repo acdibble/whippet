@@ -4,6 +4,16 @@ import Network
 import Observation
 import UniformTypeIdentifiers
 import Vision
+import WhippetCore
+
+extension ClipboardStore {
+    /// Development builds keep their own history, sync state and key, which belong to CloudKit's Development environment.
+    #if DEBUG
+    static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet Dev")
+    #else
+    static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet")
+    #endif
+}
 
 @MainActor
 @Observable
@@ -69,7 +79,7 @@ final class ClipboardHistory {
 
     init() {
         do {
-            store = try ClipboardStore()
+            store = try ClipboardStore(directory: ClipboardStore.defaultDirectory)
         } catch {
             NSLog("Clipboard history disabled: \(error)")
             store = nil

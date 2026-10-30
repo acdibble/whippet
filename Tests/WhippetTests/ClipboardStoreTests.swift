@@ -1,6 +1,7 @@
 import Foundation
 import GRDB
 import Testing
+@testable import WhippetCore
 
 /// Each test gets its own store in a temporary folder, migrated from an empty database.
 final class ClipboardStoreTests {

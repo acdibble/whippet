@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
+import WhippetCore
 
 /// Settings for clipboard history: how long it's kept, which apps it ignores, and what it holds.
 struct ClipboardPane: View {

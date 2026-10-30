@@ -3,6 +3,7 @@ import CryptoKit
 import ServiceManagement
 import KeyboardShortcuts
 import SwiftUI
+import WhippetCore
 
 /// The pane Settings shows, shared so commands can open Settings on a particular pane.
 @MainActor

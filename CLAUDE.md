@@ -41,12 +41,25 @@ xcodebuild build -project Whippet.xcodeproj -scheme Whippet -configuration Debug
 open "build/dev/Build/Products/Debug/Whippet Dev.app"
 ```
 
+Build the shared core on its own for iOS, to check it still uses nothing Mac-only:
+
+```sh
+cd Packages/WhippetCore
+xcodebuild build -scheme WhippetCore -destination 'generic/platform=iOS'
+```
+
 There is no linter or formatter configured.
 
 SourceKit in editors often reports `No such module` and errors on `/…/` regex literals. These are false alarms; trust
 `xcodebuild`.
 
 ## Architecture
+
+The Mac app is in `Sources/Whippet`. What another app could share lives in the **`WhippetCore`** Swift package in
+`Packages/WhippetCore`: `ClipboardStore`, `CloudSync`, quicklinks (`Quicklink`), the calculator with unit, currency,
+base and time conversion, exchange rates, and `FuzzyMatch`. It uses no AppKit, builds for macOS and iOS, and exposes
+only what the app uses as `public`. The app chooses where data lives (`ClipboardStore.defaultDirectory`, set in
+`ClipboardHistory.swift`) and passes it in.
 
 - **`AppDelegate`** owns the floating search panel (`LauncherPanel`, an `NSPanel`), the global hotkey
   (KeyboardShortcuts) and the shared services. `WhippetApp` holds the SwiftUI scenes (settings and other windows).
@@ -56,8 +69,9 @@ SourceKit in editors often reports `No such module` and errors on `/…/` regex 
   launcher features usually add a `LauncherResult` case and handle it here and in `SearchView`.
 - **Ranking**: `LaunchHistory` and `Ranking` order results by how often and how recently they were used, alongside
   `FuzzyMatch`.
-- **Calculator and unit conversion**: `Calculator.calculate` tries an expression, then a plain number, then
-  `UnitConversion.convert`. Unit conversion is built on the `Units` package, with our own aliases and extra units.
+- **Calculator and unit conversion**: `Calculator.calculate` tries an expression, then a plain number, then another
+  base, `UnitConversion.convert`, currency, time and finally an amount worked out without a target. Unit conversion
+  is built on the `Units` package, with our own aliases and extra units.
   `looksLikeConversion` keeps the calculator showing while a conversion is still being typed.
 - **Clipboard**: `ClipboardStore` is a GRDB SQLite database with an FTS5 index, plus content-hashed image files beside
   it. It also stores calculator history. `ClipboardHistory` watches the pasteboard and `Paster` pastes into the
@@ -71,18 +85,21 @@ SourceKit in editors often reports `No such module` and errors on `/…/` regex 
 
 ### Tests
 
-The test target doesn't load the app. It compiles a hand-picked list of app source files, listed in `project.yml`
-under `WhippetTests.sources`, so tests never open the real database or start iCloud sync. To test a new file, add it to
-that list and keep it free of app-only dependencies.
+The test target doesn't load the app, so tests never open the real database or start iCloud sync. It depends on
+`WhippetCore`, which tests reach with `@testable import WhippetCore`, and compiles a hand-picked list of app source
+files, listed in `project.yml` under `WhippetTests.sources`. To test a new app file, add it to that list and keep it
+free of app-only dependencies.
 
 ## Conventions
 
-- **Localization**: strings live in `Sources/Whippet/Localizable.xcstrings`, with English as the source language and
-  Farsi (`fa`) as the only translation. When you add a user-facing string, add its `fa` translation there too.
+- **Localization**: strings live in `Sources/Whippet/Localizable.xcstrings`, and the core's in
+  `Packages/WhippetCore/Sources/WhippetCore/Localizable.xcstrings`, looked up with `String(localized: "…", bundle:
+  .module)`. English is the source language and Farsi (`fa`) the only translation. When you add a user-facing string,
+  add its `fa` translation too.
 - **Comments**: doc comments are full sentences explaining *why*, with examples in backticks. Match the density and
   tone of the surrounding code.
-- **Dependencies** in `project.yml` are pinned to exact commits on purpose. GitHub Actions are pinned to full SHAs
-  with a version comment.
+- **Dependencies** in `project.yml` and `Packages/WhippetCore/Package.swift` are pinned to exact commits on purpose.
+  GRDB is in both, at the same commit. GitHub Actions are pinned to full SHAs with a version comment.
 - **Commits** use Conventional Commits (`feat:`, `fix:`, `ci:`, `chore:`) and go straight to `main`. User-visible
   changes get an entry under `## [Unreleased]` in `CHANGELOG.md`.
 

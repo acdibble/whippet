@@ -1,5 +1,8 @@
 .build/
+.swiftpm/
 build/
+# Packages pin their dependencies to exact commits in Package.swift, as project.yml does.
+Packages/*/Package.resolved
 *.xcodeproj
 xcuserdata/
 .DS_Store

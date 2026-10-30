@@ -15,7 +15,7 @@ settings:
 
 packages:
   # Pinned to exact commits so a release build can't pick up a new upstream version while the signing keychain is
-  # unlocked. Bump these on purpose.
+  # unlocked. Bump these on purpose. GRDB is also pinned in Packages/WhippetCore/Package.swift, to the same commit.
   GRDB:
     url: https://github.com/groue/GRDB.swift
     revision: b83108d10f42680d78f23fe4d4d80fc88dab3212 # 7.11.1
@@ -25,11 +25,10 @@ packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     revision: eef1a539a373c1f1a320624b1130fc5de7b2e100 # 2.10.0
-  # Unit conversion. Its package also lists swift-argument-parser, which only its command-line tool uses; that isn't
-  # built into Whippet.
-  Units:
-    url: https://github.com/NeedleInAJayStack/Units
-    revision: 28b3150f23ee84763f894c714eff87808e82e94d # 1.2.1
+  # What the Mac app shares with others: history, sync, quicklinks and the calculator. It pins GRDB to the same commit
+  # as here, and Units, for unit conversion.
+  WhippetCore:
+    path: Packages/WhippetCore
 
 targets:
   Whippet:
@@ -41,10 +40,9 @@ targets:
       - path: CHANGELOG.md
         buildPhase: resources
     dependencies:
-      - package: GRDB
       - package: KeyboardShortcuts
       - package: Sparkle
-      - package: Units
+      - package: WhippetCore
     scheme:
       testTargets:
         - WhippetTests
@@ -100,27 +98,19 @@ targets:
       - Tests/WhippetTests
       - Sources/Whippet/CaffeineDuration.swift
       - Sources/Whippet/Changelog.swift
-      - Sources/Whippet/Currency.swift
-      - Sources/Whippet/Calculator.swift
-      - Sources/Whippet/ClipboardStore.swift
       - Sources/Whippet/FeedbackImage.swift
       - Sources/Whippet/FeedbackKey.swift
-      - Sources/Whippet/FuzzyMatch.swift
       - Sources/Whippet/ImageConversion.swift
       - Sources/Whippet/PageImage.swift
-      - Sources/Whippet/QuantityExpression.swift
-      - Sources/Whippet/Quicklink.swift
       - Sources/Whippet/Ranking.swift
       - Sources/Whippet/SystemCommand.swift
       - Sources/Whippet/Thumbnail.swift
-      - Sources/Whippet/TimeCalculation.swift
       - Sources/Whippet/TimerDuration.swift
       - Sources/Whippet/TimerItem.swift
-      - Sources/Whippet/UnitConversion.swift
       - Sources/Whippet/WindowLayout.swift
     dependencies:
       - package: GRDB
-      - package: Units
+      - package: WhippetCore
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

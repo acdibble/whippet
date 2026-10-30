@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WhippetCore
 
 /// A small calculator window that floats above other apps, so you can do sums while reading a page. It doesn't
 /// activate Whippet, so the app you were using stays in front, and it keeps its place across launches and Spaces.

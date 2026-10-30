@@ -1,6 +1,7 @@
 import AppKit
 import KeyboardShortcuts
 import SwiftUI
+import WhippetCore
 
 @main
 struct WhippetApp: App {

@@ -1,6 +1,7 @@
 import Foundation
 import GRDB
 import Testing
+@testable import WhippetCore
 
 struct QuicklinkTemplateTests {
     @Test(arguments: [
