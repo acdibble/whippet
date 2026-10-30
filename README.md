@@ -27,6 +27,9 @@ xcodegen generate
 open Whippet.xcodeproj
 ```
 
+The `justfile` has shortcuts for the common tasks, if you have [just](https://github.com/casey/just): `just run`
+builds and opens Whippet Dev, `just test` runs the tests, and `just` lists the rest.
+
 The project signs with the Dibble Codes team and its iCloud container. To build your own copy, change
 `DEVELOPMENT_TEAM`, the bundle identifier and the iCloud container in `project.yml`,
 `Resources/*.entitlements` and `Sources/Whippet/CloudSync.swift`.
