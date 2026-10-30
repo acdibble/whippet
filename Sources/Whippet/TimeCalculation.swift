@@ -129,6 +129,12 @@ enum TimeCalculation {
         else { return nil }
 
         let calendar = context.calendar
+        // The detector reads a clock time in the system's time zone, so it's read again as the same clock time in the
+        // context's, unless the text names a zone.
+        if match.timeZone == nil {
+            let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+            date = calendar.date(from: components) ?? date
+        }
         let hasTime = text.contains(/\d\s*(?i:[ap]\.?m)|\d:\d\d/)
         if !hasTime {
             date = calendar.startOfDay(for: date)
