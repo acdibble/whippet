@@ -112,6 +112,7 @@ targets:
       - Sources/Whippet/Ranking.swift
       - Sources/Whippet/SystemCommand.swift
       - Sources/Whippet/Thumbnail.swift
+      - Sources/Whippet/TimeCalculation.swift
       - Sources/Whippet/TimerDuration.swift
       - Sources/Whippet/TimerItem.swift
       - Sources/Whippet/UnitConversion.swift

@@ -568,12 +568,13 @@ final class LauncherModel {
         return calculation
     }
 
-    /// A calculation, unit conversion or currency conversion still being typed. Text that's also a named timer, such
-    /// as `10 min to feed`, stays a timer unless what follows `to` starts a unit that fits, such as `10 min to s`.
+    /// A calculation, conversion or time calculation still being typed. Text that's also a named timer, such as
+    /// `10 min to feed`, stays a timer unless what follows `to` starts a unit that fits, such as `10 min to s`.
     private func looksLikeCalculation(_ query: String) -> Bool {
         Calculator.looksLikeCalculation(query)
             || UnitConversion.looksLikeConversion(query, requiresTarget: TimerDuration.parse(query) != nil)
             || CurrencyConversion.looksLikeConversion(query)
+            || TimeCalculation.looksLikeTimeCalculation(query)
     }
 
     private func rememberInlineAnswer() {

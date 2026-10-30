@@ -4,7 +4,7 @@ A fast, keyboard-driven launcher for macOS. Free and open source.
 
 - **Search and open apps** with fuzzy matching, ranked by how often you use them
 - **Clipboard history** for text, links, numbers and images, with full-text search, recognized text in images, pinning, and paste straight into the app you were using
-- **Calculator** that understands standard and RPN input, thousands separators and hex, octal and binary, unit and currency conversion, with a history of answers
+- **Calculator** that understands standard and RPN input, thousands separators and hex, octal and binary, unit and currency conversion, the time in other places and until or since a date, with a history of answers
 - **Hotkeys** for opening Whippet, any app or any command
 - **Caffeinate** to keep your Mac awake until you turn it off or for a set time, with an optional menu bar item
 - **iCloud sync** of clipboard history, pins and calculator history across your Macs, end-to-end encrypted, images included

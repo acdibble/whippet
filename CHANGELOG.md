@@ -5,6 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The time somewhere else, such as `time in tokyo`, `3pm pst in london` or `15:30 to new york`, by city, country,
+  time zone abbreviation or offset.
+- The time since or until a date, such as `time until dec 25`, `time since 5 may 1990 10am` or `days until friday`.
+
 ### Changed
 
 - Currency conversions show when the exchange rates were last updated, instead of the day they're for.

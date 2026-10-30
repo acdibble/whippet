@@ -403,10 +403,11 @@ enum UnitConversion {
 }
 
 extension Calculator {
-    /// A calculation, a plain number, a unit conversion or, with `rates`, a currency conversion, in that order.
+    /// A calculation, a plain number, a unit conversion, a currency conversion with `rates`, or a time calculation,
+    /// in that order.
     static func calculate(_ input: String, rates: ExchangeRates? = nil) -> Calculation? {
         evaluate(input) ?? evaluateNumber(input) ?? UnitConversion.convert(input)
-            ?? rates.flatMap { CurrencyConversion.convert(input, rates: $0) }
+            ?? rates.flatMap { CurrencyConversion.convert(input, rates: $0) } ?? TimeCalculation.calculate(input)
     }
 
     /// The value of a number or calculation, such as the amount in a conversion.

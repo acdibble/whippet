@@ -3521,6 +3521,26 @@
         }
       }
     },
+    "Time Since" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زمان سپری‌شده"
+          }
+        }
+      }
+    },
+    "Time Until" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زمان باقی‌مانده"
+          }
+        }
+      }
+    },
     "Timer" : {
       "localizations" : {
         "fa" : {
