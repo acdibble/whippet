@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-30
+
 ### Added
 
 - Unit conversion handles rates, such as `9.35 items per second in hours`, `60 km/h to per minute` or
@@ -299,7 +301,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/acdibble/whippet/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/acdibble/whippet/compare/v0.12.0...v1.0.0
 [0.12.0]: https://github.com/acdibble/whippet/compare/v0.11.3...v0.12.0
 [0.11.3]: https://github.com/acdibble/whippet/compare/v0.11.2...v0.11.3
