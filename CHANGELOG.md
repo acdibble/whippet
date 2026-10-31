@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Start Timer (⌘T, or from ⌘K) on a calculator answer that's a time: an amount, such as `90 min to h` or
+  `1 h + 30 min`, or a moment to count down to, such as `time until 5pm`, `now + 90 min` or `3pm in london`.
+
 ## [1.2.1] - 2026-10-30
 
 ### Added

@@ -74,6 +74,25 @@ struct UnitConversionTests {
         #expect(answer(input) == expected, "got \(answer(input) ?? "nil")")
     }
 
+    @Test(arguments: [
+        ("90 min to h", 5400),
+        ("1.5 h in minutes", 5400),
+        ("2100 seconds / 3 in minutes", 700),
+        ("1 day to h", 86400),
+        ("1 h + 30 min", 5400),
+        ("2100 s / 3", 700),
+    ])
+    func amountsOfTimeStartATimer(_ input: String, _ seconds: Int) throws {
+        let calculation = try #require(Calculator.calculate(input))
+        #expect(calculation.timerSeconds() == seconds)
+    }
+
+    @Test(arguments: ["5 km to mi", "100 km / 2 h to mph", "20 items / second", "60 per hour to per minute", "2 + 3"])
+    func otherResultsDontStartATimer(_ input: String) throws {
+        let calculation = try #require(Calculator.calculate(input))
+        #expect(calculation.timerSeconds() == nil)
+    }
+
     @Test func ambiguousUnitsTakeTheMeaningThatFits() {
         // m is metres or minutes, c is cups or Celsius, oz is weight or volume.
         #expect(answer("100 m to ft") == "328.0839895")

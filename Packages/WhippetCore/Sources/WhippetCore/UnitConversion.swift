@@ -17,6 +17,10 @@ public struct Conversion: Hashable, Sendable {
     public let kind: String
     /// The number copied, when it isn't the value to `UnitConversion.significantDigits`, such as money in cents.
     var answer: String?
+    /// The amount of time a result measures, in seconds, such as `90 min to h`, so a timer can be started for it.
+    var duration: TimeInterval?
+    /// The moment a result names, such as `time until 5pm` or `now + 90 min`, so a timer can count down to it.
+    var date: Date?
 }
 
 /// Converts `<amount> to|in <unit>`, such as `5 km to mi`, `72 f in c`, `2100 seconds / 3 in minutes` or
@@ -71,12 +75,19 @@ public enum UnitConversion {
                     input: UnitDisplay.format(amount, source, style: .medium),
                     output: UnitDisplay.format(converted.value, target, style: .medium),
                     outputLong: UnitDisplay.format(converted.value, target, style: .long),
-                    kind: UnitDisplay.kind(of: target)
+                    kind: UnitDisplay.kind(of: target),
+                    duration: seconds(in: converted.value, target)
                 )
                 return Calculation(tokens: [], value: converted.value, isRPN: false, conversion: conversion)
             }
         }
         return nil
+    }
+
+    /// The seconds in an amount of time, such as 5400 for `1.5 h`, or nil for anything else, including a rate.
+    static func seconds(in value: Double, _ reading: Reading) -> TimeInterval? {
+        guard reading.counted == nil, reading.per == nil, reading.unit.dimension == [.time: 1] else { return nil }
+        return try? PhysicalMeasurement(value: value, unit: reading.unit).convert(to: .second).value
     }
 
     private static func workedOut(_ text: String) -> Calculation? {
@@ -94,7 +105,8 @@ public enum UnitConversion {
             input: text,
             output: UnitDisplay.format(value, reading, style: .medium),
             outputLong: UnitDisplay.format(value, reading, style: .long),
-            kind: UnitDisplay.kind(of: reading)
+            kind: UnitDisplay.kind(of: reading),
+            duration: seconds(in: value, reading)
         )
         return Calculation(tokens: [], value: value, isRPN: false, conversion: conversion)
     }

@@ -46,6 +46,16 @@ public struct Calculation: Hashable, Sendable {
         }
     }
 
+    /// The whole seconds a timer for this result would run: an amount of time, such as `90 min to h`, or the time
+    /// left until a moment it names, such as `time until 5pm`. Nil when the result isn't a time, or is already past.
+    public func timerSeconds(at now: Date = .now) -> Int? {
+        guard let conversion else { return nil }
+        guard let seconds = conversion.duration ?? conversion.date?.timeIntervalSince(now), seconds.isFinite,
+            seconds >= 1, seconds < Double(Int.max)
+        else { return nil }
+        return Int(seconds.rounded())
+    }
+
     public var spelledAnswer: String {
         if let conversion { return conversion.outputLong }
         let formatter = NumberFormatter()

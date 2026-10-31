@@ -98,7 +98,8 @@ public enum TimeCalculation {
             output: output,
             outputLong: result.formatted(style(.wide, .wide)),
             kind: String(localized: "Date", bundle: .module),
-            answer: output
+            answer: output,
+            date: result
         )
         return Calculation(tokens: [], value: result.timeIntervalSince1970, isRPN: false, conversion: conversion)
     }
@@ -189,7 +190,8 @@ public enum TimeCalculation {
             outputLong: long,
             kind: isSince
                 ? String(localized: "Time Since", bundle: .module) : String(localized: "Time Until", bundle: .module),
-            answer: answer
+            answer: answer,
+            date: isSince ? nil : target
         )
         return Calculation(tokens: [], value: value, isRPN: false, conversion: conversion)
     }
@@ -290,7 +292,8 @@ public enum TimeCalculation {
                 outputLong:
                     "\(date.formatted(targetStyle.weekday(.wide).day().month(.wide))) · \(name(of: target, context))",
                 kind: name(of: source, context),
-                answer: output
+                answer: output,
+                date: date
             )
             return Calculation(tokens: [], value: date.timeIntervalSince1970, isRPN: false, conversion: conversion)
         }

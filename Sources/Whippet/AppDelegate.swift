@@ -176,6 +176,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case ("=", [.command]): model.perform(.addMinute)
         case ("l", [.command]): model.perform(.lap)
         case ("r", [.command]): model.perform(.restart)
+        case ("t", [.command]): model.perform(.startTimer)
         case ("k", [.command]): showActions()
         case ("q", [.command]): NSApp.terminate(nil)
         case (",", [.command]): showSettings()
@@ -197,7 +198,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private static let usKeys: [Int: Character] = [
         kVK_ANSI_P: "p", kVK_ANSI_C: "c", kVK_ANSI_X: "x", kVK_ANSI_K: "k", kVK_ANSI_Q: "q", kVK_ANSI_Comma: ",",
-        kVK_ANSI_Equal: "=", kVK_ANSI_L: "l", kVK_ANSI_R: "r",
+        kVK_ANSI_Equal: "=", kVK_ANSI_L: "l", kVK_ANSI_R: "r", kVK_ANSI_T: "t",
     ]
 
     /// Clicking the Dock icon, which only shows while Settings is open, brings Settings forward.

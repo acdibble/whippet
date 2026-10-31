@@ -158,4 +158,22 @@ struct TimeCalculationTests {
     func leavesSearchesAlone(_ input: String) {
         #expect(!TimeCalculation.looksLikeTimeCalculation(input))
     }
+
+    @Test(arguments: [
+        ("now + 90 min", 5400),
+        ("time until 30 oct 2026 15:30", 9000),
+        ("hours until 30 oct 2026 3pm", 7200),
+        ("3pm in london", 7200),
+        ("31 oct 2026 + 1 h", 43200),
+    ])
+    func timesUntilAMomentStartATimer(_ input: String, _ seconds: Int) throws {
+        let calculation = try #require(calculate(input))
+        #expect(calculation.timerSeconds(at: context.now) == seconds)
+    }
+
+    @Test(arguments: ["time since dec 25", "now - 5 min", "9am in london", "time in tokyo", "1 jan 2026 + 2 days"])
+    func timesInThePastOrNowDontStartATimer(_ input: String) throws {
+        let calculation = try #require(calculate(input))
+        #expect(calculation.timerSeconds(at: context.now) == nil)
+    }
 }

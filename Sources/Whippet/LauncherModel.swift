@@ -310,6 +310,7 @@ enum ResultAction: CaseIterable {
     case pasteAsJPEG
     case copyAsJPEG
     case copyPath
+    case startTimer
     case popOut
     case delete
 
@@ -325,6 +326,7 @@ enum ResultAction: CaseIterable {
         case (.togglePin, .clipboard), (.delete, .clipboard), (.copyPath, .app): true
         case (.refreshPreview, .clipboard(let item)): item.kind == .link
         case (.pasteAsJPEG, .clipboard(let item)), (.copyAsJPEG, .clipboard(let item)): item.kind == .image
+        case (.startTimer, .calculation(let calculation)): calculation.timerSeconds() != nil
         case (.popOut, .calculation), (.popOut, .pastCalculation), (.popOut, .calculator): true
         default: false
         }
@@ -354,6 +356,12 @@ enum ResultAction: CaseIterable {
         case .pasteAsJPEG: String(localized: "Paste as JPEG")
         case .copyAsJPEG: String(localized: "Copy as JPEG")
         case .copyPath: String(localized: "Copy Path")
+        case .startTimer:
+            if case .calculation(let calculation) = result, let seconds = calculation.timerSeconds() {
+                String(localized: "Start Timer for \(TimerNaming.duration(TimeInterval(seconds)))")
+            } else {
+                String(localized: "Start Timer")
+            }
         case .popOut: String(localized: "Pop Out Calculator")
         case .delete:
             switch result {
@@ -380,6 +388,7 @@ enum ResultAction: CaseIterable {
         case .pasteAsJPEG: "photo"
         case .copyAsJPEG: "photo.on.rectangle"
         case .copyPath: "link"
+        case .startTimer: "timer"
         case .popOut: "macwindow.on.rectangle"
         case .delete: "trash"
         }
@@ -396,6 +405,7 @@ enum ResultAction: CaseIterable {
         case .addFiveMinutes, .rename, .snooze, .refreshPreview, .pasteAsJPEG, .copyAsJPEG: nil
         case .togglePin: ("p", [.command, .shift])
         case .copyPath: ("c", [.command, .shift])
+        case .startTimer: ("t", [.command])
         case .popOut: ("o", [.command, .shift])
         case .delete, .dismiss: ("x", [.control])
         }
@@ -851,6 +861,14 @@ final class LauncherModel {
         case (.togglePin, .clipboard(let item)):
             clipboard.setPinned(item.pinnedAt == nil, item: item)
             selection = results.firstIndex { $0.id == result.id } ?? 0
+        case (.startTimer, .calculation(let calculation)):
+            // Worked out again, so a timer counting down to a moment starts from when it's chosen.
+            guard let seconds = calculation.timerSeconds() else {
+                NSSound.beep()
+                return
+            }
+            timers.startTimer(seconds: seconds, name: nil)
+            onDismiss()
         case (.popOut, .calculation):
             onPopOutCalculator(query.trimmingCharacters(in: .whitespaces))
         case (.popOut, .pastCalculation(let record)):
