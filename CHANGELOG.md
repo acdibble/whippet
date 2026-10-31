@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-31
+
 ### Added
 
 - Start Timer (⌘T, or from ⌘K) on a calculator answer that's a time: an amount, such as `90 min to h` or
@@ -342,7 +344,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/acdibble/whippet/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/acdibble/whippet/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/acdibble/whippet/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/acdibble/whippet/compare/v1.0.1...v1.1.0
