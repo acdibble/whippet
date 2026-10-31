@@ -9,7 +9,9 @@ struct PageImageTests {
             <head><meta name="twitter:image" content="https://example.com/twitter.png" />
             <meta property="og:image" content="https://opengraph.githubassets.com/abc/acdibble/whippet" /></head>
             """
-        #expect(PageImage.url(inHTML: html, baseURL: page)?.absoluteString == "https://opengraph.githubassets.com/abc/acdibble/whippet")
+        #expect(
+            PageImage.url(inHTML: html, baseURL: page)?.absoluteString
+                == "https://opengraph.githubassets.com/abc/acdibble/whippet")
     }
 
     @Test func fallsBackToTheTwitterImage() {
@@ -23,18 +25,21 @@ struct PageImageTests {
     }
 
     @Test func readsQuotedValuesAndEntitiesLikeABrowser() {
-        let html = #"<meta data-note="a > b" property="og:image" content="https://example.com/a.png?q=1&#x26;r=2&amp;quot;">"#
+        let html =
+            #"<meta data-note="a > b" property="og:image" content="https://example.com/a.png?q=1&#x26;r=2&amp;quot;">"#
         #expect(PageImage.url(inHTML: html, baseURL: page)?.absoluteString == "https://example.com/a.png?q=1&r=2&quot;")
     }
 
     @Test func readsAHeadCutOffBeforeTheBody() {
-        let html = #"<!DOCTYPE html><html><head><title>Whippet</title><meta property="og:image" content="https://example.com/a.png"></head>"#
+        let html =
+            #"<!DOCTYPE html><html><head><title>Whippet</title><meta property="og:image" content="https://example.com/a.png"></head>"#
         #expect(PageImage.url(inHTML: html, baseURL: page)?.absoluteString == "https://example.com/a.png")
     }
 
     @Test func ignoresPagesWithoutOneAndOtherSchemes() {
         #expect(PageImage.url(inHTML: #"<meta property="og:title" content="Whippet">"#, baseURL: page) == nil)
-        #expect(PageImage.url(inHTML: #"<meta property="og:image" content="javascript:alert(1)">"#, baseURL: page) == nil)
+        #expect(
+            PageImage.url(inHTML: #"<meta property="og:image" content="javascript:alert(1)">"#, baseURL: page) == nil)
         #expect(PageImage.url(inHTML: #"<meta property="og:image" content="">"#, baseURL: page) == nil)
     }
 }

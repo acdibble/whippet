@@ -66,19 +66,22 @@ struct FeedbackView: View {
                 Spacer()
                 Button("Send", action: send)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(canSend != true || isSending || message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(
+                        canSend != true || isSending || message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding([.horizontal, .bottom], 20)
         }
         .frame(width: 480)
         .onDrop(of: [.fileURL, .image], isTargeted: nil, perform: drop)
-        .fileImporter(isPresented: $isChoosingImages, allowedContentTypes: [.image], allowsMultipleSelection: true) { result in
+        .fileImporter(isPresented: $isChoosingImages, allowedContentTypes: [.image], allowsMultipleSelection: true) {
+            result in
             guard case .success(let urls) = result else { return }
-            attach(urls.compactMap { url in
-                let isAccessing = url.startAccessingSecurityScopedResource()
-                defer { if isAccessing { url.stopAccessingSecurityScopedResource() } }
-                return try? Data(contentsOf: url)
-            })
+            attach(
+                urls.compactMap { url in
+                    let isAccessing = url.startAccessingSecurityScopedResource()
+                    defer { if isAccessing { url.stopAccessingSecurityScopedResource() } }
+                    return try? Data(contentsOf: url)
+                })
         }
         .task { canSend = await store.canSend }
         .onAppear {
@@ -165,7 +168,9 @@ struct FeedbackView: View {
     }
 
     private func drop(_ providers: [NSItemProvider]) -> Bool {
-        let providers = providers.filter { $0.canLoadObject(ofClass: URL.self) || $0.hasItemConformingToTypeIdentifier(UTType.image.identifier) }
+        let providers = providers.filter {
+            $0.canLoadObject(ofClass: URL.self) || $0.hasItemConformingToTypeIdentifier(UTType.image.identifier)
+        }
         guard !providers.isEmpty else { return false }
         Task {
             var dropped: [Data] = []
@@ -182,7 +187,8 @@ struct FeedbackView: View {
             let url = await withCheckedContinuation { continuation in
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in continuation.resume(returning: url) }
             }
-            guard let url, url.isFileURL, UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true else { return nil }
+            guard let url, url.isFileURL, UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true
+            else { return nil }
             return try? Data(contentsOf: url)
         }
         return await withCheckedContinuation { continuation in
@@ -349,7 +355,8 @@ struct FeedbackAdminPane: View {
         var components = URLComponents()
         components.scheme = "mailto"
         components.path = email
-        let quoted = entry.message.split(separator: "\n", omittingEmptySubsequences: false).map { "> \($0)" }.joined(separator: "\n")
+        let quoted = entry.message.split(separator: "\n", omittingEmptySubsequences: false).map { "> \($0)" }.joined(
+            separator: "\n")
         components.queryItems = [
             URLQueryItem(name: "subject", value: String(localized: "Your Whippet feedback")),
             URLQueryItem(name: "body", value: "\n\n\(quoted)"),
@@ -436,7 +443,10 @@ enum DockIcon {
         // Runs on the next pass, so a window that is closing no longer counts as visible.
         DispatchQueue.main.async {
             let hasWindow = NSApp.windows.contains { window in
-                window.isVisible && [SettingsView.windowID, FeedbackView.windowID].contains { window.identifier?.rawValue.hasPrefix($0) == true }
+                window.isVisible
+                    && [SettingsView.windowID, FeedbackView.windowID].contains {
+                        window.identifier?.rawValue.hasPrefix($0) == true
+                    }
             }
             NSApp.setActivationPolicy(hasWindow ? .regular : .accessory)
         }

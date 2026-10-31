@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import WhippetCore
 
 struct TimeCalculationTests {
@@ -83,7 +84,9 @@ struct TimeCalculationTests {
     @Test func aDateWithoutAYearIsTheNearestOneTheRightWay() throws {
         // The detector reads dates against the real clock, so this uses it too.
         let now = TimeCalculation.Context(timeZone: context.timeZone, locale: context.locale)
-        for input in ["time since dec 25", "time until oct 1", "time since jan 1", "days until monday", "days since friday"] {
+        for input in [
+            "time since dec 25", "time until oct 1", "time since jan 1", "days until monday", "days since friday",
+        ] {
             let value = try #require(TimeCalculation.calculate(input, context: now)?.value, "\(input)")
             #expect(value >= 0, "\(input) gave \(value)")
             #expect(value <= 366 * 86400, "\(input) gave \(value)")
@@ -135,7 +138,8 @@ struct TimeCalculationTests {
     }
 
     @Test func leavesOtherTextAlone() {
-        for input in ["time", "time machine", "days", "time in nowhere", "13pm in tokyo", "3 in tokyo", "until dec 25"] {
+        for input in ["time", "time machine", "days", "time in nowhere", "13pm in tokyo", "3 in tokyo", "until dec 25"]
+        {
             #expect(calculate(input) == nil, "\(input)")
         }
         // Picometres stay picometres.

@@ -44,7 +44,8 @@ struct RankingTests {
     }
 
     @Test func aKeywordStillFindsItsQuicklink() {
-        let ranked = Ranking.rank(["YouTube Music", "Search YouTube yt"], query: "yt", title: { $0 }, frecency: { _ in 0 })
+        let ranked = Ranking.rank(
+            ["YouTube Music", "Search YouTube yt"], query: "yt", title: { $0 }, frecency: { _ in 0 })
         #expect(ranked.first == "Search YouTube yt")
     }
 
@@ -54,7 +55,8 @@ struct RankingTests {
 
     @Test func suggestionsAreTheMostUsedInOrder() {
         let use: [String: Double] = ["Safari": 3, "Notes": 0, "Mail": 9, "Maps": 3]
-        let suggestions = Ranking.suggestions(["Safari", "Notes", "Mail", "Maps"], limit: 2, frecency: { use[$0] ?? 0 })
+        let suggestions = Ranking.suggestions(
+            ["Safari", "Notes", "Mail", "Maps"], limit: 2, frecency: { use[$0] ?? 0 })
         #expect(suggestions == ["Mail", "Safari"])
     }
 

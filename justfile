@@ -32,6 +32,14 @@ test filter="": generate
     xcodebuild test -project {{project}} -scheme {{scheme}} -destination '{{destination}}' CODE_SIGNING_ALLOWED=NO \
         {{ if filter == "" { "" } else { "-only-testing:WhippetTests/" + filter } }}
 
+# Formats the Swift sources in place with swift-format, which comes with Xcode, using `.swift-format`.
+format:
+    git ls-files -z '*.swift' | xargs -0 xcrun swift-format format --in-place --parallel
+
+# Checks the Swift sources' formatting and style without changing them, as CI does.
+lint:
+    git ls-files -z '*.swift' | xargs -0 xcrun swift-format lint --strict --parallel
+
 # Opens the project in Xcode.
 open: generate
     open {{project}}

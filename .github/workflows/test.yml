@@ -30,6 +30,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # swift-format comes with Xcode, so it's pinned by the runner's Xcode rather than downloaded. Run `just format`
+      # to fix what it finds.
+      - name: Lint
+        run: git ls-files -z '*.swift' | xargs -0 xcrun swift-format lint --strict --parallel
+
       - name: Generate the Xcode project
         run: |
           curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" \

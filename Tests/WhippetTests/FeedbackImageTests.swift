@@ -7,19 +7,21 @@ import UniformTypeIdentifiers
 struct FeedbackImageTests {
     /// A 300 × 200 image with a location and an orientation that turns it on its side.
     private func image(type: UTType, orientation: Int = 1) throws -> Data {
-        let context = try #require(CGContext(
-            data: nil, width: 300, height: 200, bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ))
+        let context = try #require(
+            CGContext(
+                data: nil, width: 300, height: 200, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ))
         context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
         context.fill(CGRect(x: 0, y: 0, width: 300, height: 200))
         let cgImage = try #require(context.makeImage())
         let output = NSMutableData()
         let destination = try #require(CGImageDestinationCreateWithData(output, type.identifier as CFString, 1, nil))
-        let properties = [
-            kCGImagePropertyGPSDictionary: [kCGImagePropertyGPSLatitude: 52.5, kCGImagePropertyGPSLongitude: 13.4],
-            kCGImagePropertyOrientation: orientation,
-        ] as CFDictionary
+        let properties =
+            [
+                kCGImagePropertyGPSDictionary: [kCGImagePropertyGPSLatitude: 52.5, kCGImagePropertyGPSLongitude: 13.4],
+                kCGImagePropertyOrientation: orientation,
+            ] as CFDictionary
         CGImageDestinationAddImage(destination, cgImage, properties)
         #expect(CGImageDestinationFinalize(destination))
         return output as Data

@@ -133,7 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             switch Int(event.keyCode) {
             case kVK_Escape: model.back()
             case kVK_Return where model.usesPlainKeys && modifiers.isEmpty,
-                 kVK_Space where model.usesPlainKeys && modifiers.isEmpty:
+                kVK_Space where model.usesPlainKeys && modifiers.isEmpty:
                 model.activate()
             case kVK_Delete where model.usesPlainKeys && modifiers.isEmpty:
                 model.deleteWithPlainKey()
@@ -145,8 +145,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 model.perform(.secondary)
             case kVK_LeftArrow where isPlainArrow, kVK_RightArrow where isPlainArrow:
                 // Columns swap sides in right-to-left languages, so the arrow keys follow the screen rather than the column order.
-                let towardStart = (Int(event.keyCode) == kVK_LeftArrow) == (NSApp.userInterfaceLayoutDirection == .leftToRight)
-                guard model.moveColumn(by: towardStart ? -1 : 1) || model.switchStopwatch(by: towardStart ? -1 : 1) else {
+                let towardStart =
+                    (Int(event.keyCode) == kVK_LeftArrow) == (NSApp.userInterfaceLayoutDirection == .leftToRight)
+                guard model.moveColumn(by: towardStart ? -1 : 1) || model.switchStopwatch(by: towardStart ? -1 : 1)
+                else {
                     return event
                 }
             default:
@@ -186,7 +188,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// without Latin letters fall back to the key's US position, as macOS does for menu shortcuts.
     private static func shortcutKey(for event: NSEvent) -> Character? {
         if let typed = event.charactersIgnoringModifiers?.lowercased(), typed.count == 1,
-           let character = typed.first, character.isASCII, !character.isWhitespace {
+            let character = typed.first, character.isASCII, !character.isWhitespace
+        {
             return character
         }
         return usKeys[Int(event.keyCode)]

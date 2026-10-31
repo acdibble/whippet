@@ -81,7 +81,8 @@ private struct TimerRow: View {
     private var icon: some View {
         switch result {
         case .ringingTimer: Image(systemName: "bell.and.waves.left.and.right").foregroundStyle(.red)
-        case .timer(let item) where item.isPaused: Image(systemName: "pause.circle").foregroundStyle(Color.launcherSecondary)
+        case .timer(let item) where item.isPaused:
+            Image(systemName: "pause.circle").foregroundStyle(Color.launcherSecondary)
         default: Image(systemName: "timer")
         }
     }

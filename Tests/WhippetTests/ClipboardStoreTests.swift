@@ -1,6 +1,7 @@
 import Foundation
 import GRDB
 import Testing
+
 @testable import WhippetCore
 
 /// Each test gets its own store in a temporary folder, migrated from an empty database.
@@ -57,7 +58,10 @@ final class ClipboardStoreTests {
         try await pause()
         try store.recordText("newer", sourceBundleID: nil)
         try await pause()
-        guard case .clipboard(let hash) = image else { Issue.record("Expected a clipboard item"); return }
+        guard case .clipboard(let hash) = image else {
+            Issue.record("Expected a clipboard item")
+            return
+        }
 
         #expect(try store.recordCopy(contentHash: hash) == image)
         let all = try items()
@@ -87,7 +91,8 @@ final class ClipboardStoreTests {
 
     @Test func imagesShowTheirFileNameOrFormat() throws {
         try store.recordImage(png: Data([1]), width: 4, height: 2, type: "public.jpeg", sourceBundleID: nil)
-        try store.recordImage(png: Data([2]), width: 4, height: 2, type: "public.png", path: "/tmp/Photo One.jpg", sourceBundleID: nil)
+        try store.recordImage(
+            png: Data([2]), width: 4, height: 2, type: "public.png", path: "/tmp/Photo One.jpg", sourceBundleID: nil)
 
         let titles = Set(try items(kind: .image).map(\.title))
         #expect(titles.contains("Photo One.jpg"))
@@ -107,8 +112,12 @@ final class ClipboardStoreTests {
     }
 
     @Test func photosLibraryPathsAreForgotten() throws {
-        try store.recordImage(png: Data([1]), width: 1, height: 1, path: "/Users/me/Pictures/Photos Library.photoslibrary/resources/derivatives/A_1_c.jpeg", sourceBundleID: nil)
-        try store.recordImage(png: Data([2]), width: 1, height: 1, path: "/Users/me/Pictures/Beach.heic", sourceBundleID: nil)
+        try store.recordImage(
+            png: Data([1]), width: 1, height: 1,
+            path: "/Users/me/Pictures/Photos Library.photoslibrary/resources/derivatives/A_1_c.jpeg",
+            sourceBundleID: nil)
+        try store.recordImage(
+            png: Data([2]), width: 1, height: 1, path: "/Users/me/Pictures/Beach.heic", sourceBundleID: nil)
         try DatabaseQueue(path: directory.appending(path: "clipboard.sqlite").path).write { db in
             try db.execute(sql: "DELETE FROM grdb_migrations WHERE identifier = 'forgetPhotosLibraryPaths'")
         }
@@ -223,7 +232,10 @@ final class ClipboardStoreTests {
     @Test func copyingAgainCancelsAPendingDeletion() throws {
         let item = try store.recordText("back again", sourceBundleID: nil)
         try store.assignRecordNames([item: "clip-again"])
-        guard case .clipboard(let hash) = item else { Issue.record("Expected a clipboard item"); return }
+        guard case .clipboard(let hash) = item else {
+            Issue.record("Expected a clipboard item")
+            return
+        }
         _ = try store.delete(contentHash: hash)
         #expect(try store.pendingDeletions() == ["clip-again"])
 
@@ -329,7 +341,10 @@ final class ClipboardStoreTests {
 
     @Test func aRecordDeletedHereStaysDeletedWhenICloudSendsItBack() throws {
         let item = try store.recordText("deleted", sourceBundleID: nil)
-        guard case .clipboard(let hash) = item else { Issue.record("Expected a clipboard item"); return }
+        guard case .clipboard(let hash) = item else {
+            Issue.record("Expected a clipboard item")
+            return
+        }
         try store.assignRecordNames([item: "clip-remote"])
         _ = try store.delete(contentHash: hash)
 
@@ -344,7 +359,10 @@ final class ClipboardStoreTests {
     @Test func recognizingTextOfADeletedImageChangesNothing() throws {
         let png = Data([0x89, 0x50, 0x4E, 0x47, 4, 5, 6])
         let item = try store.recordImage(png: png, width: 1, height: 1, sourceBundleID: nil)
-        guard case .clipboard(let hash) = item else { Issue.record("Expected a clipboard item"); return }
+        guard case .clipboard(let hash) = item else {
+            Issue.record("Expected a clipboard item")
+            return
+        }
         try store.assignRecordNames([item: "clip-image"])
         _ = try store.delete(contentHash: hash)
 
@@ -354,11 +372,15 @@ final class ClipboardStoreTests {
 
     @Test func mergingKeepsTheLatestCopyAndHighestCount() throws {
         let local = try store.recordText("shared", sourceBundleID: nil)
-        guard case .clipboard(let hash) = local else { Issue.record("Expected a clipboard item"); return }
+        guard case .clipboard(let hash) = local else {
+            Issue.record("Expected a clipboard item")
+            return
+        }
         let localItem = try #require(try items().first)
 
         let older = localItem.copiedAt.addingTimeInterval(-60)
-        let isLocalAhead = try store.mergeRemote(remote(hash: hash, text: "shared", copiedAt: older, timesCopied: 5, updatedAt: older))
+        let isLocalAhead = try store.mergeRemote(
+            remote(hash: hash, text: "shared", copiedAt: older, timesCopied: 5, updatedAt: older))
 
         let merged = try #require(try items().first)
         #expect(isLocalAhead)
@@ -368,13 +390,17 @@ final class ClipboardStoreTests {
 
     @Test func theMostRecentlyChangedSideDecidesThePinAndSource() throws {
         let local = try store.recordText("shared", sourceBundleID: "com.example.local")
-        guard case .clipboard(let hash) = local else { Issue.record("Expected a clipboard item"); return }
+        guard case .clipboard(let hash) = local else {
+            Issue.record("Expected a clipboard item")
+            return
+        }
         let localItem = try #require(try items().first)
 
         let newer = Date.now.addingTimeInterval(60)
         let isLocalAhead = try store.mergeRemote(
-            remote(hash: hash, text: "shared", copiedAt: localItem.copiedAt, timesCopied: 1, pinnedAt: newer,
-                   sourceBundleID: "com.example.remote", updatedAt: newer)
+            remote(
+                hash: hash, text: "shared", copiedAt: localItem.copiedAt, timesCopied: 1, pinnedAt: newer,
+                sourceBundleID: "com.example.remote", updatedAt: newer)
         )
         #expect(!isLocalAhead)
         var merged = try #require(try items().first)
@@ -383,8 +409,9 @@ final class ClipboardStoreTests {
 
         let stale = Date.now.addingTimeInterval(-3600)
         _ = try store.mergeRemote(
-            remote(hash: hash, text: "shared", copiedAt: localItem.copiedAt, pinnedAt: nil,
-                   sourceBundleID: "com.example.stale", updatedAt: stale)
+            remote(
+                hash: hash, text: "shared", copiedAt: localItem.copiedAt, pinnedAt: nil,
+                sourceBundleID: "com.example.stale", updatedAt: stale)
         )
         merged = try #require(try items().first)
         #expect(merged.pinnedAt.map { $0.isSameMillisecond(as: newer) } == true)
@@ -473,7 +500,9 @@ final class ClipboardStoreTests {
 
         // As if the database were from a version before the migration.
         let database = try DatabaseQueue(path: directory.appending(path: "clipboard.sqlite").path)
-        try database.write { try $0.execute(sql: "DELETE FROM grdb_migrations WHERE identifier = 'refetchLinkPreviews'") }
+        try database.write {
+            try $0.execute(sql: "DELETE FROM grdb_migrations WHERE identifier = 'refetchLinkPreviews'")
+        }
         try database.close()
         let reopened = try ClipboardStore(directory: directory)
 
@@ -544,9 +573,9 @@ struct LinkPreviewMigrationTests {
     }
 }
 
-private extension Date {
+extension Date {
     /// The store keeps dates to the millisecond, so a date read back can differ from the one written by less than that.
-    func isSameMillisecond(as other: Date) -> Bool {
+    fileprivate func isSameMillisecond(as other: Date) -> Bool {
         abs(timeIntervalSince(other)) < 0.001
     }
 }

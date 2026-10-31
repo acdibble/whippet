@@ -73,6 +73,6 @@ final class LauncherPanel: NSPanel {
     }
 }
 
-private extension NSRect {
-    var area: CGFloat { isNull ? 0 : width * height }
+extension NSRect {
+    fileprivate var area: CGFloat { isNull ? 0 : width * height }
 }

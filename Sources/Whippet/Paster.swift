@@ -33,18 +33,20 @@ enum Paster {
     static func paste(into window: NSWindow) {
         window.makeKeyAndOrderFront(nil)
         for type in [NSEvent.EventType.keyDown, .keyUp] {
-            guard let event = NSEvent.keyEvent(
-                with: type,
-                location: .zero,
-                modifierFlags: .command,
-                timestamp: ProcessInfo.processInfo.systemUptime,
-                windowNumber: window.windowNumber,
-                context: nil,
-                characters: "v",
-                charactersIgnoringModifiers: "v",
-                isARepeat: false,
-                keyCode: UInt16(kVK_ANSI_V)
-            ) else { continue }
+            guard
+                let event = NSEvent.keyEvent(
+                    with: type,
+                    location: .zero,
+                    modifierFlags: .command,
+                    timestamp: ProcessInfo.processInfo.systemUptime,
+                    windowNumber: window.windowNumber,
+                    context: nil,
+                    characters: "v",
+                    charactersIgnoringModifiers: "v",
+                    isARepeat: false,
+                    keyCode: UInt16(kVK_ANSI_V)
+                )
+            else { continue }
             NSApp.postEvent(event, atStart: false)
         }
     }

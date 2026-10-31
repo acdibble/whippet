@@ -47,16 +47,19 @@ struct ChangelogTests {
         let releases = Changelog.parse(sample)
         #expect(releases.map(\.version) == ["0.3.0", "0.2.0", "0.1.0"])
         let date = try #require(releases[0].date)
-        #expect(Calendar.current.dateComponents([.year, .month, .day], from: date) == DateComponents(year: 2026, month: 10, day: 29))
+        #expect(
+            Calendar.current.dateComponents([.year, .month, .day], from: date)
+                == DateComponents(year: 2026, month: 10, day: 29))
     }
 
     @Test func joinsWrappedLinesAndKeepsSections() {
         let release = Changelog.parse(sample)[0]
         #expect(release.sections.map(\.title) == ["Added", "Fixed"])
-        #expect(release.sections[0].changes.map(\.text) == [
-            "**Bold** feature with `code`, which wraps onto a second line.",
-            "Another.",
-        ])
+        #expect(
+            release.sections[0].changes.map(\.text) == [
+                "**Bold** feature with `code`, which wraps onto a second line.",
+                "Another.",
+            ])
         #expect(release.note == nil)
     }
 
@@ -90,7 +93,9 @@ struct ChangelogTests {
         let url = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "../../CHANGELOG.md")
         let markdown = try String(contentsOf: url, encoding: .utf8)
         let releases = Changelog.parse(markdown)
-        let headings = markdown.split(separator: "\n").filter { $0.hasPrefix("## [") && !$0.hasPrefix("## [Unreleased]") }
+        let headings = markdown.split(separator: "\n").filter {
+            $0.hasPrefix("## [") && !$0.hasPrefix("## [Unreleased]")
+        }
         #expect(releases.count == headings.count)
         #expect(releases.allSatisfy { $0.date != nil && !$0.sections.isEmpty })
     }

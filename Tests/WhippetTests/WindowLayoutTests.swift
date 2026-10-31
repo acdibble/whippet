@@ -6,7 +6,9 @@ struct WindowLayoutTests {
     private let screen = CGRect(x: 0, y: 25, width: 1440, height: 875)
     private let window = CGRect(x: 100, y: 200, width: 800, height: 500)
 
-    private func frame(_ command: WindowCommand, window: CGRect? = nil, screen: CGRect? = nil, next: CGRect? = nil) -> CGRect? {
+    private func frame(_ command: WindowCommand, window: CGRect? = nil, screen: CGRect? = nil, next: CGRect? = nil)
+        -> CGRect?
+    {
         WindowLayout.frame(for: command, window: window ?? self.window, screen: screen ?? self.screen, nextScreen: next)
     }
 

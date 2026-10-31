@@ -40,12 +40,13 @@ enum Ranking {
     static func frecency(count: Int, lastOpened: Date?, now: Date) -> Double {
         guard count > 0 else { return 0 }
         let days = lastOpened.map { now.timeIntervalSince($0) / 86_400 } ?? .infinity
-        let recency: Double = switch days {
-        case ..<1: 1
-        case ..<7: 0.8
-        case ..<30: 0.5
-        default: 0.25
-        }
+        let recency: Double =
+            switch days {
+            case ..<1: 1
+            case ..<7: 0.8
+            case ..<30: 0.5
+            default: 0.25
+            }
         return Double(count) * recency
     }
 
@@ -77,8 +78,11 @@ enum Ranking {
     }
 
     /// The most used candidates, weighted toward recent use, for the Suggestions section of an empty search.
-    static func suggestions<Candidate>(_ candidates: [Candidate], limit: Int, frecency: (Candidate) -> Double) -> [Candidate] {
-        let used: [(offset: Int, candidate: Candidate, frecency: Double)] = candidates.enumerated().compactMap { offset, candidate in
+    static func suggestions<Candidate>(_ candidates: [Candidate], limit: Int, frecency: (Candidate) -> Double)
+        -> [Candidate]
+    {
+        let used: [(offset: Int, candidate: Candidate, frecency: Double)] = candidates.enumerated().compactMap {
+            offset, candidate in
             let use = frecency(candidate)
             return use > 0 ? (offset, candidate, use) : nil
         }

@@ -17,7 +17,9 @@ enum TimerDuration {
     static func parse(_ input: String, plainNumberIsMinutes: Bool = false) -> Parsed? {
         var scanner = Scanner(text: normalized(input))
         let hasKeyword = scanner.skipKeyword()
-        guard let seconds = scanner.clock() ?? scanner.units() ?? scanner.plainMinutes(allowed: hasKeyword || plainNumberIsMinutes)
+        guard
+            let seconds = scanner.clock() ?? scanner.units()
+                ?? scanner.plainMinutes(allowed: hasKeyword || plainNumberIsMinutes)
         else { return nil }
         guard scanner.isAtEnd || scanner.skipSpaces() else { return nil }
         guard seconds > 0, seconds <= Double(maximumSeconds) else { return nil }
@@ -28,7 +30,9 @@ enum TimerDuration {
     /// With Farsi and Arabic digits as ASCII, so `۲۵ دقیقه` reads like `25 دقیقه`.
     private static func normalized(_ input: String) -> String {
         let digits = input.map { character -> Character in
-            guard let scalar = character.unicodeScalars.first, character.unicodeScalars.count == 1 else { return character }
+            guard let scalar = character.unicodeScalars.first, character.unicodeScalars.count == 1 else {
+                return character
+            }
             switch scalar.value {
             case 0x06F0...0x06F9: return Character(String(scalar.value - 0x06F0))
             case 0x0660...0x0669: return Character(String(scalar.value - 0x0660))
@@ -173,7 +177,8 @@ enum TimerDuration {
             let start = index
             guard integer() != nil else { return nil }
             if index < characters.count, characters[index] == ".", index + 1 < characters.count,
-               characters[index + 1].isASCIIDigit {
+                characters[index + 1].isASCIIDigit
+            {
                 index += 1
                 _ = integer()
             }
@@ -182,8 +187,8 @@ enum TimerDuration {
     }
 }
 
-private extension Character {
-    var isASCIIDigit: Bool {
+extension Character {
+    fileprivate var isASCIIDigit: Bool {
         ("0"..."9").contains(self)
     }
 }

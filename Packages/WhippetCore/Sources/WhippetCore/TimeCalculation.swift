@@ -29,7 +29,9 @@ public enum TimeCalculation {
 
     public static func calculate(_ input: String, context: Context = Context()) -> Calculation? {
         let text = input.trimmingCharacters(in: .whitespaces)
-        guard text.count <= maximumLength, text.first?.isLetter == true || text.first?.isNumber == true else { return nil }
+        guard text.count <= maximumLength, text.first?.isLetter == true || text.first?.isNumber == true else {
+            return nil
+        }
         return interval(text, context) ?? dateArithmetic(text, context) ?? zoneConversion(text, context)
     }
 
@@ -39,7 +41,9 @@ public enum TimeCalculation {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard text.count <= maximumLength else { return false }
         if text.contains(/^(?i:time|now)\s+(?i:in|to)(?:\s|$)/) || text.contains(intervalStart) { return true }
-        if let sign = text.firstMatch(of: /\s[+-]/), startDate(in: String(text[..<sign.range.lowerBound]), Context()) != nil {
+        if let sign = text.firstMatch(of: /\s[+-]/),
+            startDate(in: String(text[..<sign.range.lowerBound]), Context()) != nil
+        {
             return true
         }
         return UnitConversion.splits(text).contains { moment(in: $0.0, Context()) != nil }
@@ -51,9 +55,11 @@ public enum TimeCalculation {
     /// `tomorrow 9am + 2 h 30 min`. Amounts without a sign take the one before, so `+ 2 h 30 min` adds both.
     private static func dateArithmetic(_ text: String, _ context: Context) -> Calculation? {
         // The first sign with a number after it, since a date such as `2026-12-25` has its own.
-        guard let start = text.firstMatch(of: /\s[+-]\s*\d/), let (date, hasDateTime) = startDate(
-            in: String(text[..<start.range.lowerBound]), context
-        ) else { return nil }
+        guard let start = text.firstMatch(of: /\s[+-]\s*\d/),
+            let (date, hasDateTime) = startDate(
+                in: String(text[..<start.range.lowerBound]), context
+            )
+        else { return nil }
 
         let calendar = context.calendar
         let steps = text[start.range.lowerBound...]
@@ -72,14 +78,16 @@ public enum TimeCalculation {
                 addsTime = true
             } else {
                 // Days, weeks, months and years follow the calendar, so they're whole.
-                guard amount == amount.rounded(), let added = calendar.date(byAdding: unit.component, value: Int(signed), to: result)
+                guard amount == amount.rounded(),
+                    let added = calendar.date(byAdding: unit.component, value: Int(signed), to: result)
                 else { return nil }
                 result = added
             }
         }
 
         let showsTime = hasDateTime || addsTime
-        func style(_ width: Date.FormatStyle.Symbol.Weekday, _ month: Date.FormatStyle.Symbol.Month) -> Date.FormatStyle {
+        func style(_ width: Date.FormatStyle.Symbol.Weekday, _ month: Date.FormatStyle.Symbol.Month) -> Date.FormatStyle
+        {
             let style = Date.FormatStyle(locale: context.locale, calendar: calendar, timeZone: context.timeZone)
                 .weekday(width).day().month(month).year()
             return showsTime ? style.hour().minute() : style
@@ -179,7 +187,8 @@ public enum TimeCalculation {
             input: target.formatted(style),
             output: output,
             outputLong: long,
-            kind: isSince ? String(localized: "Time Since", bundle: .module) : String(localized: "Time Until", bundle: .module),
+            kind: isSince
+                ? String(localized: "Time Since", bundle: .module) : String(localized: "Time Until", bundle: .module),
             answer: answer
         )
         return Calculation(tokens: [], value: value, isRPN: false, conversion: conversion)
@@ -229,7 +238,8 @@ public enum TimeCalculation {
         // The detector reads a clock time in the system's time zone, so it's read again as the same clock time in the
         // context's, unless the text names a zone.
         if match.timeZone == nil {
-            let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+            let components = Calendar.current.dateComponents(
+                [.year, .month, .day, .hour, .minute, .second], from: date)
             date = calendar.date(from: components) ?? date
         }
         let hasTime = text.contains(/\d\s*(?i:[ap]\.?m)|\d:\d\d/)
@@ -269,14 +279,16 @@ public enum TimeCalculation {
             sourceCalendar.timeZone = source
             var targetCalendar = context.calendar
             targetCalendar.timeZone = target
-            let isSameDay = sourceCalendar.dateComponents([.year, .month, .day], from: date)
+            let isSameDay =
+                sourceCalendar.dateComponents([.year, .month, .day], from: date)
                 == targetCalendar.dateComponents([.year, .month, .day], from: date)
 
             let output = date.formatted(isSameDay ? targetStyle.hour().minute() : targetStyle.weekday().hour().minute())
             let conversion = Conversion(
                 input: date.formatted(sourceStyle.hour().minute()),
                 output: output,
-                outputLong: "\(date.formatted(targetStyle.weekday(.wide).day().month(.wide))) · \(name(of: target, context))",
+                outputLong:
+                    "\(date.formatted(targetStyle.weekday(.wide).day().month(.wide))) · \(name(of: target, context))",
                 kind: name(of: source, context),
                 answer: output
             )
@@ -290,7 +302,9 @@ public enum TimeCalculation {
         if ["time", "now"].contains(text.lowercased()) { return (context.now, context.timeZone) }
         if let date = today(at: text, in: context.timeZone, context) { return (date, context.timeZone) }
         for space in text.indices where text[space] == " " {
-            if let zone = zone(named: String(text[space...])), let date = today(at: String(text[..<space]), in: zone, context) {
+            if let zone = zone(named: String(text[space...])),
+                let date = today(at: String(text[..<space]), in: zone, context)
+            {
                 return (date, zone)
             }
         }
@@ -371,7 +385,9 @@ public enum TimeCalculation {
         func add(_ keys: [String], _ identifier: String) {
             for key in keys { aliases[key] = identifier }
         }
-        add(["nyc", "new york city", "boston", "washington", "dc", "miami", "atlanta", "philadelphia"], "America/New_York")
+        add(
+            ["nyc", "new york city", "boston", "washington", "dc", "miami", "atlanta", "philadelphia"],
+            "America/New_York")
         add(["sf", "san francisco", "la", "seattle", "portland", "san diego", "california"], "America/Los_Angeles")
         add(["austin", "dallas", "houston", "texas"], "America/Chicago")
         add(["hawaii"], "Pacific/Honolulu")

@@ -9,9 +9,9 @@ import WhippetCore
 extension ClipboardStore {
     /// Development builds keep their own history, sync state and key, which belong to CloudKit's Development environment.
     #if DEBUG
-    static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet Dev")
+        static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet Dev")
     #else
-    static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet")
+        static let defaultDirectory = URL.applicationSupportDirectory.appending(path: "Whippet")
     #endif
 }
 
@@ -27,7 +27,9 @@ final class ClipboardHistory {
     /// Called with the iCloud record name of every synced item deleted on this Mac.
     @ObservationIgnored var onLocalDelete: (String) -> Void = { _ in }
     /// How long unpinned items are kept; shortening it removes older items right away.
-    var retention = ClipboardRetention(rawValue: UserDefaults.standard.string(forKey: "clipboardRetention") ?? "") ?? .forever {
+    var retention =
+        ClipboardRetention(rawValue: UserDefaults.standard.string(forKey: "clipboardRetention") ?? "") ?? .forever
+    {
         didSet {
             UserDefaults.standard.set(retention.rawValue, forKey: "clipboardRetention")
             pruneExpiredItems()
@@ -47,7 +49,8 @@ final class ClipboardHistory {
 
     @ObservationIgnored private var lastChangeCount = NSPasteboard.general.changeCount
     /// Hashing, PNG encoding and database writes run here, in copy order, so the main thread never waits on them.
-    @ObservationIgnored private let recordingQueue = DispatchQueue(label: "codes.dibble.whippet.clipboard", qos: .userInitiated)
+    @ObservationIgnored private let recordingQueue = DispatchQueue(
+        label: "codes.dibble.whippet.clipboard", qos: .userInitiated)
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var isRecognizing = false
     @ObservationIgnored private var isFetchingPreviews = false
@@ -252,7 +255,9 @@ final class ClipboardHistory {
 
     func recordCalculation(expression: String, answer: String, isRPN: Bool) {
         do {
-            if let syncItem = try store?.recordCalculation(expression: expression, answer: answer, mode: isRPN ? "rpn" : "standard") {
+            if let syncItem = try store?.recordCalculation(
+                expression: expression, answer: answer, mode: isRPN ? "rpn" : "standard")
+            {
                 onLocalChange(syncItem)
             }
             revision += 1
@@ -282,7 +287,8 @@ final class ClipboardHistory {
 
         // The pasteboard is read here; the slow work happens on the recording queue. Files come before text, which Finder
         // fills with their names as shown, without any hidden extension.
-        let files = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        let files =
+            pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
         if !files.isEmpty {
             // A photo's file in the Photos library has an internal name, and isn't something to paste into Finder.
             let isFromPhotos = pasteboard.types?.contains(Self.photosAssetType) == true
@@ -341,11 +347,12 @@ final class ClipboardHistory {
             let width = properties[kCGImagePropertyPixelWidth] as? Int,
             let height = properties[kCGImagePropertyPixelHeight] as? Int
         else { return nil }
-        let options = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: max(width, height),
-        ] as CFDictionary
+        let options =
+            [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: max(width, height),
+            ] as CFDictionary
         guard
             let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options),
             let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
@@ -353,7 +360,8 @@ final class ClipboardHistory {
         return (png, image.width, image.height, type)
     }
 
-    private func record(recognizesText: Bool = false, _ save: @escaping @Sendable (ClipboardStore) throws -> SyncItem?) {
+    private func record(recognizesText: Bool = false, _ save: @escaping @Sendable (ClipboardStore) throws -> SyncItem?)
+    {
         guard let store else { return }
         let cutoff = retention.cutoff(from: .now)
         recordingQueue.async { [weak self] in
@@ -408,7 +416,9 @@ final class ClipboardHistory {
         guard fetchesLinkPreviews, isOnline, !isFetchingPreviews, let store else { return }
         isFetchingPreviews = true
         Task {
-            while fetchesLinkPreviews, isOnline, let pending = try? store.nextLinkAwaitingPreview(skippingHosts: activePauses) {
+            while fetchesLinkPreviews, isOnline,
+                let pending = try? store.nextLinkAwaitingPreview(skippingHosts: activePauses)
+            {
                 let fetched = await Self.fetchPreview(of: pending.url)
                 // Gone offline mid-fetch: the link waits until the Mac is back online.
                 guard isOnline else { break }
@@ -418,10 +428,13 @@ final class ClipboardHistory {
                 }
                 // A link without a host can't be paused, so a rate limit counts as a failed fetch.
                 guard case .fetched(let preview) = fetched else {
-                    guard (try? store.setLinkPreview(title: "", imagePNG: nil, hash: pending.hash)) != nil else { break }
+                    guard (try? store.setLinkPreview(title: "", imagePNG: nil, hash: pending.hash)) != nil else {
+                        break
+                    }
                     continue
                 }
-                guard (try? store.setLinkPreview(title: preview.title, imagePNG: preview.png, hash: pending.hash)) != nil
+                guard
+                    (try? store.setLinkPreview(title: preview.title, imagePNG: preview.png, hash: pending.hash)) != nil
                 else { break }
                 revision += 1
                 if preview.png != nil {
@@ -486,11 +499,12 @@ final class ClipboardHistory {
     }
 
     nonisolated private static func downscaledPNG(_ data: Data) -> Data? {
-        let options = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: previewMaxPixelSize,
-        ] as CFDictionary
+        let options =
+            [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: previewMaxPixelSize,
+            ] as CFDictionary
         guard
             let source = CGImageSourceCreateWithData(data as CFData, nil),
             let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options)

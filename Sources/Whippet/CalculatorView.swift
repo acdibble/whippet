@@ -8,9 +8,18 @@ struct CalculatorResults: View {
 
     var body: some View {
         let rows = Array(results.enumerated()).map { (index: $0.offset, result: $0.element) }
-        let current = rows.first { if case .calculation = $0.result { return true }; return false }
-        let history = rows.filter { if case .pastCalculation = $0.result { return true }; return false }
-        let numbers = rows.filter { if case .clipboard = $0.result { return true }; return false }
+        let current = rows.first {
+            if case .calculation = $0.result { return true }
+            return false
+        }
+        let history = rows.filter {
+            if case .pastCalculation = $0.result { return true }
+            return false
+        }
+        let numbers = rows.filter {
+            if case .clipboard = $0.result { return true }
+            return false
+        }
 
         ScrollViewReader { proxy in
             ScrollView {
@@ -78,7 +87,9 @@ struct CalculationCard: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            side(Text(calculation.conversion.map { AttributedString($0.input.leftToRightIsolated) } ?? expression), label: calculation.operationName)
+            side(
+                Text(calculation.conversion.map { AttributedString($0.input.leftToRightIsolated) } ?? expression),
+                label: calculation.operationName)
             VStack(spacing: 8) {
                 Rectangle().fill(Color.primary.opacity(0.1)).frame(width: 1)
                 Image(systemName: "arrow.right")
@@ -153,4 +164,3 @@ struct CalculationCard: View {
         }
     }
 }
-

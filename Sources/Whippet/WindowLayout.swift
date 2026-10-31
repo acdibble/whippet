@@ -77,7 +77,9 @@ enum WindowLayout {
         case .maximize: frame = screen
         case .center:
             let size = CGSize(width: min(window.width, screen.width), height: min(window.height, screen.height))
-            frame = CGRect(x: screen.midX - size.width / 2, y: screen.midY - size.height / 2, width: size.width, height: size.height)
+            frame = CGRect(
+                x: screen.midX - size.width / 2, y: screen.midY - size.height / 2, width: size.width,
+                height: size.height)
         case .nextDisplay:
             guard let nextScreen else { return nil }
             frame = moved(window, from: screen, to: nextScreen)
@@ -89,22 +91,29 @@ enum WindowLayout {
 
     /// Edges on whole points, rounded rather than pushed outwards, so thirds don't gain a point from rounding errors.
     private static func rounded(_ rect: CGRect) -> CGRect {
-        let minX = rect.minX.rounded(), minY = rect.minY.rounded()
+        let minX = rect.minX.rounded()
+        let minY = rect.minY.rounded()
         return CGRect(x: minX, y: minY, width: rect.maxX.rounded() - minX, height: rect.maxY.rounded() - minY)
     }
 
     /// Part of the screen, measured from the left, or from the top when vertical.
     private static func slice(_ screen: CGRect, from start: CGFloat, to end: CGFloat, vertical: Bool) -> CGRect {
         if vertical {
-            return CGRect(x: screen.minX, y: screen.maxY - screen.height * end, width: screen.width, height: screen.height * (end - start))
+            return CGRect(
+                x: screen.minX, y: screen.maxY - screen.height * end, width: screen.width,
+                height: screen.height * (end - start))
         }
-        return CGRect(x: screen.minX + screen.width * start, y: screen.minY, width: screen.width * (end - start), height: screen.height)
+        return CGRect(
+            x: screen.minX + screen.width * start, y: screen.minY, width: screen.width * (end - start),
+            height: screen.height)
     }
 
     /// The window in the same place relative to the other screen, scaled to its size and kept on it.
     private static func moved(_ window: CGRect, from screen: CGRect, to next: CGRect) -> CGRect {
-        let scaleX = next.width / screen.width, scaleY = next.height / screen.height
-        let width = min(window.width * scaleX, next.width), height = min(window.height * scaleY, next.height)
+        let scaleX = next.width / screen.width
+        let scaleY = next.height / screen.height
+        let width = min(window.width * scaleX, next.width)
+        let height = min(window.height * scaleY, next.height)
         let x = next.minX + (window.minX - screen.minX) * scaleX
         let y = next.minY + (window.minY - screen.minY) * scaleY
         return CGRect(
@@ -131,7 +140,9 @@ enum WindowLayout {
     /// The next screen from left to right, back to the first after the last.
     static func nextScreenIndex(after index: Int, in screens: [CGRect]) -> Int? {
         guard screens.count > 1 else { return nil }
-        let order = screens.indices.sorted { (screens[$0].minX, screens[$0].minY) < (screens[$1].minX, screens[$1].minY) }
+        let order = screens.indices.sorted {
+            (screens[$0].minX, screens[$0].minY) < (screens[$1].minX, screens[$1].minY)
+        }
         guard let position = order.firstIndex(of: index) else { return nil }
         return order[(position + 1) % order.count]
     }

@@ -21,12 +21,13 @@ enum Thumbnail {
             return image
         }
         return await Task.detached(priority: .userInitiated) {
-            let options = [
-                kCGImageSourceCreateThumbnailFromImageAlways: true,
-                kCGImageSourceCreateThumbnailWithTransform: true,
-                kCGImageSourceShouldCacheImmediately: true,
-                kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
-            ] as CFDictionary
+            let options =
+                [
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceCreateThumbnailWithTransform: true,
+                    kCGImageSourceShouldCacheImmediately: true,
+                    kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+                ] as CFDictionary
             guard
                 let source = CGImageSourceCreateWithURL(url as CFURL, nil),
                 let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options)

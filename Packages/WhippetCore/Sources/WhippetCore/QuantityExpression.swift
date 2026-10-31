@@ -93,8 +93,9 @@ public enum QuantityExpression {
         for case .unit(let text) in tokens {
             let readings = readings(named: text)
             guard !readings.isEmpty else { return [] }
-            combinations = Array(combinations.flatMap { combination in readings.map { combination + [$0] } }
-                .prefix(maximumCombinations))
+            combinations = Array(
+                combinations.flatMap { combination in readings.map { combination + [$0] } }
+                    .prefix(maximumCombinations))
         }
         return combinations.compactMap { readings in
             var parser = Parser(tokens: tokens, readings: readings)
@@ -123,7 +124,8 @@ public enum QuantityExpression {
         guard let left = lhs.reading, let right = rhs.reading else {
             switch operation {
             case "+", "-", "*":
-                return Quantity(value: Calculator.apply(operation, lhs.value, rhs.value), reading: lhs.reading ?? rhs.reading)
+                return Quantity(
+                    value: Calculator.apply(operation, lhs.value, rhs.value), reading: lhs.reading ?? rhs.reading)
             case "/" where rhs.reading == nil, "%" where rhs.reading == nil:
                 return Quantity(value: Calculator.apply(operation, lhs.value, rhs.value), reading: lhs.reading)
             case "/":
@@ -161,10 +163,13 @@ public enum QuantityExpression {
     }
 
     private static func product(_ lhs: Quantity, _ rhs: Quantity) -> Quantity? {
-        guard let left = lhs.reading, let right = rhs.reading, left.counted == nil || right.counted == nil else { return nil }
+        guard let left = lhs.reading, let right = rhs.reading, left.counted == nil || right.counted == nil else {
+            return nil
+        }
         let counted = left.counted ?? right.counted
         let product = simplified(
-            PhysicalMeasurement(value: lhs.value, unit: left.unit) * PhysicalMeasurement(value: rhs.value, unit: right.unit),
+            PhysicalMeasurement(value: lhs.value, unit: left.unit)
+                * PhysicalMeasurement(value: rhs.value, unit: right.unit),
             like: [left, right]
         )
         // Counting can only lose its rate, as in `20 items/s * 1 h`.
@@ -179,12 +184,15 @@ public enum QuantityExpression {
         // A rate of something counted can't be divided again, as in `20 items/s / 2 s`.
         guard left.counted == nil || left.per == nil else { return nil }
         let unit = left.unit / right.unit
-        guard let quotient = simplified(
-            PhysicalMeasurement(value: lhs.value / rhs.value, unit: unit),
-            like: [left, right]
-        ) else { return nil }
+        guard
+            let quotient = simplified(
+                PhysicalMeasurement(value: lhs.value / rhs.value, unit: unit),
+                like: [left, right]
+            )
+        else { return nil }
         // What it's per, so a target can name only that, unless it cancelled out, as in `6 m2 / 2 m`.
-        let isRate = left.per == nil && right.per == nil
+        let isRate =
+            left.per == nil && right.per == nil
             && right.unit.dimension.keys.allSatisfy { (quotient.unit.dimension[$0] ?? 0) < 0 }
         return Quantity(
             value: quotient.value,
@@ -208,7 +216,8 @@ public enum QuantityExpression {
         like readings: [UnitConversion.Reading]
     ) -> PhysicalMeasurement? {
         let units = readings.flatMap { reading in [reading.unit] + (reading.per.map { [reading.unit * $0] } ?? []) }
-        let target = measurement.unit.dimension.isEmpty
+        let target =
+            measurement.unit.dimension.isEmpty
             ? PhysicalUnit.none
             : units.first { $0 != measurement.unit && $0.isDimensionallyEquivalent(to: measurement.unit) }
         guard let target else { return measurement }
@@ -291,7 +300,8 @@ private struct Parser {
     private mutating func amounts() -> Quantity? {
         guard var total = amount() else { return nil }
         while total.reading != nil, case .number? = next, tokens.indices.contains(position + 1),
-              case .unit = tokens[position + 1] {
+            case .unit = tokens[position + 1]
+        {
             guard let more = amount(), let sum = QuantityExpression.apply("+", total, more) else { return nil }
             total = sum
         }

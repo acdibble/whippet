@@ -20,7 +20,8 @@ struct UsagePane: View {
                 }
 
                 Section("App") {
-                    LabeledContent("Memory", value: Self.memoryFootprint().map(Self.bytes) ?? String(localized: "Unknown"))
+                    LabeledContent(
+                        "Memory", value: Self.memoryFootprint().map(Self.bytes) ?? String(localized: "Unknown"))
                     LabeledContent("Data Folder") {
                         Button("Show in Finder") {
                             NSWorkspace.shared.activateFileViewerSelecting([usage.directory])

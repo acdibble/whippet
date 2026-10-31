@@ -53,7 +53,8 @@ final class Quicklinks {
 
     /// The icon of the app that opens the link.
     static func icon(for quicklink: Quicklink) -> NSImage? {
-        let appURL = quicklink.appBundleID.flatMap { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) }
+        let appURL =
+            quicklink.appBundleID.flatMap { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) }
             ?? QuicklinkTemplate.url(quicklink.template).flatMap { NSWorkspace.shared.urlForApplication(toOpen: $0) }
         return appURL.map { NSWorkspace.shared.icon(forFile: $0.path) }
     }
@@ -63,7 +64,8 @@ final class Quicklinks {
     static func open(_ quicklink: Quicklink, argument: String = "") -> Bool {
         guard let url = QuicklinkTemplate.url(quicklink.template, argument: argument) else { return false }
         if let bundleID = quicklink.appBundleID,
-           let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
+        {
             NSWorkspace.shared.open([url], withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration())
         } else {
             NSWorkspace.shared.open(url)

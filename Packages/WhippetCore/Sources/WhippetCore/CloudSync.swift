@@ -82,7 +82,9 @@ public final class CloudSync {
         case .failed(let message): return message
         case .upToDate:
             guard let lastSyncedAt else { return String(localized: "Up to date", bundle: .module) }
-            return String(localized: "Up to date, last synced \(lastSyncedAt.formatted(.relative(presentation: .named)))", bundle: .module)
+            return String(
+                localized: "Up to date, last synced \(lastSyncedAt.formatted(.relative(presentation: .named)))",
+                bundle: .module)
         }
     }
 
@@ -131,7 +133,8 @@ public final class CloudSync {
         do {
             var moreComing = true
             while moreComing {
-                let changes = try await container.privateCloudDatabase.recordZoneChanges(inZoneWith: Self.zoneID, since: changeToken)
+                let changes = try await container.privateCloudDatabase.recordZoneChanges(
+                    inZoneWith: Self.zoneID, since: changeToken)
                 // Sync may have stopped or restarted meanwhile, which owns the status now.
                 guard self.engine === engine else { return }
                 for case .success(let modification) in changes.modificationResultsByID.values
@@ -172,7 +175,8 @@ public final class CloudSync {
 
     private func start() {
         guard let store else {
-            status = .unavailable(String(localized: "History could not be opened, so there is nothing to sync.", bundle: .module))
+            status = .unavailable(
+                String(localized: "History could not be opened, so there is nothing to sync.", bundle: .module))
             return
         }
         status = .checkingAccount
@@ -277,7 +281,8 @@ public final class CloudSync {
             return secret
         }
         let database = container.privateCloudDatabase
-        let (zoneResults, _) = try await database.modifyRecordZones(saving: [CKRecordZone(zoneID: Self.zoneID)], deleting: [])
+        let (zoneResults, _) = try await database.modifyRecordZones(
+            saving: [CKRecordZone(zoneID: Self.zoneID)], deleting: [])
         _ = try zoneResults[Self.zoneID]?.get()
 
         let secret: Data
@@ -294,7 +299,8 @@ public final class CloudSync {
         let secret = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
         let record = CKRecord(recordType: Self.keyType, recordID: Self.keyRecordID)
         record.encryptedValues["secret"] = secret
-        let (saveResults, _) = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .ifServerRecordUnchanged)
+        let (saveResults, _) = try await database.modifyRecords(
+            saving: [record], deleting: [], savePolicy: .ifServerRecordUnchanged)
         do {
             _ = try saveResults[Self.keyRecordID]?.get()
             return secret
@@ -417,12 +423,16 @@ public final class CloudSync {
         switch record.recordType {
         case Self.clipboardType:
             // The hash names the image file, so anything else is rejected.
-            guard let hash = values["contentHash"] as? String, hash.count == 64, hash.allSatisfy(\.isHexDigit) else { return }
+            guard let hash = values["contentHash"] as? String, hash.count == 64, hash.allSatisfy(\.isHexDigit) else {
+                return
+            }
             let kind = (values["kind"] as? String).flatMap(ClipboardKind.init(rawValue:)) ?? .text
             if kind == .image, !includesImages { return }
             // Files are never uploaded, so one can only come from a broken or newer record.
             if kind == .file { return }
-            let imageFile = kind == .image ? saveImage(record["image"] as? CKAsset, hash: hash, key: keys.images, store: store) : nil
+            let imageFile =
+                kind == .image
+                ? saveImage(record["image"] as? CKAsset, hash: hash, key: keys.images, store: store) : nil
             // An image whose file couldn't be saved can't be stored, so it waits until the record changes again.
             if kind == .image, imageFile == nil { return }
             item = .clipboard(contentHash: hash)
@@ -501,7 +511,8 @@ public final class CloudSync {
         guard
             let png = try? Data(contentsOf: source),
             let sealed = try? AES.GCM.seal(png, using: key).combined,
-            (try? FileManager.default.createDirectory(at: Self.uploadsDirectory, withIntermediateDirectories: true)) != nil
+            (try? FileManager.default.createDirectory(at: Self.uploadsDirectory, withIntermediateDirectories: true))
+                != nil
         else { return nil }
         let upload = Self.uploadsDirectory.appending(path: recordName)
         guard (try? sealed.write(to: upload, options: .atomic)) != nil else { return nil }
@@ -531,7 +542,9 @@ public final class CloudSync {
         return fileName
     }
 
-    private func handleFailedSave(_ failure: CKSyncEngine.Event.SentRecordZoneChanges.FailedRecordSave, engine: CKSyncEngine) {
+    private func handleFailedSave(
+        _ failure: CKSyncEngine.Event.SentRecordZoneChanges.FailedRecordSave, engine: CKSyncEngine
+    ) {
         let recordID = failure.record.recordID
         switch failure.error.code {
         case .serverRecordChanged:
@@ -546,7 +559,8 @@ public final class CloudSync {
         case .unknownItem:
             try? store?.forgetSyncState(recordName: recordID.recordName)
             engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
-        case .networkFailure, .networkUnavailable, .zoneBusy, .serviceUnavailable, .requestRateLimited, .notAuthenticated:
+        case .networkFailure, .networkUnavailable, .zoneBusy, .serviceUnavailable, .requestRateLimited,
+            .notAuthenticated:
             break
         default:
             status = .failed(failure.error.localizedDescription)
@@ -579,16 +593,24 @@ extension CloudSync: CKSyncEngineDelegate {
                 isEnabled = false
             }
         case .fetchedRecordZoneChanges(let changes):
-            changes.modifications.forEach { merge($0.record) }
-            changes.deletions.forEach { try? store?.deleteRecord(named: $0.recordID.recordName) }
+            for modification in changes.modifications {
+                merge(modification.record)
+            }
+            for deletion in changes.deletions {
+                try? store?.deleteRecord(named: deletion.recordID.recordName)
+            }
             onRemoteChanges()
         case .sentRecordZoneChanges(let sent):
             for record in sent.savedRecords {
                 try? store?.markSynced(recordName: record.recordID.recordName, systemFields: record.encodedSystemFields)
                 Self.removeUpload(for: record.recordID)
             }
-            sent.failedRecordSaves.forEach { Self.removeUpload(for: $0.record.recordID) }
-            sent.failedRecordSaves.forEach { handleFailedSave($0, engine: syncEngine) }
+            for failure in sent.failedRecordSaves {
+                Self.removeUpload(for: failure.record.recordID)
+            }
+            for failure in sent.failedRecordSaves {
+                handleFailedSave(failure, engine: syncEngine)
+            }
             // A record that's already gone counts as deleted.
             let alreadyGone = sent.failedRecordDeletes.filter { $0.value.code == .unknownItem }.keys
             try? store?.forgetDeletions((sent.deletedRecordIDs + alreadyGone).map(\.recordName))
@@ -615,8 +637,8 @@ extension CloudSync: CKSyncEngineDelegate {
     }
 }
 
-private extension CKRecord {
-    var encodedSystemFields: Data {
+extension CKRecord {
+    fileprivate var encodedSystemFields: Data {
         let coder = NSKeyedArchiver(requiringSecureCoding: true)
         encodeSystemFields(with: coder)
         coder.finishEncoding()

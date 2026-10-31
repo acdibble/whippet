@@ -1,7 +1,7 @@
 import AppKit
 import CryptoKit
-import ServiceManagement
 import KeyboardShortcuts
+import ServiceManagement
 import SwiftUI
 import WhippetCore
 
@@ -141,9 +141,9 @@ struct SettingsView: View {
             return canReadFeedback
         case .developer:
             #if DEBUG
-            return true
+                return true
             #else
-            return hasAdminRole
+                return hasAdminRole
             #endif
         default:
             return true
@@ -223,7 +223,9 @@ private struct GeneralPane: View {
                     }
                 } label: {
                     Text("Paste and Move Windows")
-                    Text("Needs Accessibility permission to send ⌘V and move other apps' windows; without it, Return only copies")
+                    Text(
+                        "Needs Accessibility permission to send ⌘V and move other apps' windows; without it, Return only copies"
+                    )
                 }
             }
 
@@ -279,7 +281,11 @@ private struct ShortcutsPane: View {
                 Section("Window") {
                     ForEach(windowCommands) { command in
                         KeyboardShortcuts.Recorder(for: command.shortcutName) {
-                            Label { Text(command.title) } icon: { command.image }
+                            Label {
+                                Text(command.title)
+                            } icon: {
+                                command.image
+                            }
                         }
                     }
                 }
@@ -339,9 +345,11 @@ private struct CloudSyncPane: View {
                 }
                 .disabled(!cloudSync.isEnabled)
             } footer: {
-                Text("Everything that syncs is end-to-end encrypted, images included. Apple can see only how many items there are, their sizes and when they changed.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Everything that syncs is end-to-end encrypted, images included. Apple can see only how many items there are, their sizes and when they changed."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             Section("Status") {
@@ -394,9 +402,11 @@ private struct DeveloperPane: View {
                     }
                 }
             } footer: {
-                Text("The CloudKit user record for the Apple Account signed into iCloud on this Mac. Give it a role, such as Admin, in the CloudKit Console.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "The CloudKit user record for the Apple Account signed into iCloud on this Mac. Give it a role, such as Admin, in the CloudKit Console."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             FeedbackKeySection()
@@ -423,7 +433,9 @@ private struct FeedbackKeySection: View {
                             .textSelection(.enabled)
                             .lineLimit(1)
                             .truncationMode(.middle)
-                        Button("Copy") { copy(storedKey.publicKey.rawRepresentation.base64EncodedString(), concealed: false) }
+                        Button("Copy") {
+                            copy(storedKey.publicKey.rawRepresentation.base64EncodedString(), concealed: false)
+                        }
                     }
                 }
             }
@@ -434,15 +446,19 @@ private struct FeedbackKeySection: View {
                 Button("Import Key…") { isImporting = true }
                 Spacer()
                 if let storedKey {
-                    Button("Copy Private Key") { copy(storedKey.rawRepresentation.base64EncodedString(), concealed: true) }
+                    Button("Copy Private Key") {
+                        copy(storedKey.rawRepresentation.base64EncodedString(), concealed: true)
+                    }
                 }
             }
         } header: {
             Text("Feedback")
         } footer: {
-            Text("Feedback is sealed to this key. Its public key goes in WhippetFeedbackPublicKey in project.yml. The private key syncs through iCloud Keychain; back it up too, since feedback sealed to a lost key can't be read.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Text(
+                "Feedback is sealed to this key. Its public key goes in WhippetFeedbackPublicKey in project.yml. The private key syncs through iCloud Keychain; back it up too, since feedback sealed to a lost key can't be read."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
         .confirmationDialog("Replace the feedback key?", isPresented: $isConfirmingCreate) {
             Button("Replace Key", role: .destructive, action: create)
@@ -506,7 +522,9 @@ private struct AboutPane: View {
         Form {
             Section {
                 LabeledContent("Developer", value: "Dibble Codes")
-                LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
+                LabeledContent(
+                    "Version",
+                    value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
                 LabeledContent("Data Folder") {
                     Button("Show in Finder") {
                         NSWorkspace.shared.activateFileViewerSelecting([ClipboardStore.defaultDirectory])
@@ -570,11 +588,12 @@ enum AppAppearance: String, CaseIterable, Identifiable {
     @MainActor
     func apply() {
         UserDefaults.standard.set(rawValue, forKey: "appearance")
-        NSApp.appearance = switch self {
-        case .system: nil
-        case .light: NSAppearance(named: .aqua)
-        case .dark: NSAppearance(named: .darkAqua)
-        }
+        NSApp.appearance =
+            switch self {
+            case .system: nil
+            case .light: NSAppearance(named: .aqua)
+            case .dark: NSAppearance(named: .darkAqua)
+            }
     }
 }
 

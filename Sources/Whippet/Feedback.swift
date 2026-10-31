@@ -13,7 +13,10 @@ final class FeedbackStore {
         /// Nil when the feedback is sealed and this Mac doesn't have the admin key.
         let content: FeedbackContent?
         var id: CKRecord.ID { record.recordID }
-        var message: String { content?.message ?? String(localized: "This feedback is encrypted, and this Mac doesn't have the feedback key.") }
+        var message: String {
+            content?.message
+                ?? String(localized: "This feedback is encrypted, and this Mac doesn't have the feedback key.")
+        }
         var email: String? { content.flatMap { $0.email.isEmpty ? nil : $0.email } }
         var details: String { content?.details ?? "" }
         var sentAt: Date { record.creationDate ?? .distantPast }
@@ -54,7 +57,9 @@ final class FeedbackStore {
     }
 
     /// Every field but the images, which are fetched for one feedback at a time when it's shown.
-    private static let fieldsWithoutImages = ["sealedKey", "sealed", "handled", "message", "email", "details", "attachmentCount"]
+    private static let fieldsWithoutImages = [
+        "sealedKey", "sealed", "handled", "message", "email", "details", "attachmentCount",
+    ]
 
     func send(message: String, email: String, images: [Data]) async throws {
         let content = FeedbackContent(
@@ -139,7 +144,9 @@ final class FeedbackStore {
     func images(of entry: Entry) async throws -> [Data] {
         guard entry.imageCount > 0 else { return [] }
         let results = try await database.records(for: [entry.id], desiredKeys: ["attachments"])
-        guard let record = try results[entry.id]?.get(), let assets = record["attachments"] as? [CKAsset] else { return [] }
+        guard let record = try results[entry.id]?.get(), let assets = record["attachments"] as? [CKAsset] else {
+            return []
+        }
         let privateKey = FeedbackKey.matchingPrivateKey
         return try assets.compactMap { asset in
             guard let url = asset.fileURL else { return nil }
@@ -183,9 +190,9 @@ enum SystemDetails {
 
     private static var architecture: String {
         #if arch(arm64)
-        "Apple silicon"
+            "Apple silicon"
         #else
-        "Intel"
+            "Intel"
         #endif
     }
 }

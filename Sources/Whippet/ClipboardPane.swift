@@ -18,9 +18,11 @@ struct ClipboardPane: View {
                     }
                 }
             } footer: {
-                Text("Pinned items are always kept. With iCloud sync on, removed items are also removed from your other Macs.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Pinned items are always kept. With iCloud sync on, removed items are also removed from your other Macs."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             Section {
@@ -30,9 +32,11 @@ struct ClipboardPane: View {
                 }
                 .toggleStyle(.switch)
             } footer: {
-                Text("Fetching opens the link from this Mac. A single-use link, such as a sign-in or password reset link, may stop working once it's opened.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Fetching opens the link from this Mac. A single-use link, such as a sign-in or password reset link, may stop working once it's opened."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             Section {
@@ -45,9 +49,11 @@ struct ClipboardPane: View {
             } header: {
                 Text("Ignored Apps")
             } footer: {
-                Text("Copies made in these apps aren't saved. Copies that password managers mark as concealed are always skipped.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Copies made in these apps aren't saved. Copies that password managers mark as concealed are always skipped."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             Section {
@@ -56,7 +62,8 @@ struct ClipboardPane: View {
                     ForEach(ClipboardKind.allCases) { kind in
                         LabeledContent(kind.pluralTitle, value: (usage.counts[kind] ?? 0).formatted())
                     }
-                    LabeledContent("Images Awaiting Text Recognition", value: usage.imagesAwaitingRecognition.formatted())
+                    LabeledContent(
+                        "Images Awaiting Text Recognition", value: usage.imagesAwaitingRecognition.formatted())
                     LabeledContent("Calculations", value: usage.calculations.formatted())
                 }
                 LabeledContent("Clear History") {
@@ -65,16 +72,20 @@ struct ClipboardPane: View {
             } header: {
                 Text("History")
             } footer: {
-                Text("Text copies larger than \(Int64(ClipboardHistory.maximumTextBytes).formatted(.byteCount(style: .file))) aren't saved.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Text copies larger than \(Int64(ClipboardHistory.maximumTextBytes).formatted(.byteCount(style: .file))) aren't saved."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .confirmationDialog("Clear clipboard history?", isPresented: $isConfirmingClear) {
             Button("Clear Unpinned Items", role: .destructive) { clipboard.clear(includingPinned: false) }
             Button("Clear All Items", role: .destructive) { clipboard.clear(includingPinned: true) }
         } message: {
-            Text("Items are removed from this Mac, and from your other Macs when iCloud sync is on. Calculations are kept.")
+            Text(
+                "Items are removed from this Mac, and from your other Macs when iCloud sync is on. Calculations are kept."
+            )
         }
         .task(id: clipboard.revision) { usage = clipboard.usage() }
     }

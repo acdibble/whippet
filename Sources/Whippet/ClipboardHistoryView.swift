@@ -89,8 +89,8 @@ private struct ItemList: View {
                                 imageURL: model.imageURL(for: row.item),
                                 isSelected: row.index == model.selection
                             )
-                                .id(row.item.id)
-                                .onTapGesture { model.selection = row.index }
+                            .id(row.item.id)
+                            .onTapGesture { model.selection = row.index }
                         }
                     }
                 }
@@ -229,10 +229,12 @@ private struct ItemDetail: View {
             ]
         } else if item.kind == .file {
             let files = item.fileURLs
-            rows += files.count == 1 ? [InformationRow("Path", files[0].path)] : [InformationRow("Files", files.count.formatted())]
+            rows +=
+                files.count == 1
+                ? [InformationRow("Path", files[0].path)] : [InformationRow("Files", files.count.formatted())]
         } else if item.kind == .link {
             rows += [
-                InformationRow("URL", item.text ?? ""),
+                InformationRow("URL", item.text ?? "")
             ]
         } else {
             let text = item.text ?? ""

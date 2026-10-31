@@ -105,17 +105,17 @@ enum WhippetIcon {
     static let menuBarImage: NSImage = {
         let template = NSImage(resource: .menuBarIcon)
         #if DEBUG
-        // Development builds draw the whippet in construction yellow, to tell them apart from the installed release.
-        let image = NSImage(size: template.size, flipped: false) { rect in
-            template.draw(in: rect)
-            NSColor.systemYellow.set()
-            rect.fill(using: .sourceAtop)
-            return true
-        }
-        image.isTemplate = false
-        return image
+            // Development builds draw the whippet in construction yellow, to tell them apart from the installed release.
+            let image = NSImage(size: template.size, flipped: false) { rect in
+                template.draw(in: rect)
+                NSColor.systemYellow.set()
+                rect.fill(using: .sourceAtop)
+                return true
+            }
+            image.isTemplate = false
+            return image
         #else
-        return template
+            return template
         #endif
     }()
 }

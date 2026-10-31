@@ -64,7 +64,9 @@ final class TimersStatusItem: NSObject, NSMenuDelegate {
         if !timers.ringing.isEmpty {
             main = String(localized: "Done")
         } else if let next = Self.featured(timers.items) {
-            main = next.kind == .stopwatch ? TimerNaming.clock(next.value().rounded(.down)) : TimerNaming.clock(next.value())
+            main =
+                next.kind == .stopwatch
+                ? TimerNaming.clock(next.value().rounded(.down)) : TimerNaming.clock(next.value())
         } else {
             main = ""
         }
@@ -77,7 +79,9 @@ final class TimersStatusItem: NSObject, NSMenuDelegate {
 
     /// The running timer due soonest, then a running stopwatch, then whatever is paused.
     private static func featured(_ items: [TimerItem]) -> TimerItem? {
-        let soonest = items.compactMap { item in item.endsAt.map { (item: item, endsAt: $0) } }.min { $0.endsAt < $1.endsAt }
+        let soonest = items.compactMap { item in item.endsAt.map { (item: item, endsAt: $0) } }.min {
+            $0.endsAt < $1.endsAt
+        }
         return soonest?.item
             ?? items.first { $0.kind == .stopwatch && !$0.isPaused }
             ?? items.first
@@ -124,7 +128,8 @@ final class TimersStatusItem: NSObject, NSMenuDelegate {
         }
         for item in timers.items {
             let entry = NSMenuItem(title: "\(item.name) · \(status(of: item))", action: nil, keyEquivalent: "")
-            entry.image = NSImage(systemSymbolName: item.kind == .timer ? "timer" : "stopwatch", accessibilityDescription: nil)
+            entry.image = NSImage(
+                systemSymbolName: item.kind == .timer ? "timer" : "stopwatch", accessibilityDescription: nil)
             entry.submenu = submenu(actions(for: item))
             menu.addItem(entry)
         }
@@ -132,14 +137,17 @@ final class TimersStatusItem: NSObject, NSMenuDelegate {
             menu.addItem(.separator())
         }
         menu.addItem(action(String(localized: "Start Timer…"), symbol: "timer") { [weak self] in self?.onStartTimer() })
-        menu.addItem(action(String(localized: "Open Timers"), symbol: "list.bullet") { [weak self] in self?.onOpenTimers() })
-        menu.addItem(action(String(localized: "Start Stopwatch"), symbol: "stopwatch") { [weak self] in
-            self?.onStartStopwatch()
-        })
+        menu.addItem(
+            action(String(localized: "Open Timers"), symbol: "list.bullet") { [weak self] in self?.onOpenTimers() })
+        menu.addItem(
+            action(String(localized: "Start Stopwatch"), symbol: "stopwatch") { [weak self] in
+                self?.onStartStopwatch()
+            })
     }
 
     private func status(of item: TimerItem) -> String {
-        let time = item.kind == .timer
+        let time =
+            item.kind == .timer
             ? String(localized: "\(TimerNaming.clock(item.value())) left")
             : TimerNaming.stopwatchClock(item.value())
         return item.isPaused ? String(localized: "Paused · \(time)") : time
@@ -150,30 +158,39 @@ final class TimersStatusItem: NSObject, NSMenuDelegate {
         var items = [
             item.isPaused
                 ? action(String(localized: "Resume"), symbol: "play") { [timers] in timers.togglePause(id) }
-                : action(String(localized: "Pause"), symbol: "pause") { [timers] in timers.togglePause(id) },
+                : action(String(localized: "Pause"), symbol: "pause") { [timers] in timers.togglePause(id) }
         ]
         switch item.kind {
         case .timer:
-            items.append(action(String(localized: "Add 1 Minute"), symbol: "plus") { [timers] in timers.add(60, to: id) })
-            items.append(action(String(localized: "Add 5 Minutes"), symbol: "goforward.5") { [timers] in timers.add(300, to: id) })
-            items.append(action(String(localized: "Restart"), symbol: "arrow.counterclockwise") { [timers] in timers.restart(id) })
+            items.append(
+                action(String(localized: "Add 1 Minute"), symbol: "plus") { [timers] in timers.add(60, to: id) })
+            items.append(
+                action(String(localized: "Add 5 Minutes"), symbol: "goforward.5") { [timers] in timers.add(300, to: id)
+                })
+            items.append(
+                action(String(localized: "Restart"), symbol: "arrow.counterclockwise") { [timers] in timers.restart(id)
+                })
         case .stopwatch:
-            items.insert(action(String(localized: "Open Stopwatch"), symbol: "stopwatch") { [weak self] in
-                self?.onOpenStopwatch(id)
-            }, at: 0)
+            items.insert(
+                action(String(localized: "Open Stopwatch"), symbol: "stopwatch") { [weak self] in
+                    self?.onOpenStopwatch(id)
+                }, at: 0)
             if !item.isPaused {
                 items.append(action(String(localized: "Lap"), symbol: "flag") { [timers] in timers.lap(id) })
             }
-            items.append(action(String(localized: "Reset"), symbol: "arrow.counterclockwise") { [timers] in timers.restart(id) })
-            items.append(action(String(localized: "Copy Elapsed Time"), symbol: "doc.on.doc") { [weak self, timers] in
-                guard let item = timers.item(id) else { return }
-                self?.onCopyTime(item)
-            })
+            items.append(
+                action(String(localized: "Reset"), symbol: "arrow.counterclockwise") { [timers] in timers.restart(id) })
+            items.append(
+                action(String(localized: "Copy Elapsed Time"), symbol: "doc.on.doc") { [weak self, timers] in
+                    guard let item = timers.item(id) else { return }
+                    self?.onCopyTime(item)
+                })
         }
-        items.append(action(String(localized: "Rename…"), symbol: "pencil") { [weak self, timers] in
-            guard let item = timers.item(id) else { return }
-            self?.onRename(item)
-        })
+        items.append(
+            action(String(localized: "Rename…"), symbol: "pencil") { [weak self, timers] in
+                guard let item = timers.item(id) else { return }
+                self?.onRename(item)
+            })
         if !item.laps.isEmpty {
             items.append(.separator())
             for (index, lap) in item.laps.enumerated() {
@@ -188,10 +205,11 @@ final class TimersStatusItem: NSObject, NSMenuDelegate {
             }
         }
         items.append(.separator())
-        items.append(action(
-            item.kind == .timer ? String(localized: "Cancel Timer") : String(localized: "Stop Stopwatch"),
-            symbol: "xmark"
-        ) { [timers] in timers.remove(id) })
+        items.append(
+            action(
+                item.kind == .timer ? String(localized: "Cancel Timer") : String(localized: "Stop Stopwatch"),
+                symbol: "xmark"
+            ) { [timers] in timers.remove(id) })
         return items
     }
 

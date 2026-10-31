@@ -109,7 +109,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .caffeinateFor: String(localized: "Caffeinate for…")
         case .decaffeinate: String(localized: "Decaffeinate")
         case .caffeinateMenuBar(let isShown):
-            isShown ? String(localized: "Hide Caffeinate in Menu Bar") : String(localized: "Show Caffeinate in Menu Bar")
+            isShown
+                ? String(localized: "Hide Caffeinate in Menu Bar") : String(localized: "Show Caffeinate in Menu Bar")
         case .startTimer(let seconds, let name?):
             String(localized: "Start “\(name)” for \(TimerNaming.duration(TimeInterval(seconds)))")
         case .startTimer(let seconds, nil):
@@ -132,11 +133,12 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
         case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog,
-             .shareWhippet, .quit:
+            .shareWhippet, .quit:
             String(localized: "Command")
         case .whatsNew(let release): String(localized: "Changes since \(release.since ?? "")")
         case .release(let release):
-            release.since.map { String(localized: "Changes since \($0)") } ?? release.date?.formatted(date: .abbreviated, time: .omitted) ?? ""
+            release.since.map { String(localized: "Changes since \($0)") } ?? release.date?.formatted(
+                date: .abbreviated, time: .omitted) ?? ""
         case .caffeinate, .caffeinateFor: String(localized: "Keep this Mac awake")
         case .caffeinateMenuBar, .system, .createQuicklink, .searchClipboard: String(localized: "Command")
         case .window: String(localized: "Window")
@@ -223,7 +225,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .shareWhippet: String(localized: "Copy Link")
         case .system: String(localized: "Run Command")
         case .window: String(localized: "Move Window")
-        case .quicklink(let quicklink): quicklink.takesArgument ? String(localized: "Enter Text") : String(localized: "Open Quicklink")
+        case .quicklink(let quicklink):
+            quicklink.takesArgument ? String(localized: "Enter Text") : String(localized: "Open Quicklink")
         case .createQuicklink: String(localized: "Open Command")
         case .searchWithQuicklink: String(localized: "Open Quicklink")
         case .searchClipboard: String(localized: "Search")
@@ -335,7 +338,8 @@ enum ResultAction: CaseIterable {
             switch result {
             case .app: String(localized: "Show in Finder")
             case .changelog: String(localized: "Open in Browser")
-            case .timer: result.isStopwatch ? String(localized: "Copy Elapsed Time") : String(localized: "Copy Time Left")
+            case .timer:
+                result.isStopwatch ? String(localized: "Copy Elapsed Time") : String(localized: "Copy Time Left")
             default: String(localized: "Copy")
             }
         case .addMinute: String(localized: "Add 1 Minute")
@@ -591,7 +595,7 @@ final class LauncherModel {
     /// and ⌃X dismisses it.
     var collapsedWhatsNew: Release? {
         guard mode == .root, query.isEmpty, argumentTarget == nil, !isEnteringDuration, !isExpanded,
-              case .whatsNew(let release)? = results.first
+            case .whatsNew(let release)? = results.first
         else { return nil }
         return release
     }
@@ -665,19 +669,29 @@ final class LauncherModel {
             if looksLikeCalculation(query) {
                 return calculatorResults(nil)
             }
-            let commands: [LauncherResult] = [.calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .changelog, .shareWhippet, .quit]
-                + (isFeedbackAdmin ? [.readFeedback] : [])
-                + [.caffeinate, .caffeinateFor]
-                + (caffeine.isActive ? [.decaffeinate(until: caffeine.untilDescription)] : [])
-                + [.caffeinateMenuBar(isShown: caffeine.showsInMenuBar)]
-                + SystemCommand.allCases.map(LauncherResult.system)
-                + [.createQuicklink, .newTimer, .timersView, .newStopwatch, .stopwatch]
-                + WindowCommand.allCases.map(LauncherResult.window)
+            // Built up in steps, because one long `+` chain takes the type checker too long.
+            var commands: [LauncherResult] = [
+                .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .changelog,
+                .shareWhippet, .quit,
+            ]
+            if isFeedbackAdmin {
+                commands.append(.readFeedback)
+            }
+            commands += [.caffeinate, .caffeinateFor]
+            if caffeine.isActive {
+                commands.append(.decaffeinate(until: caffeine.untilDescription))
+            }
+            commands.append(.caffeinateMenuBar(isShown: caffeine.showsInMenuBar))
+            commands += SystemCommand.allCases.map(LauncherResult.system)
+            commands += [.createQuicklink, .newTimer, .timersView, .newStopwatch, .stopwatch]
+            commands += WindowCommand.allCases.map(LauncherResult.window)
             let timerRows = timers.ringing.map(LauncherResult.ringingTimer) + timers.items.map(LauncherResult.timer)
-            let whatsNewRows = whatsNewSince
+            let whatsNewRows =
+                whatsNewSince
                 .flatMap { Changelog.changes(after: $0, upTo: Self.currentVersion, in: Changelog.shipped) }
                 .map { [LauncherResult.whatsNew($0)] } ?? []
-            let candidates = whatsNewRows + commands
+            let candidates =
+                whatsNewRows + commands
                 + quicklinks.items.map(LauncherResult.quicklink)
                 + timers.presets.map(LauncherResult.timerPreset)
                 + appIndex.apps.map(LauncherResult.app)
@@ -685,8 +699,11 @@ final class LauncherModel {
                 suggestionCount = 0
                 timerRowCount = 0
                 whatsNewRowCount = 0
-                let typedTimer = TimerDuration.parse(query).map { LauncherResult.startTimer(seconds: $0.seconds, name: $0.name) }
-                let ranked = Ranking.rank(timerRows + candidates, query: query, title: \.searchText, frecency: frecency(of:))
+                let typedTimer = TimerDuration.parse(query).map {
+                    LauncherResult.startTimer(seconds: $0.seconds, name: $0.name)
+                }
+                let ranked = Ranking.rank(
+                    timerRows + candidates, query: query, title: \.searchText, frecency: frecency(of:))
                 return (typedTimer.map { [$0] } ?? []) + ranked + textFallbacks
             }
             let others = Array(candidates.dropFirst(whatsNewRows.count))
@@ -709,7 +726,8 @@ final class LauncherModel {
         case .changelog:
             let releases = (shownWhatsNew.map { [$0] } ?? []) + Changelog.shipped
             let words = query.split(whereSeparator: \.isWhitespace)
-            return releases
+            return
+                releases
                 .filter { release in words.allSatisfy { release.searchText.localizedStandardContains($0) } }
                 .map(LauncherResult.release)
         }
@@ -769,7 +787,8 @@ final class LauncherModel {
 
     /// Moves between the calculator columns, returning false when the selection is not in a column so the key can edit the text instead.
     func moveColumn(by offset: Int) -> Bool {
-        guard let layout = calculatorLayout(results), let target = layout.horizontalMove(from: selection, by: offset) else {
+        guard let layout = calculatorLayout(results), let target = layout.horizontalMove(from: selection, by: offset)
+        else {
             return false
         }
         selection = target
@@ -782,8 +801,14 @@ final class LauncherModel {
         return CalculatorLayout(
             card: indices.first { results[$0].isCalculation },
             columns: [
-                indices.filter { if case .pastCalculation = results[$0] { return true }; return false },
-                indices.filter { if case .clipboard = results[$0] { return true }; return false },
+                indices.filter {
+                    if case .pastCalculation = results[$0] { return true }
+                    return false
+                },
+                indices.filter {
+                    if case .clipboard = results[$0] { return true }
+                    return false
+                },
             ]
         )
     }
@@ -1010,7 +1035,9 @@ final class LauncherModel {
         let results = results
         guard results.indices.contains(selection) else { return }
         // Apps are recorded by AppIndex.open, which their hotkeys use too, and a quicklink that takes text when it opens.
-        if !results[selection].isApp, !results[selection].startsQuicklinkArgument, let key = results[selection].launchKey {
+        if !results[selection].isApp, !results[selection].startsQuicklinkArgument,
+            let key = results[selection].launchKey
+        {
             history.record(key)
         }
 
@@ -1063,7 +1090,9 @@ final class LauncherModel {
             caffeine.showsInMenuBar = !isShown
             onDismiss()
             Toast.shared.show(
-                isShown ? String(localized: "Caffeinate hidden from menu bar") : String(localized: "Caffeinate shown in menu bar"),
+                isShown
+                    ? String(localized: "Caffeinate hidden from menu bar")
+                    : String(localized: "Caffeinate shown in menu bar"),
                 symbol: "menubar.rectangle"
             )
         case .decaffeinate:
@@ -1208,7 +1237,9 @@ final class LauncherModel {
 
     func actionTitle(for result: LauncherResult) -> String {
         if isEnteringDuration, case .caffeinateFor = result { return String(localized: "Caffeinate") }
-        if mode == .root, case .timer(let item) = result, item.kind == .timer { return String(localized: "Open Timers") }
+        if mode == .root, case .timer(let item) = result, item.kind == .timer {
+            return String(localized: "Open Timers")
+        }
         guard result.pastes, let name = targetApp?.localizedName else { return result.actionTitle }
         return String(localized: "Paste to \(name)")
     }
@@ -1246,11 +1277,13 @@ final class LauncherModel {
 
     /// Starts "Caffeinate for…" with the typed duration; blank fields count as zero, and a zero or invalid duration beeps.
     func startTimedCaffeinate() {
-        guard let seconds = CaffeineDuration.seconds(
-            hours: durationFields[0],
-            minutes: durationFields[1],
-            seconds: durationFields[2]
-        ) else {
+        guard
+            let seconds = CaffeineDuration.seconds(
+                hours: durationFields[0],
+                minutes: durationFields[1],
+                seconds: durationFields[2]
+            )
+        else {
             NSSound.beep()
             return
         }
@@ -1330,7 +1363,8 @@ final class LauncherModel {
     private var textFallbacks: [LauncherResult] {
         let quicklinkResults = quicklinks.items.filter(\.takesArgument).map(LauncherResult.searchWithQuicklink)
         let ordered = quicklinkResults.enumerated().sorted { lhs, rhs in
-            let left = frecency(of: lhs.element), right = frecency(of: rhs.element)
+            let left = frecency(of: lhs.element)
+            let right = frecency(of: rhs.element)
             return left != right ? left > right : lhs.offset < rhs.offset
         }
         return ordered.map(\.element) + [.searchClipboard]

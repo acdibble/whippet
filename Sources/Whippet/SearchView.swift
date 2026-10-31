@@ -345,7 +345,9 @@ private struct ResultSubtitle: View {
         case .stopwatch:
             let total = TimerNaming.stopwatchClock(item.value(at: date))
             guard !item.laps.isEmpty else { return total }
-            return String(localized: "Lap \(item.laps.count + 1) \(TimerNaming.stopwatchClock(item.currentLap(at: date))) · \(total)")
+            return String(
+                localized:
+                    "Lap \(item.laps.count + 1) \(TimerNaming.stopwatchClock(item.currentLap(at: date))) · \(total)")
         }
     }
 }

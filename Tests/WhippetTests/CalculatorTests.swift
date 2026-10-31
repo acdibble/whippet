@@ -1,4 +1,5 @@
 import Testing
+
 @testable import WhippetCore
 
 struct CalculatorTests {
@@ -70,11 +71,12 @@ struct CalculatorTests {
     @Test(arguments: ["brackets", "signs", "exponents"])
     func deepNestingIsNotACalculation(_ nesting: String) {
         let depth = 100_000
-        let input = switch nesting {
-        case "brackets": String(repeating: "(", count: depth) + "1"
-        case "signs": String(repeating: "-", count: depth) + "1 + 1"
-        default: Array(repeating: "2", count: depth).joined(separator: "^")
-        }
+        let input =
+            switch nesting {
+            case "brackets": String(repeating: "(", count: depth) + "1"
+            case "signs": String(repeating: "-", count: depth) + "1 + 1"
+            default: Array(repeating: "2", count: depth).joined(separator: "^")
+            }
         #expect(Calculator.evaluate(input) == nil)
     }
 

@@ -18,15 +18,17 @@ final class Updater: NSObject {
 
     override init() {
         #if DEBUG
-        let starts = false
+            let starts = false
         #else
-        let starts = true
+            let starts = true
         #endif
         automaticallyChecksForUpdates = false
         super.init()
-        controller = SPUStandardUpdaterController(startingUpdater: starts, updaterDelegate: nil, userDriverDelegate: self)
+        controller = SPUStandardUpdaterController(
+            startingUpdater: starts, updaterDelegate: nil, userDriverDelegate: self)
         automaticallyChecksForUpdates = controller.updater.automaticallyChecksForUpdates
-        observation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] updater, _ in
+        observation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) {
+            [weak self] updater, _ in
             MainActor.assumeIsolated { self?.canCheckForUpdates = updater.canCheckForUpdates }
         }
     }

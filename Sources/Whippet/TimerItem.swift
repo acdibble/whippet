@@ -65,10 +65,11 @@ struct TimerItem: Identifiable, Hashable, Codable {
 
     mutating func resume(at now: Date = .now) {
         guard isPaused else { return }
-        anchor = switch kind {
-        case .timer: now.addingTimeInterval(pausedValue)
-        case .stopwatch: now.addingTimeInterval(-pausedValue)
-        }
+        anchor =
+            switch kind {
+            case .timer: now.addingTimeInterval(pausedValue)
+            case .stopwatch: now.addingTimeInterval(-pausedValue)
+            }
         pausedValue = 0
     }
 

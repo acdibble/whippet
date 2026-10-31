@@ -63,10 +63,12 @@ private struct Clock: View {
                 .monospacedDigit()
                 .opacity(stopwatch.isPaused ? 0.6 : 1)
             if !stopwatch.laps.isEmpty {
-                Text("Lap \(stopwatch.laps.count + 1)  \(TimerNaming.stopwatchClock(stopwatch.currentLap(at: now)).leftToRightIsolated)")
-                    .font(.system(size: 15))
-                    .monospacedDigit()
-                    .foregroundStyle(Color.launcherSecondary)
+                Text(
+                    "Lap \(stopwatch.laps.count + 1)  \(TimerNaming.stopwatchClock(stopwatch.currentLap(at: now)).leftToRightIsolated)"
+                )
+                .font(.system(size: 15))
+                .monospacedDigit()
+                .foregroundStyle(Color.launcherSecondary)
             } else if stopwatch.isPaused {
                 Text("Paused")
                     .font(.system(size: 15))

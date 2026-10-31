@@ -41,7 +41,7 @@ final class AppIndex {
 
     /// Apps in folders that are otherwise full of background agents, so only these are listed from them.
     private static let individualApps = [
-        "/System/Library/CoreServices/Finder.app",
+        "/System/Library/CoreServices/Finder.app"
     ]
 
     func refresh() {
@@ -58,7 +58,9 @@ final class AppIndex {
             .map { URL(filePath: $0) }
             .filter { FileManager.default.fileExists(atPath: $0.path) }
         apps = (inFolders + individual)
-            .map { AppEntry(url: $0, name: Self.displayName(of: $0), bundleIdentifier: Bundle(url: $0)?.bundleIdentifier) }
+            .map {
+                AppEntry(url: $0, name: Self.displayName(of: $0), bundleIdentifier: Bundle(url: $0)?.bundleIdentifier)
+            }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 

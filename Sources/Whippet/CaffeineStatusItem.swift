@@ -68,15 +68,17 @@ final class CaffeineStatusItem: NSObject, NSMenuDelegate {
             let status = NSMenuItem(title: caffeine.untilDescription, action: nil, keyEquivalent: "")
             status.isEnabled = false
             menu.addItem(status)
-            menu.addItem(item(String(localized: "Decaffeinate"), symbol: "cup.and.heat.waves") { [caffeine] in
-                caffeine.stop()
-            })
+            menu.addItem(
+                item(String(localized: "Decaffeinate"), symbol: "cup.and.heat.waves") { [caffeine] in
+                    caffeine.stop()
+                })
             menu.addItem(.separator())
         }
         for minutes in Caffeine.durations {
-            menu.addItem(item(Caffeine.title(minutes: minutes), symbol: "cup.and.heat.waves.fill") { [caffeine] in
-                caffeine.start(seconds: minutes.map { $0 * 60 })
-            })
+            menu.addItem(
+                item(Caffeine.title(minutes: minutes), symbol: "cup.and.heat.waves.fill") { [caffeine] in
+                    caffeine.start(seconds: minutes.map { $0 * 60 })
+                })
         }
     }
 

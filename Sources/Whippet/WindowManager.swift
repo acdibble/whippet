@@ -36,7 +36,9 @@ enum WindowManager {
         let windowFrame = WindowLayout.flipped(current, mainScreenHeight: mainHeight)
         let target: CGRect?
         if command == .restore {
-            target = originalFrames.firstIndex { CFEqual($0.window, window) }.map { originalFrames.remove(at: $0).frame }
+            target = originalFrames.firstIndex { CFEqual($0.window, window) }.map {
+                originalFrames.remove(at: $0).frame
+            }
         } else {
             let screens = NSScreen.screens.map(\.visibleFrame)
             guard let index = WindowLayout.screenIndex(for: windowFrame, in: screens) else { return NSSound.beep() }
@@ -65,7 +67,8 @@ enum WindowManager {
 
     /// In Accessibility coordinates, from the top left of the main display.
     private static func frame(of window: AXUIElement) -> CGRect? {
-        var position = CGPoint.zero, size = CGSize.zero
+        var position = CGPoint.zero
+        var size = CGSize.zero
         guard
             let positionValue = attribute(kAXPositionAttribute, of: window),
             let sizeValue = attribute(kAXSizeAttribute, of: window),
@@ -78,7 +81,8 @@ enum WindowManager {
     /// Size, then position, then size again: a window too big to move fully onto a screen is resized first, and one
     /// that couldn't take its size at the old position gets it at the new one.
     private static func setFrame(of window: AXUIElement, to frame: CGRect) {
-        var position = frame.origin, size = frame.size
+        var position = frame.origin
+        var size = frame.size
         guard
             let positionValue = AXValueCreate(.cgPoint, &position),
             let sizeValue = AXValueCreate(.cgSize, &size)
@@ -90,7 +94,9 @@ enum WindowManager {
 
     private static func attribute(_ name: String, of element: AXUIElement) -> AXValue? {
         var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success, let value else { return nil }
+        guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success, let value else {
+            return nil
+        }
         return (value as! AXValue)
     }
 }

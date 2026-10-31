@@ -5,10 +5,11 @@ import Testing
 struct ThumbnailTests {
     /// Writes a PNG of the given size to a temporary file.
     private func png(width: Int, height: Int) throws -> URL {
-        let bitmap = try #require(NSBitmapImageRep(
-            bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height, bitsPerSample: 8, samplesPerPixel: 4,
-            hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
-        ))
+        let bitmap = try #require(
+            NSBitmapImageRep(
+                bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height, bitsPerSample: 8, samplesPerPixel: 4,
+                hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+            ))
         let data = try #require(bitmap.representation(using: .png, properties: [:]))
         let url = FileManager.default.temporaryDirectory.appending(path: "WhippetThumbnail-\(UUID().uuidString).png")
         try data.write(to: url)

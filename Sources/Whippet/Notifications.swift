@@ -65,7 +65,7 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
                 actions: [stop, snooze],
                 intentIdentifiers: [],
                 options: [.customDismissAction]
-            ),
+            )
         ])
     }
 

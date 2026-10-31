@@ -60,7 +60,9 @@ final class FloatingCalculator {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.minSize = NSSize(width: 240, height: 220)
         panel.contentView = NSHostingView(
-            rootView: FloatingCalculatorView(state: state, clipboard: clipboard, exchangeRates: exchangeRates) { [weak panel] in panel?.performClose(nil) }
+            rootView: FloatingCalculatorView(state: state, clipboard: clipboard, exchangeRates: exchangeRates) {
+                [weak panel] in panel?.performClose(nil)
+            }
         )
         panel.center()
         panel.setFrameAutosaveName("FloatingCalculator")

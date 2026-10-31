@@ -87,7 +87,9 @@ public enum CurrencyConversion {
         // The keyword itself being typed: `$5 t`.
         if let space = text.lastIndex(where: \.isWhitespace) {
             let word = text[text.index(after: space)...].lowercased()
-            if UnitConversion.keywords.contains(where: { $0.hasPrefix(word) }), amount(in: String(text[..<space])) != nil {
+            if UnitConversion.keywords.contains(where: { $0.hasPrefix(word) }),
+                amount(in: String(text[..<space])) != nil
+            {
                 return true
             }
         }
@@ -117,12 +119,14 @@ public enum CurrencyConversion {
         for length in 1...min(maximumNameLength, text.count) {
             let prefix = text.prefix(length)
             if let code = currency(named: String(prefix)), isBoundary(after: prefix, in: text),
-               let value = Calculator.number(String(text.dropFirst(length))) {
+                let value = Calculator.number(String(text.dropFirst(length)))
+            {
                 return (value, code)
             }
             let suffix = text.suffix(length)
             if let code = currency(named: String(suffix)), isBoundary(before: suffix, in: text),
-               let value = Calculator.number(String(text.dropLast(length))) {
+                let value = Calculator.number(String(text.dropLast(length)))
+            {
                 return (value, code)
             }
         }
@@ -202,7 +206,8 @@ extension Calculator {
     /// Without grouping, to a fixed number of decimal places, as money is copied.
     public static func format(_ value: Double, fractionDigits: Int) -> String {
         value.formatted(
-            .number.locale(Locale(identifier: "en_US_POSIX")).grouping(.never).precision(.fractionLength(fractionDigits))
+            .number.locale(Locale(identifier: "en_US_POSIX")).grouping(.never).precision(
+                .fractionLength(fractionDigits))
         )
     }
 }

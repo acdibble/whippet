@@ -27,12 +27,15 @@ public struct Calculation: Hashable, Sendable {
     public var operationName: String {
         if let conversion { return conversion.kind }
         if !isRPN, tokens.contains(.percent) { return String(localized: "Percentage", bundle: .module) }
-        let operations = Set(tokens.compactMap { token -> Character? in
-            guard case .operation(let operation) = token else { return nil }
-            return operation
-        })
+        let operations = Set(
+            tokens.compactMap { token -> Character? in
+                guard case .operation(let operation) = token else { return nil }
+                return operation
+            })
         if operations.isEmpty { return String(localized: "Number", bundle: .module) }
-        guard operations.count == 1, let operation = operations.first else { return String(localized: "Expression", bundle: .module) }
+        guard operations.count == 1, let operation = operations.first else {
+            return String(localized: "Expression", bundle: .module)
+        }
         switch operation {
         case "+": return String(localized: "Sum", bundle: .module)
         case "-": return String(localized: "Difference", bundle: .module)
@@ -77,8 +80,11 @@ public enum Calculator {
         guard let first = text.first, first.isASCIIDigit || "(.-+".contains(first) else { return false }
         // Letters only belong to radix literals such as 0xFF and to a percentage's word, as in `20% of`, or the word
         // being typed, as in `20% o`, so those are set aside first.
-        let withoutLetters = text
-            .replacingOccurrences(of: "0[xX][0-9a-fA-F_]*|0[bB][01_]*|0[oO][0-7_]*", with: "0", options: .regularExpression)
+        let withoutLetters =
+            text
+            .replacingOccurrences(
+                of: "0[xX][0-9a-fA-F_]*|0[bB][01_]*|0[oO][0-7_]*", with: "0", options: .regularExpression
+            )
             .replacingOccurrences(of: #"%\s*(?i:off?|on?)\b"#, with: "%", options: .regularExpression)
         return withoutLetters.allSatisfy { $0.isASCIIDigit || $0.isWhitespace || "+-*/%^().,_".contains($0) }
     }
@@ -121,7 +127,8 @@ public enum Calculator {
             let char = input[index]
             let next = input.index(after: index)
             let startsWord = index == input.startIndex || input[input.index(before: index)].isWhitespace
-            let isSigned = signedNumbers && char == "-" && startsWord && next < input.endIndex && input[next].isASCIIDigit
+            let isSigned =
+                signedNumbers && char == "-" && startsWord && next < input.endIndex && input[next].isASCIIDigit
             if char == "." || char.isASCIIDigit || isSigned {
                 let end = numberEnd(in: input, from: isSigned ? next : index)
                 let literal = String(input[index..<end])
@@ -193,7 +200,9 @@ public enum Calculator {
         guard parts.count <= 2, parts.count == 1 || !parts[1].contains(",") else { return nil }
         let groups = parts[0].split(separator: ",", omittingEmptySubsequences: false)
         if groups.count > 1 {
-            guard (1...3).contains(groups[0].count), groups.dropFirst().allSatisfy({ $0.count == 3 }) else { return nil }
+            guard (1...3).contains(groups[0].count), groups.dropFirst().allSatisfy({ $0.count == 3 }) else {
+                return nil
+            }
         }
         let digits = text.replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "_", with: "")
         return Double(digits).map { sign * $0 }
@@ -259,7 +268,8 @@ public enum BaseConversion {
             let integer = Int64(value)
             let digits = String(integer.magnitude, radix: base.radix, uppercase: true)
             let output = (integer < 0 ? "-" : "") + base.prefix + digits
-            let conversion = Conversion(input: amountText, output: output, outputLong: output, kind: base.kind, answer: output)
+            let conversion = Conversion(
+                input: amountText, output: output, outputLong: output, kind: base.kind, answer: output)
             return Calculation(tokens: [], value: value, isRPN: false, conversion: conversion)
         }
         return nil
@@ -316,7 +326,8 @@ private struct InfixParser {
             if rhs.isPercent, !lhs.isPercent {
                 lhs = Operand(value: lhs.value * Calculator.apply(operation, 1, rhs.value))
             } else {
-                lhs = Operand(value: Calculator.apply(operation, lhs.value, rhs.value), isPercent: lhs.isPercent && rhs.isPercent)
+                lhs = Operand(
+                    value: Calculator.apply(operation, lhs.value, rhs.value), isPercent: lhs.isPercent && rhs.isPercent)
             }
         }
         return lhs
@@ -336,11 +347,12 @@ private struct InfixParser {
                 guard lhs.isPercent else { return nil }
                 position += 1
                 guard let rhs = unary() else { return nil }
-                let share = switch word {
-                case "off": 1 - lhs.value
-                case "on": 1 + lhs.value
-                default: lhs.value
-                }
+                let share =
+                    switch word {
+                    case "off": 1 - lhs.value
+                    case "on": 1 + lhs.value
+                    default: lhs.value
+                    }
                 lhs = Operand(value: rhs.value * share)
             default:
                 return lhs
@@ -395,8 +407,8 @@ private struct InfixParser {
     }
 }
 
-private extension Character {
-    var isASCIIDigit: Bool {
+extension Character {
+    fileprivate var isASCIIDigit: Bool {
         ("0"..."9").contains(self)
     }
 }

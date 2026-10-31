@@ -55,7 +55,9 @@ enum Changelog {
             endSection()
             if let version {
                 let note = note.joined(separator: " ")
-                releases.append(Release(version: version, date: date, note: note.isEmpty ? nil : note, sections: sections, since: nil))
+                releases.append(
+                    Release(
+                        version: version, date: date, note: note.isEmpty ? nil : note, sections: sections, since: nil))
             }
             version = nil
             date = nil
@@ -72,7 +74,8 @@ enum Changelog {
                 // Unreleased changes aren't in any build anyone runs.
                 guard name != "Unreleased" else { continue }
                 version = name
-                let rest = heading[heading.index(after: close)...].trimmingCharacters(in: CharacterSet(charactersIn: " -"))
+                let rest = heading[heading.index(after: close)...].trimmingCharacters(
+                    in: CharacterSet(charactersIn: " -"))
                 date = day(from: rest)
             } else if version == nil {
                 continue
@@ -97,7 +100,9 @@ enum Changelog {
     /// The versions after `version` up to and including `current`, newest first, gathered into one: each section keeps
     /// the order sections first appear in, with the newest changes first.
     static func changes(after version: String, upTo current: String, in releases: [Release]) -> Release? {
-        let newer = releases.filter { isVersion($0.version, newerThan: version) && !isVersion($0.version, newerThan: current) }
+        let newer = releases.filter {
+            isVersion($0.version, newerThan: version) && !isVersion($0.version, newerThan: current)
+        }
         guard let newest = newer.first else { return nil }
         var titles: [String] = []
         var changes: [String: [Release.Change]] = [:]

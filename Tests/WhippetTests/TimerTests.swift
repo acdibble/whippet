@@ -2,28 +2,29 @@ import Foundation
 import Testing
 
 struct TimerDurationTests {
-    @Test(arguments: [
-        ("25m", 1500, nil),
-        ("25 min", 1500, nil),
-        ("5 minutes", 300, nil),
-        ("90s", 90, nil),
-        ("1h30m", 5400, nil),
-        ("1 hour 30 min", 5400, nil),
-        ("1h 30m 15s", 5415, nil),
-        ("1.5h", 5400, nil),
-        ("4:30", 270, nil),
-        ("1:02:03", 3723, nil),
-        ("25m tea", 1500, "tea"),
-        ("4:30 eggs and toast", 270, "eggs and toast"),
-        ("25m 2 eggs", 1500, "2 eggs"),
-        ("1h 30", 3600, "30"),
-        ("timer 5", 300, nil),
-        ("timer 5 tea", 300, "tea"),
-        ("Timer 10M Pasta", 600, "Pasta"),
-        ("۲۵ دقیقه", 1500, nil),
-        ("تایمر ۵ چای", 300, "چای"),
-        ("1 ساعت", 3600, nil),
-    ] as [(String, Int, String?)])
+    @Test(
+        arguments: [
+            ("25m", 1500, nil),
+            ("25 min", 1500, nil),
+            ("5 minutes", 300, nil),
+            ("90s", 90, nil),
+            ("1h30m", 5400, nil),
+            ("1 hour 30 min", 5400, nil),
+            ("1h 30m 15s", 5415, nil),
+            ("1.5h", 5400, nil),
+            ("4:30", 270, nil),
+            ("1:02:03", 3723, nil),
+            ("25m tea", 1500, "tea"),
+            ("4:30 eggs and toast", 270, "eggs and toast"),
+            ("25m 2 eggs", 1500, "2 eggs"),
+            ("1h 30", 3600, "30"),
+            ("timer 5", 300, nil),
+            ("timer 5 tea", 300, "tea"),
+            ("Timer 10M Pasta", 600, "Pasta"),
+            ("۲۵ دقیقه", 1500, nil),
+            ("تایمر ۵ چای", 300, "چای"),
+            ("1 ساعت", 3600, nil),
+        ] as [(String, Int, String?)])
     func parses(_ input: String, _ seconds: Int, _ name: String?) {
         #expect(TimerDuration.parse(input) == .init(seconds: seconds, name: name))
     }

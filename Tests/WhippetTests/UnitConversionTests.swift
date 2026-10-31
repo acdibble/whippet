@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import WhippetCore
 
 struct UnitConversionTests {
@@ -160,7 +161,8 @@ struct UnitConversionTests {
 
     @Test func moneyIsntACount() {
         let rates = ExchangeRates(date: "2026-10-30", perEuro: ["EUR": 1, "GBP": 0.5])
-        #expect(Calculator.calculate("2 * 3 euros as pounds", rates: rates)?.conversion?.kind.hasPrefix("Currency") == true)
+        #expect(
+            Calculator.calculate("2 * 3 euros as pounds", rates: rates)?.conversion?.kind.hasPrefix("Currency") == true)
     }
 
     @Test(arguments: [
@@ -192,7 +194,8 @@ struct UnitConversionTests {
     }
 
     @Test(arguments: [
-        "5 km", "5 km to kg", "5 items per second to km", "5 items per second to requests per hour", "5 per second to h",
+        "5 km", "5 km to kg", "5 items per second to km", "5 items per second to requests per hour",
+        "5 per second to h",
         "5 items per banana to h", "5 to km", "km to mi", "5 apples to pears", "5 km to", "to mi", "72 f to",
         String(repeating: "1", count: 200) + " m to ft",
     ])
@@ -234,7 +237,8 @@ struct UnitConversionTests {
     }
 
     @Test func historyShowsTheUnitButKeepsTheNumber() {
-        let record = CalculationRecord(id: 1, expression: "5 km to mi", answer: "3.106855961", mode: "standard", calculatedAt: .now)
+        let record = CalculationRecord(
+            id: 1, expression: "5 km to mi", answer: "3.106855961", mode: "standard", calculatedAt: .now)
         #expect(record.displayAnswer.contains("mi"))
         #expect(record.answer == "3.106855961")
         let sum = CalculationRecord(id: 2, expression: "2+2", answer: "4", mode: "standard", calculatedAt: .now)
@@ -242,7 +246,8 @@ struct UnitConversionTests {
     }
 
     @Test(arguments: [
-        "5 km t", "5 km to", "5 km to m", "5km to", "5 km i", "72 f in", "12 in to", "12 in to c", "1.5 light years to p",
+        "5 km t", "5 km to", "5 km to m", "5km to", "5 km i", "72 f in", "12 in to", "12 in to c",
+        "1.5 light years to p",
         "5 km to light y", "9 items per second in h", "9 items per second to per", "9 items per second to per ho",
         "2100 seconds /", "2100 seconds / 3 i", "1 h + (",
     ])

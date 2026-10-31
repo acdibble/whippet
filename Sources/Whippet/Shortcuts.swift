@@ -75,21 +75,22 @@ extension AppEntry {
 extension LauncherResult {
     /// The global hotkey set for this app or command in Settings › Shortcuts, if any.
     @MainActor var hotkey: KeyboardShortcuts.Shortcut? {
-        let name: KeyboardShortcuts.Name? = switch self {
-        case .app(let app): app.shortcutName
-        case .calculator: CommandShortcut.calculator.name
-        case .floatingCalculator: CommandShortcut.floatingCalculator.name
-        case .clipboardHistory: CommandShortcut.clipboardHistory.name
-        case .settings: CommandShortcut.settings.name
-        case .caffeinate: CommandShortcut.caffeinate.name
-        case .newTimer: CommandShortcut.startTimer.name
-        case .newStopwatch: CommandShortcut.startStopwatch.name
-        case .stopwatch: CommandShortcut.stopwatch.name
-        case .timersView: CommandShortcut.timers.name
-        case .quicklink(let quicklink): quicklink.shortcutName
-        case .window(let command): command.shortcutName
-        default: nil
-        }
+        let name: KeyboardShortcuts.Name? =
+            switch self {
+            case .app(let app): app.shortcutName
+            case .calculator: CommandShortcut.calculator.name
+            case .floatingCalculator: CommandShortcut.floatingCalculator.name
+            case .clipboardHistory: CommandShortcut.clipboardHistory.name
+            case .settings: CommandShortcut.settings.name
+            case .caffeinate: CommandShortcut.caffeinate.name
+            case .newTimer: CommandShortcut.startTimer.name
+            case .newStopwatch: CommandShortcut.startStopwatch.name
+            case .stopwatch: CommandShortcut.stopwatch.name
+            case .timersView: CommandShortcut.timers.name
+            case .quicklink(let quicklink): quicklink.shortcutName
+            case .window(let command): command.shortcutName
+            default: nil
+            }
         return name.flatMap { KeyboardShortcuts.getShortcut(for: $0) }
     }
 }

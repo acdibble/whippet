@@ -40,11 +40,20 @@ enum SystemCommand: String, CaseIterable, Identifiable {
     var confirmation: (title: String, message: String, button: String)? {
         switch self {
         case .restart:
-            (String(localized: "Restart this Mac?"), String(localized: "Apps will be asked to quit first."), String(localized: "Restart"))
+            (
+                String(localized: "Restart this Mac?"), String(localized: "Apps will be asked to quit first."),
+                String(localized: "Restart")
+            )
         case .shutDown:
-            (String(localized: "Shut down this Mac?"), String(localized: "Apps will be asked to quit first."), String(localized: "Shut Down"))
+            (
+                String(localized: "Shut down this Mac?"), String(localized: "Apps will be asked to quit first."),
+                String(localized: "Shut Down")
+            )
         case .emptyTrash:
-            (String(localized: "Empty the Trash?"), String(localized: "Items in the Trash will be deleted permanently."), String(localized: "Empty Trash"))
+            (
+                String(localized: "Empty the Trash?"),
+                String(localized: "Items in the Trash will be deleted permanently."), String(localized: "Empty Trash")
+            )
         default:
             nil
         }

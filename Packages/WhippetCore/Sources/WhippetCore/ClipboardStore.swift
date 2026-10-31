@@ -285,7 +285,8 @@ public final class ClipboardStore: Sendable {
     public func recordCopy(contentHash: String) throws -> SyncItem? {
         let changed = try database.write { db in
             try db.execute(
-                sql: "UPDATE clipboard SET copiedAt = ?, timesCopied = timesCopied + 1, updatedAt = ? WHERE contentHash = ?",
+                sql:
+                    "UPDATE clipboard SET copiedAt = ?, timesCopied = timesCopied + 1, updatedAt = ? WHERE contentHash = ?",
                 arguments: [Date.now, Date.now, contentHash]
             )
             return db.changesCount > 0
@@ -341,13 +342,15 @@ public final class ClipboardStore: Sendable {
         try database.read { db in
             let rows = try Row.fetchAll(
                 db,
-                sql: "SELECT contentHash, text FROM clipboard WHERE kind = ? AND linkTitle IS NULL ORDER BY copiedAt DESC",
+                sql:
+                    "SELECT contentHash, text FROM clipboard WHERE kind = ? AND linkTitle IS NULL ORDER BY copiedAt DESC",
                 arguments: [ClipboardKind.link.rawValue]
             )
             for row in rows {
                 let text: String? = row["text"]
                 if let url = text.flatMap({ URL(string: $0.trimmingCharacters(in: .whitespacesAndNewlines)) }),
-                   !skippingHosts.contains(url.host()?.lowercased() ?? "") {
+                    !skippingHosts.contains(url.host()?.lowercased() ?? "")
+                {
                     return (row["contentHash"], url)
                 }
             }
@@ -366,7 +369,8 @@ public final class ClipboardStore: Sendable {
             imageFile = name
         }
         let oldFile = try database.write { db in
-            let oldFile = try String.fetchOne(db, sql: "SELECT linkImageFile FROM clipboard WHERE contentHash = ?", arguments: [hash])
+            let oldFile = try String.fetchOne(
+                db, sql: "SELECT linkImageFile FROM clipboard WHERE contentHash = ?", arguments: [hash])
             try db.execute(
                 sql: "UPDATE clipboard SET linkTitle = ?, linkImageFile = ?, linkOcrText = NULL WHERE contentHash = ?",
                 arguments: [title, imageFile, hash]
@@ -381,9 +385,11 @@ public final class ClipboardStore: Sendable {
     /// Forgets a link's preview, so it's fetched again.
     public func clearLinkPreview(hash: String) throws {
         let file = try database.write { db in
-            let file = try String.fetchOne(db, sql: "SELECT linkImageFile FROM clipboard WHERE contentHash = ?", arguments: [hash])
+            let file = try String.fetchOne(
+                db, sql: "SELECT linkImageFile FROM clipboard WHERE contentHash = ?", arguments: [hash])
             try db.execute(
-                sql: "UPDATE clipboard SET linkTitle = NULL, linkImageFile = NULL, linkOcrText = NULL WHERE contentHash = ?",
+                sql:
+                    "UPDATE clipboard SET linkTitle = NULL, linkImageFile = NULL, linkOcrText = NULL WHERE contentHash = ?",
                 arguments: [hash]
             )
             return file
@@ -473,10 +479,11 @@ public final class ClipboardStore: Sendable {
         }
 
         let databaseFiles = ["", "-wal", "-shm"].map { URL(filePath: databaseURL.path + $0) }
-        let imageFiles = (try? FileManager.default.contentsOfDirectory(
-            at: imagesDirectory,
-            includingPropertiesForKeys: [.totalFileAllocatedSizeKey]
-        )) ?? []
+        let imageFiles =
+            (try? FileManager.default.contentsOfDirectory(
+                at: imagesDirectory,
+                includingPropertiesForKeys: [.totalFileAllocatedSizeKey]
+            )) ?? []
 
         return ClipboardUsage(
             directory: directory,
@@ -556,7 +563,8 @@ public final class ClipboardStore: Sendable {
         guard let target = SyncTarget(recordName: recordName) else { return }
         try database.write { db in
             try db.execute(
-                sql: "UPDATE \(target.table) SET syncedAt = NULL, cloudSystemFields = NULL WHERE \(target.keyColumn) = ?",
+                sql:
+                    "UPDATE \(target.table) SET syncedAt = NULL, cloudSystemFields = NULL WHERE \(target.keyColumn) = ?",
                 arguments: [target.key]
             )
         }
@@ -582,7 +590,9 @@ public final class ClipboardStore: Sendable {
     /// A record deleted on this Mac stays deleted until the deletion reaches iCloud, even when a fetch brings it back
     /// first, as it does for a record this Mac uploaded just before deleting it.
     private static func isPendingDeletion(_ recordName: String, in db: Database) throws -> Bool {
-        try Bool.fetchOne(db, sql: "SELECT EXISTS(SELECT 1 FROM deletedRecord WHERE recordName = ?)", arguments: [recordName]) ?? false
+        try Bool.fetchOne(
+            db, sql: "SELECT EXISTS(SELECT 1 FROM deletedRecord WHERE recordName = ?)", arguments: [recordName])
+            ?? false
     }
 
     func forgetDeletions(_ recordNames: [String]) throws {
@@ -715,7 +725,8 @@ public final class ClipboardStore: Sendable {
             )
             try db.execute(sql: "DELETE FROM clipboard \(filter)", arguments: arguments)
             for case let recordName? in rows.map({ $0["recordName"] as String? }) {
-                try db.execute(sql: "INSERT OR IGNORE INTO deletedRecord (recordName) VALUES (?)", arguments: [recordName])
+                try db.execute(
+                    sql: "INSERT OR IGNORE INTO deletedRecord (recordName) VALUES (?)", arguments: [recordName])
             }
             return rows
         }
@@ -734,10 +745,12 @@ public final class ClipboardStore: Sendable {
 
     private func delete(_ target: SyncTarget, remembersDeletion: Bool) throws -> String? {
         let row = try database.write { db in
-            let row = try Row.fetchOne(db, sql: "SELECT * FROM \(target.table) WHERE \(target.keyColumn) = ?", arguments: [target.key])
+            let row = try Row.fetchOne(
+                db, sql: "SELECT * FROM \(target.table) WHERE \(target.keyColumn) = ?", arguments: [target.key])
             try db.execute(sql: "DELETE FROM \(target.table) WHERE \(target.keyColumn) = ?", arguments: [target.key])
             if remembersDeletion, let recordName = row?["recordName"] as String? {
-                try db.execute(sql: "INSERT OR IGNORE INTO deletedRecord (recordName) VALUES (?)", arguments: [recordName])
+                try db.execute(
+                    sql: "INSERT OR IGNORE INTO deletedRecord (recordName) VALUES (?)", arguments: [recordName])
             }
             return row
         }
@@ -934,7 +947,8 @@ public final class ClipboardStore: Sendable {
         // 0.11.2 kept the path of a photo copied from Photos, which names a file inside the Photos library by an internal
         // ID, so those images showed that ID as their name.
         migrator.registerMigration("forgetPhotosLibraryPaths") { db in
-            try db.execute(sql: "UPDATE clipboard SET text = NULL WHERE kind = 'image' AND text LIKE '%.photoslibrary/%'")
+            try db.execute(
+                sql: "UPDATE clipboard SET text = NULL WHERE kind = 'image' AND text LIKE '%.photoslibrary/%'")
         }
         return migrator
     }

@@ -25,7 +25,8 @@ public final class ExchangeRateStore {
 
     public init() {
         if let data = UserDefaults.standard.data(forKey: Self.defaultsKey),
-           let saved = try? JSONDecoder().decode(Saved.self, from: data) {
+            let saved = try? JSONDecoder().decode(Saved.self, from: data)
+        {
             rates = saved.rates
             rates?.fetchedAt = saved.fetchedAt
         }

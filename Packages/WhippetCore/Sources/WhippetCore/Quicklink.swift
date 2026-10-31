@@ -35,8 +35,12 @@ public struct Quicklink: Identifiable, Hashable, Codable, FetchableRecord, Table
     /// Starters are created once, with fixed UUIDs so two Macs creating them make the same records rather than
     /// duplicates.
     public static let starters = [
-        Quicklink(uuid: "starter-google", name: "Search Google", keyword: "g", template: "https://www.google.com/search?q={query}"),
-        Quicklink(uuid: "starter-github", name: "Search GitHub", keyword: "gh", template: "https://github.com/search?q={query}"),
+        Quicklink(
+            uuid: "starter-google", name: "Search Google", keyword: "g",
+            template: "https://www.google.com/search?q={query}"),
+        Quicklink(
+            uuid: "starter-github", name: "Search GitHub", keyword: "gh",
+            template: "https://github.com/search?q={query}"),
         Quicklink(
             uuid: "starter-wikipedia",
             name: "Search Wikipedia",
@@ -59,7 +63,8 @@ public enum QuicklinkTemplate {
     /// result isn't a URL with a scheme.
     public static func url(_ template: String, argument: String = "") -> URL? {
         let encoded = argument.addingPercentEncoding(withAllowedCharacters: unreserved) ?? ""
-        let filled = template
+        let filled =
+            template
             .replacingOccurrences(of: rawQueryPlaceholder, with: argument)
             .replacingOccurrences(of: queryPlaceholder, with: encoded)
         guard let url = URL(string: filled), let scheme = url.scheme, !scheme.isEmpty else { return nil }

@@ -3,13 +3,15 @@ import Foundation
 import Testing
 
 struct SealedFeedbackTests {
-    private let content = FeedbackContent(message: "The calculator is great", email: "someone@example.com", details: "Whippet 0.6.0")
+    private let content = FeedbackContent(
+        message: "The calculator is great", email: "someone@example.com", details: "Whippet 0.6.0")
 
     @Test func theAdminKeyOpensSealedFeedback() throws {
         let adminKey = Curve25519.KeyAgreement.PrivateKey()
         let sealed = try SealedFeedback.seal(content, to: adminKey.publicKey)
 
-        let opened = try SealedFeedback.open(encapsulatedKey: sealed.encapsulatedKey, ciphertext: sealed.ciphertext, with: adminKey)
+        let opened = try SealedFeedback.open(
+            encapsulatedKey: sealed.encapsulatedKey, ciphertext: sealed.ciphertext, with: adminKey)
         #expect(opened == content)
     }
 

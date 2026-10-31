@@ -33,9 +33,11 @@ struct QuicklinksPane: View {
                 }
                 Button("Add Quicklink…") { editing = Self.newQuicklink }
             } footer: {
-                Text("Search for a quicklink in Whippet and press Tab to type the text that replaces {query} in its link.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Search for a quicklink in Whippet and press Tab to type the text that replaces {query} in its link."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .sheet(item: $editing) { quicklink in
@@ -119,9 +121,11 @@ private struct QuicklinkEditor: View {
                     }
                 }
                 Section {
-                    Text("Put {query} where the text you type should go. It's encoded for a link; {query:raw} inserts it as typed.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        "Put {query} where the text you type should go. It's encoded for a link; {query:raw} inserts it as typed."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                     if let problem {
                         Text(problem)
                             .font(.caption)

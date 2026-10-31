@@ -15,7 +15,8 @@ enum ImageConversion {
             let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         else { return nil }
         // Grey and indexed images are drawn into RGB, which JPEG encoders handle everywhere.
-        let colorSpace = image.colorSpace.flatMap { $0.model == .rgb ? $0 : nil } ?? CGColorSpace(name: CGColorSpace.sRGB)
+        let colorSpace =
+            image.colorSpace.flatMap { $0.model == .rgb ? $0 : nil } ?? CGColorSpace(name: CGColorSpace.sRGB)
         guard
             let colorSpace,
             let context = CGContext(
@@ -30,7 +31,8 @@ enum ImageConversion {
         guard let flattened = context.makeImage() else { return nil }
 
         let output = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil) else {
+        guard let destination = CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil)
+        else {
             return nil
         }
         let options = [kCGImageDestinationLossyCompressionQuality: jpegQuality] as CFDictionary

@@ -133,8 +133,9 @@ public enum UnitConversion {
         }
         // Arithmetic being typed after an amount: `2100 seconds /` or `1 h + (`.
         if !requiresTarget, let tokens = QuantityExpression.tokenize(text),
-           let end = tokens.lastIndex(where: { $0 != .open && !$0.isOperation }), end < tokens.count - 1,
-           !measured(Array(tokens[...end])).isEmpty {
+            let end = tokens.lastIndex(where: { $0 != .open && !$0.isOperation }), end < tokens.count - 1,
+            !measured(Array(tokens[...end])).isEmpty
+        {
             return true
         }
         // The target being typed: `5 km to` or `5 km to light y`.
@@ -147,7 +148,8 @@ public enum UnitConversion {
             if typed.isEmpty { return !requiresTarget && sources.contains { $0.per != nil } }
             let kinds = sources.flatMap { [$0.unit] + ($0.per.map { [$0] } ?? []) }
             return vocabularyUnits.contains { word, units in
-                word.hasPrefix(typed) && units.contains { unit in kinds.contains { $0.isDimensionallyEquivalent(to: unit) } }
+                word.hasPrefix(typed)
+                    && units.contains { unit in kinds.contains { $0.isDimensionallyEquivalent(to: unit) } }
             }
         }
         return false
@@ -208,7 +210,8 @@ public enum UnitConversion {
     static func readings(named text: String) -> [Reading] {
         // A unit that's a rate itself, such as `mph` (`mi/hr`), is per what follows its last `/`.
         var readings = units(named: text).map { unit in
-            let perSymbol = unit.symbol.split(separator: "/").dropFirst().last.map(String.init) ?? perSymbols[unit.symbol]
+            let perSymbol =
+                unit.symbol.split(separator: "/").dropFirst().last.map(String.init) ?? perSymbols[unit.symbol]
             return Reading(unit: unit, per: perSymbol.flatMap { try? PhysicalUnit(fromSymbol: $0, registry: registry) })
         }
         for match in text.matches(of: /\s+(?i:per)\s+|\s*\/\s*/) {
@@ -272,7 +275,8 @@ public enum UnitConversion {
             // The definitions are fixed, so this only fails if the package gains a unit with the same name or symbol,
             // which would leave aliases such as `month` or `deg` pointing nowhere.
             do {
-                try builder.addUnit(name: unit.name, symbol: unit.symbol, dimension: unit.dimension, coefficient: unit.coefficient)
+                try builder.addUnit(
+                    name: unit.name, symbol: unit.symbol, dimension: unit.dimension, coefficient: unit.coefficient)
             } catch {
                 assertionFailure("Couldn't add \(unit.name): \(error)")
             }
@@ -480,7 +484,8 @@ public enum UnitDisplay {
     static func format(_ value: Double, _ reading: UnitConversion.Reading, style: Formatter.UnitStyle) -> String {
         guard let counted = reading.counted else { return format(value, reading.unit, style: style) }
         let formatter = style == .long ? longFormatter : mediumFormatter
-        let number = formatter.numberFormatter.string(from: NSNumber(value: value))
+        let number =
+            formatter.numberFormatter.string(from: NSNumber(value: value))
             ?? Calculator.format(value, significantDigits: UnitConversion.significantDigits)
         guard let per = reading.per else { return "\(number) \(counted)" }
         return style == .long
@@ -503,7 +508,8 @@ public enum UnitDisplay {
             return formatter.string(from: Foundation.Measurement(value: value, unit: foundationUnit))
         }
         let digits = UnitConversion.significantDigits
-        let number = formatter.numberFormatter.string(from: NSNumber(value: value))
+        let number =
+            formatter.numberFormatter.string(from: NSNumber(value: value))
             ?? Calculator.format(value, significantDigits: digits)
         // Read from the rounded number, so 0.9999999999 and -1 show as "1 hogshead" and "-1 hogshead".
         let isOne = Calculator.format(abs(value), significantDigits: digits) == "1"
@@ -543,7 +549,8 @@ public enum UnitDisplay {
 
     static func kind(of reading: UnitConversion.Reading) -> String {
         guard reading.counted != nil else { return kind(of: reading.unit) }
-        return reading.per == nil ? String(localized: "Count", bundle: .module) : String(localized: "Rate", bundle: .module)
+        return reading.per == nil
+            ? String(localized: "Count", bundle: .module) : String(localized: "Rate", bundle: .module)
     }
 
     static func kind(of unit: PhysicalUnit) -> String {

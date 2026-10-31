@@ -1,6 +1,7 @@
 import Foundation
 import GRDB
 import Testing
+
 @testable import WhippetCore
 
 struct QuicklinkTemplateTests {
@@ -51,7 +52,8 @@ final class QuicklinkStoreTests {
             try ClipboardStore.migrator.migrate(database, upTo: "createSchema")
             try database.write { db in
                 try db.execute(
-                    sql: "INSERT INTO clipboard (contentHash, kind, text, copiedAt, updatedAt) VALUES ('h', 'text', 'kept', ?, ?)",
+                    sql:
+                        "INSERT INTO clipboard (contentHash, kind, text, copiedAt, updatedAt) VALUES ('h', 'text', 'kept', ?, ?)",
                     arguments: [Date.now, Date.now]
                 )
             }

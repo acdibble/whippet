@@ -7,15 +7,17 @@ import UniformTypeIdentifiers
 struct ImageConversionTests {
     /// A 4×2 PNG whose left half is opaque red and right half fully transparent.
     private func halfTransparentPNG() throws -> Data {
-        let context = try #require(CGContext(
-            data: nil, width: 4, height: 2, bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ))
+        let context = try #require(
+            CGContext(
+                data: nil, width: 4, height: 2, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ))
         context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
         context.fill(CGRect(x: 0, y: 0, width: 2, height: 2))
         let image = try #require(context.makeImage())
         let data = NSMutableData()
-        let destination = try #require(CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil))
+        let destination = try #require(
+            CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil))
         CGImageDestinationAddImage(destination, image, nil)
         #expect(CGImageDestinationFinalize(destination))
         return data as Data
@@ -26,10 +28,12 @@ struct ImageConversionTests {
         let source = try #require(CGImageSourceCreateWithData(data as CFData, nil))
         let image = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
         var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)
-        let context = try #require(CGContext(
-            data: &pixels, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
-        ))
+        let context = try #require(
+            CGContext(
+                data: &pixels, width: image.width, height: image.height, bitsPerComponent: 8,
+                bytesPerRow: image.width * 4,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+            ))
         context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
         return (0..<image.width).map { Array(pixels[$0 * 4..<$0 * 4 + 3]) }
     }

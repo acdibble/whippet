@@ -110,8 +110,12 @@ private struct ReleaseDetail: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(release.since == nil ? String(localized: "Whippet \(release.version)") : String(localized: "What's New in \(release.version)"))
-                        .font(.system(size: 17, weight: .semibold))
+                    Text(
+                        release.since == nil
+                            ? String(localized: "Whippet \(release.version)")
+                            : String(localized: "What's New in \(release.version)")
+                    )
+                    .font(.system(size: 17, weight: .semibold))
                     Text(LauncherResult.release(release).subtitle)
                         .font(.system(size: 12))
                         .foregroundStyle(Color.launcherSecondary)

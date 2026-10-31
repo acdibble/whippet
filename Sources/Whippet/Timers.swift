@@ -25,8 +25,10 @@ final class Timers {
         didSet { defaults.set(snoozeMinutes, forKey: Keys.snoozeMinutes) }
     }
 
-    static let sounds = ["Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero", "Morse", "Ping", "Pop", "Purr",
-                         "Sosumi", "Submarine", "Tink"]
+    static let sounds = [
+        "Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero", "Morse", "Ping", "Pop", "Purr",
+        "Sosumi", "Submarine", "Tink",
+    ]
     static let snoozeChoices = [1, 5, 10, 15]
     private static let presetLimit = 5
     /// How long a finished timer's sound plays before it goes quiet.
