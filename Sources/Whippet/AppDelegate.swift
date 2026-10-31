@@ -315,8 +315,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// A native menu of the selected result's actions, which brings arrow keys, Return, Escape and type-to-select with it.
     /// It opens above the footer at the panel's bottom right, or bottom left in right-to-left languages, beside the footer actions.
+    /// The menu opens above the footer, so it's only offered while the panel is expanded and has one. Collapsed, as
+    /// for an inline answer such as `10 min in s`, the selected result's own shortcuts still work.
     private func showActions() {
-        guard let result = model.selectedResult, let view = panel.contentView else { return }
+        guard model.isExpanded, let result = model.selectedResult, let view = panel.contentView else { return }
         let menu = NSMenu()
         for action in ResultAction.allCases where action.isAvailable(for: result) {
             let item = ActionMenuItem(title: action.title(for: result, model: model)) { [weak self] in
