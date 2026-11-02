@@ -215,6 +215,29 @@ final class ClipboardHistory {
         return true
     }
 
+    /// The name an image is saved under: the file it was copied from, or `Image.png` when it came as data.
+    func suggestedImageName(for item: ClipboardItem) -> String {
+        let name = item.fileURLs.first?.deletingPathExtension().lastPathComponent ?? String(localized: "Image")
+        return name + ".png"
+    }
+
+    /// Writes an image to a file, as the stored PNG, or converted to JPEG when the file's extension asks for it. Returns
+    /// false when the image can't be read, converted or written.
+    func saveImage(_ item: ClipboardItem, to url: URL) -> Bool {
+        guard item.kind == .image, let file = imageURL(for: item), let png = try? Data(contentsOf: file) else {
+            return false
+        }
+        let isJPEG = UTType(filenameExtension: url.pathExtension)?.conforms(to: .jpeg) ?? false
+        guard let data = isJPEG ? ImageConversion.jpeg(from: png) : png else { return false }
+        do {
+            try data.write(to: url, options: .atomic)
+            return true
+        } catch {
+            NSLog("Failed to save the image: \(error)")
+            return false
+        }
+    }
+
     /// Puts an image on the pasteboard as JPEG, both as data and as a file named after it: most apps and web pages read
     /// pasted image data only as PNG or TIFF, but take a file in whatever format it is. Returns false when the image
     /// can't be read or converted.

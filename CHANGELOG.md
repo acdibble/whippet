@@ -5,6 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Save Image… (⌘S, or from ⌘K) saves an image from the clipboard history to a file, as PNG or JPEG.
+
 ## [1.3.0] - 2026-10-31
 
 ### Added

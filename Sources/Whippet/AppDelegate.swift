@@ -1,6 +1,7 @@
 import AppKit
 import Carbon.HIToolbox
 import KeyboardShortcuts
+import UniformTypeIdentifiers
 import WhippetCore
 
 /// Owns the search panel, the global hotkey and the services shared with the SwiftUI scenes in `WhippetApp`.
@@ -80,6 +81,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             dismissPanel()
             floatingCalculator.show(expression: expression)
         }
+
+        model.onSaveImage = { [weak self] item in self?.saveImage(item) }
 
         panel = LauncherPanel(rootView: SearchView(model: model))
         panel.delegate = self
@@ -177,6 +180,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case ("l", [.command]): model.perform(.lap)
         case ("r", [.command]): model.perform(.restart)
         case ("t", [.command]): model.perform(.startTimer)
+        case ("s", [.command]): model.perform(.saveImage)
         case ("k", [.command]): showActions()
         case ("q", [.command]): NSApp.terminate(nil)
         case (",", [.command]): showSettings()
@@ -251,6 +255,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         NSApp.setActivationPolicy(.regular)
         openFeedbackWindow()
+    }
+
+    /// Asks where to save a clipboard image, as PNG or, given a `.jpg` name, JPEG. The panel closes first, since the
+    /// save panel is a window of its own and would otherwise close the panel by taking focus anyway.
+    private func saveImage(_ item: ClipboardItem) {
+        panel.orderOut(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.png, .jpeg]
+        savePanel.canCreateDirectories = true
+        savePanel.isExtensionHidden = false
+        savePanel.nameFieldStringValue = clipboard.suggestedImageName(for: item)
+        savePanel.directoryURL = .downloadsDirectory
+        savePanel.level = .floating
+        savePanel.begin { [weak self] response in
+            guard response == .OK, let url = savePanel.url, let self else { return }
+            if clipboard.saveImage(item, to: url) {
+                Toast.shared.show(String(localized: "Saved Image"), symbol: "square.and.arrow.down")
+            } else {
+                NSSound.beep()
+            }
+        }
     }
 
     /// Registers a handler once per app; the handler looks the app up when pressed, so it follows the app if it moves.

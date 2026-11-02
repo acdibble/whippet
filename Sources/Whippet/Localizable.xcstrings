@@ -2571,6 +2571,26 @@
         }
       }
     },
+    "Save Image…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ذخیره‌ی تصویر…"
+          }
+        }
+      }
+    },
+    "Saved Image" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصویر ذخیره شد"
+          }
+        }
+      }
+    },
     "Search" : {
       "localizations" : {
         "fa" : {

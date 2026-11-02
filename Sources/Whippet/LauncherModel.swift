@@ -309,6 +309,7 @@ enum ResultAction: CaseIterable {
     case refreshPreview
     case pasteAsJPEG
     case copyAsJPEG
+    case saveImage
     case copyPath
     case startTimer
     case popOut
@@ -325,7 +326,9 @@ enum ResultAction: CaseIterable {
         case (.secondary, _): result.pastes
         case (.togglePin, .clipboard), (.delete, .clipboard), (.copyPath, .app): true
         case (.refreshPreview, .clipboard(let item)): item.kind == .link
-        case (.pasteAsJPEG, .clipboard(let item)), (.copyAsJPEG, .clipboard(let item)): item.kind == .image
+        case (.pasteAsJPEG, .clipboard(let item)), (.copyAsJPEG, .clipboard(let item)),
+            (.saveImage, .clipboard(let item)):
+            item.kind == .image
         case (.startTimer, .calculation(let calculation)): calculation.timerSeconds() != nil
         case (.popOut, .calculation), (.popOut, .pastCalculation), (.popOut, .calculator): true
         default: false
@@ -355,6 +358,7 @@ enum ResultAction: CaseIterable {
         case .refreshPreview: String(localized: "Refresh Preview")
         case .pasteAsJPEG: String(localized: "Paste as JPEG")
         case .copyAsJPEG: String(localized: "Copy as JPEG")
+        case .saveImage: String(localized: "Save Image…")
         case .copyPath: String(localized: "Copy Path")
         case .startTimer:
             if case .calculation(let calculation) = result, let seconds = calculation.timerSeconds() {
@@ -387,6 +391,7 @@ enum ResultAction: CaseIterable {
         case .refreshPreview: "arrow.clockwise"
         case .pasteAsJPEG: "photo"
         case .copyAsJPEG: "photo.on.rectangle"
+        case .saveImage: "square.and.arrow.down"
         case .copyPath: "link"
         case .startTimer: "timer"
         case .popOut: "macwindow.on.rectangle"
@@ -404,6 +409,7 @@ enum ResultAction: CaseIterable {
         case .restart: ("r", [.command])
         case .addFiveMinutes, .rename, .snooze, .refreshPreview, .pasteAsJPEG, .copyAsJPEG: nil
         case .togglePin: ("p", [.command, .shift])
+        case .saveImage: ("s", [.command])
         case .copyPath: ("c", [.command, .shift])
         case .startTimer: ("t", [.command])
         case .popOut: ("o", [.command, .shift])
@@ -456,6 +462,7 @@ final class LauncherModel {
     /// Opens the floating calculator, with the given expression in its input.
     @ObservationIgnored var onPopOutCalculator: (String?) -> Void = { _ in }
     @ObservationIgnored var onCreateQuicklink: () -> Void = {}
+    @ObservationIgnored var onSaveImage: (ClipboardItem) -> Void = { _ in }
 
     /// The stopwatch the stopwatch view shows.
     private var stopwatchID: UUID?
@@ -858,6 +865,8 @@ final class LauncherModel {
                 return
             }
             dismissAndPaste(copyOnly: action == .copyAsJPEG)
+        case (.saveImage, .clipboard(let item)):
+            onSaveImage(item)
         case (.togglePin, .clipboard(let item)):
             clipboard.setPinned(item.pinnedAt == nil, item: item)
             selection = results.firstIndex { $0.id == result.id } ?? 0
