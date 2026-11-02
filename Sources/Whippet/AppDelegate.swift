@@ -158,9 +158,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             case kVK_Return where model.usesPlainKeys && modifiers.isEmpty,
                 kVK_Space where model.usesPlainKeys && modifiers.isEmpty:
                 model.activate()
-            // An extension's detail has no field to take Return, so it runs the first action here.
+            // An extension's view runs its first action on Return when no field takes it: always in a detail, and in a
+            // list whose search field hasn't got focus yet.
             case kVK_Return
-            where model.leavesArrowsToExtension && modifiers.isEmpty && !(panel.firstResponder is NSTextView):
+            where model.mode == .extensionView && modifiers.isEmpty && !(panel.firstResponder is NSTextView):
                 model.activate()
             case kVK_Delete where model.usesPlainKeys && modifiers.isEmpty:
                 model.deleteWithPlainKey()

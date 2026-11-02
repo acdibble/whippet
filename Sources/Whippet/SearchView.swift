@@ -144,6 +144,12 @@ struct SearchView: View {
             guard target == nil else { return }
             DispatchQueue.main.async { focus = .search }
         }
+        // An extension going from a detail or form back to a list brings the search field back, which needs focus
+        // again for typing and Return.
+        .onChange(of: model.showsExtensionSearchField) { _, shows in
+            guard shows, model.mode == .extensionView else { return }
+            DispatchQueue.main.async { focus = .search }
+        }
     }
 
     private static let durationPlaceholders = [

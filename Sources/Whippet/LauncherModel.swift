@@ -1489,7 +1489,9 @@ final class LauncherModel {
 
     var extensionPlaceholder: String {
         extensionSession?.list?.searchBarPlaceholder
-            ?? String(localized: "Search \(extensionSession?.command.title ?? "")…")
+            ?? String(
+                localized: "Search \(extensionSession?.list?.navigationTitle ?? extensionSession?.command.title ?? "")…"
+            )
     }
 
     func runExtensionAction(_ action: ExtensionAction) {
