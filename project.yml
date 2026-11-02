@@ -98,6 +98,7 @@ targets:
       - Tests/WhippetTests
       - Sources/Whippet/CaffeineDuration.swift
       - Sources/Whippet/Changelog.swift
+      - Sources/Whippet/FeatureFlags.swift
       - Sources/Whippet/FeedbackImage.swift
       - Sources/Whippet/FeedbackKey.swift
       - Sources/Whippet/ImageConversion.swift

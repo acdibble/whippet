@@ -1,0 +1,21 @@
+{
+  "id": "codes.dibble.whippet.hello",
+  "name": "Hello",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "description": "Examples of what an extension can show: a list, a detail, a form and a command without a view.",
+  "author": "Whippet",
+  "icon": "hand.wave",
+  "commands": [
+    { "name": "fruit", "title": "Browse Fruit", "icon": "🍎" },
+    { "name": "notes", "title": "Notes", "icon": "note.text" },
+    { "name": "addNote", "title": "Add Note", "icon": "square.and.pencil" },
+    { "name": "copyUUID", "title": "Copy UUID", "mode": "no-view", "icon": "number" },
+    {
+      "name": "greet",
+      "title": "Greet",
+      "mode": "no-view",
+      "argument": { "name": "name", "placeholder": "Name" }
+    }
+  ]
+}

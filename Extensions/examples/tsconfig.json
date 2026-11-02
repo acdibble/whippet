@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": [],
+    "typeRoots": ["../api/node_modules/@types"],
+    "paths": {
+      "@whippet/api": ["../api/src/index.ts"],
+      "react": ["../api/node_modules/@types/react"],
+      "react/jsx-runtime": ["../api/node_modules/@types/react/jsx-runtime"]
+    }
+  },
+  "include": ["*/src/**/*"]
+}

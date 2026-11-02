@@ -23,7 +23,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let settingsNavigation = SettingsNavigation()
     let quicklinks: Quicklinks
     let exchangeRates = ExchangeRateStore()
+    let featureFlags = FeatureFlags()
+    let extensions = ExtensionManager()
     private var registeredQuicklinkHotkeys: Set<String> = []
+    private var registeredExtensionHotkeys: Set<String> = []
     private lazy var floatingCalculator = FloatingCalculator(clipboard: clipboard, exchangeRates: exchangeRates)
     /// Created with the delegate, as Sparkle recommends, so its scheduled checks start at launch.
     let updater = Updater()
@@ -64,7 +67,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             timers: timers,
             history: launchHistory,
             quicklinks: quicklinks,
-            exchangeRates: exchangeRates
+            exchangeRates: exchangeRates,
+            extensions: extensions
         )
         model.onDismiss = { [weak self] in self?.dismissPanel() }
         model.onOpenSettings = { [weak self] in self?.showSettings() }
@@ -83,6 +87,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
 
         model.onSaveImage = { [weak self] item in self?.saveImage(item) }
+        model.onOpenExtensionSettings = { [weak self] in self?.showSettings(pane: .extensions) }
+        extensions.onEvent = { [weak self] extensionID, event in
+            self?.model.handleExtensionEvent(event, from: extensionID)
+        }
+        extensions.host = { [weak self] request in
+            self?.model.handleExtensionRequest(request) ?? .null
+        }
+        extensions.onReload = { [weak self] ids in self?.model.extensionsReloaded(ids) }
+        extensions.onCommandsChange = { [weak self] in self?.registerExtensionHotkeys() }
+        featureFlags.onChange = { [weak self] flag, isEnabled in
+            switch flag {
+            case .extensions: self?.extensions.setActive(isEnabled)
+            }
+        }
+        extensions.setActive(featureFlags.isEnabled(.extensions))
 
         panel = LauncherPanel(rootView: SearchView(model: model))
         panel.delegate = self
@@ -103,6 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         registerAppHotkeys()
         registerQuicklinkHotkeys()
+        registerExtensionHotkeys()
         appIndex.onChange = { [weak self] in self?.registerAppHotkeys() }
         appIndex.startWatching()
         caffeineStatusItem = CaffeineStatusItem(caffeine: caffeine)
@@ -138,10 +158,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             case kVK_Return where model.usesPlainKeys && modifiers.isEmpty,
                 kVK_Space where model.usesPlainKeys && modifiers.isEmpty:
                 model.activate()
+            // An extension's detail has no field to take Return, so it runs the first action here.
+            case kVK_Return
+            where model.leavesArrowsToExtension && modifiers.isEmpty && !(panel.firstResponder is NSTextView):
+                model.activate()
             case kVK_Delete where model.usesPlainKeys && modifiers.isEmpty:
                 model.deleteWithPlainKey()
             case kVK_Tab where modifiers.isEmpty:
                 guard model.beginArgumentForSelection() else { return event }
+            // An extension's form or detail leaves the arrows to its fields and scrolling.
+            case kVK_UpArrow where model.leavesArrowsToExtension, kVK_DownArrow where model.leavesArrowsToExtension:
+                return event
             case kVK_UpArrow: model.moveSelection(by: -1)
             case kVK_DownArrow: model.moveSelection(by: 1)
             case kVK_Return where modifiers == [.command], kVK_ANSI_KeypadEnter where modifiers == [.command]:
@@ -184,7 +211,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case ("k", [.command]): showActions()
         case ("q", [.command]): NSApp.terminate(nil)
         case (",", [.command]): showSettings()
-        default: return false
+        default: return model.performExtensionShortcut(key, modifiers: modifiers)
         }
         return true
     }
@@ -291,6 +318,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    /// Like app hotkeys, looked up when pressed, so they follow a command through its extension reloading.
+    private func registerExtensionHotkeys() {
+        for info in extensions.commands where !registeredExtensionHotkeys.contains(info.key) {
+            registeredExtensionHotkeys.insert(info.key)
+            let key = info.key
+            KeyboardShortcuts.onKeyDown(for: info.shortcutName) { [weak self] in
+                guard let self, let info = extensions.commands.first(where: { $0.key == key }) else { return }
+                runExtensionCommand(info)
+            }
+        }
+    }
+
+    /// A command without a view or argument runs without the panel, into the app in front. Others open the panel on the
+    /// command, or on its argument.
+    private func runExtensionCommand(_ info: ExtensionCommandInfo) {
+        launchHistory.record(LauncherResult.extensionCommand(info).id)
+        if info.command.mode == .noView, info.command.argument == nil {
+            let frontmost = NSWorkspace.shared.frontmostApplication
+            model.targetWindow = nil
+            model.targetApp =
+                frontmost?.processIdentifier == ProcessInfo.processInfo.processIdentifier ? nil : frontmost
+            model.launchExtension(info)
+            return
+        }
+        showPanel()
+        model.openDirectly {
+            if info.command.argument != nil {
+                model.beginArgument(.extensionCommand(info))
+            } else {
+                model.launchExtension(info)
+            }
+        }
+    }
+
     /// Like app hotkeys, looked up when pressed. A quicklink that takes text opens the panel ready for it.
     private func registerQuicklinkHotkeys() {
         for quicklink in quicklinks.items where !registeredQuicklinkHotkeys.contains(quicklink.uuid) {
@@ -344,8 +405,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// The menu opens above the footer, so it's only offered while the panel is expanded and has one. Collapsed, as
     /// for an inline answer such as `10 min in s`, the selected result's own shortcuts still work.
     private func showActions() {
-        guard model.isExpanded, let result = model.selectedResult, let view = panel.contentView else { return }
+        guard model.isExpanded, let view = panel.contentView else { return }
         let menu = NSMenu()
+        if model.mode == .extensionView {
+            addExtensionActions(to: menu)
+        } else if let result = model.selectedResult {
+            addActions(for: result, to: menu)
+        }
+        guard !menu.items.isEmpty else { return }
+
+        let inset = LauncherPanel.shadowInset
+        let size = LauncherPanel.contentSize
+        let footerHeight: CGFloat = 44
+        let isRightToLeft = NSApp.userInterfaceLayoutDirection == .rightToLeft
+        let origin = NSPoint(
+            x: isRightToLeft ? inset + 12 : inset + size.width - menu.size.width - 12,
+            y: inset + size.height - footerHeight - menu.size.height
+        )
+        menu.popUp(positioning: nil, at: origin, in: view)
+    }
+
+    private func addActions(for result: LauncherResult, to menu: NSMenu) {
         for action in ResultAction.allCases where action.isAvailable(for: result) {
             let item = ActionMenuItem(title: action.title(for: result, model: model)) { [weak self] in
                 self?.model.perform(action)
@@ -359,16 +439,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
             menu.addItem(item)
         }
+    }
 
-        let inset = LauncherPanel.shadowInset
-        let size = LauncherPanel.contentSize
-        let footerHeight: CGFloat = 44
-        let isRightToLeft = NSApp.userInterfaceLayoutDirection == .rightToLeft
-        let origin = NSPoint(
-            x: isRightToLeft ? inset + 12 : inset + size.width - menu.size.width - 12,
-            y: inset + size.height - footerHeight - menu.size.height
-        )
-        menu.popUp(positioning: nil, at: origin, in: view)
+    /// The extension's actions for the selected item, or for its detail or form, with its sections as headers. The
+    /// first runs on Return, the second on ⌘Return, as the menu shows; a form's first runs on ⌘Return too.
+    private func addExtensionActions(to menu: NSMenu) {
+        let actions = model.extensionActions
+        let isForm = if case .form? = model.extensionSession?.view { true } else { false }
+        var section: String?
+        for (index, action) in actions.enumerated() {
+            if action.section != section {
+                section = action.section
+                if index > 0 {
+                    menu.addItem(.separator())
+                }
+                if let section {
+                    menu.addItem(.sectionHeader(title: section))
+                }
+            }
+            let item = ActionMenuItem(title: action.title) { [weak self] in
+                self?.model.runExtensionAction(action)
+            }
+            item.image = action.icon.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
+            if action.isDestructive {
+                item.attributedTitle = NSAttributedString(
+                    string: action.title, attributes: [.foregroundColor: NSColor.systemRed])
+            }
+            if let shortcut = action.shortcut {
+                item.keyEquivalent = shortcut.key
+                item.keyEquivalentModifierMask = Self.modifierFlags(shortcut.modifiers)
+            } else if index == 1 && !isForm || index == 0 && isForm {
+                item.keyEquivalent = "\r"
+                item.keyEquivalentModifierMask = .command
+            }
+            menu.addItem(item)
+        }
+    }
+
+    private static func modifierFlags(_ modifiers: ExtensionShortcut.Modifiers) -> NSEvent.ModifierFlags {
+        var flags: NSEvent.ModifierFlags = []
+        if modifiers.contains(.command) { flags.insert(.command) }
+        if modifiers.contains(.shift) { flags.insert(.shift) }
+        if modifiers.contains(.option) { flags.insert(.option) }
+        if modifiers.contains(.control) { flags.insert(.control) }
+        return flags
     }
 
     private func togglePanel() {

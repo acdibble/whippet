@@ -161,6 +161,16 @@
         }
       }
     },
+    "Access" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دسترسی"
+          }
+        }
+      }
+    },
     "Actions" : {
       "localizations" : {
         "fa" : {
@@ -271,6 +281,16 @@
         }
       }
     },
+    "Allow “%@” to:" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به «%@» اجازه داده شود که:"
+          }
+        }
+      }
+    },
     "Allowed" : {
       "localizations" : {
         "fa" : {
@@ -287,6 +307,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اجازه دادن…"
+          }
+        }
+      }
+    },
+    "An extension is a folder with a manifest.json and a built index.js. Extensions in the Extensions folder reload as they change." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزونه پوشه‌ای است با یک manifest.json و یک index.js ساخته‌شده. افزونه‌های پوشهٔ Extensions با هر تغییر دوباره بارگذاری می‌شوند."
+          }
+        }
+      }
+    },
+    "Another folder has an extension with the id %@." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پوشهٔ دیگری افزونه‌ای با شناسهٔ %@ دارد."
           }
         }
       }
@@ -377,6 +417,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بیدار تا زمان خاموش کردن"
+          }
+        }
+      }
+    },
+    "Beta Features" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ویژگی‌های آزمایشی"
           }
         }
       }
@@ -621,12 +671,32 @@
         }
       }
     },
+    "Choose an extension's folder, with its manifest.json and index.js." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پوشهٔ یک افزونه را با manifest.json و index.js آن انتخاب کنید."
+          }
+        }
+      }
+    },
     "Choose…" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "انتخاب…"
+          }
+        }
+      }
+    },
+    "Clear" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پاک کردن"
           }
         }
       }
@@ -737,6 +807,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "فرمان‌ها"
+          }
+        }
+      }
+    },
+    "Commands written in JavaScript with React, installed in Settings › Extensions." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فرمان‌هایی نوشته‌شده با JavaScript و React که در تنظیمات › افزونه‌ها نصب می‌شوند."
           }
         }
       }
@@ -877,6 +957,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "کپی در کلیپ‌بورد"
+          }
+        }
+      }
+    },
+    "Couldn't Install the Extension" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نصب افزونه ممکن نشد"
+          }
+        }
+      }
+    },
+    "Couldn't Load" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بارگذاری نشد"
           }
         }
       }
@@ -1161,6 +1261,16 @@
         }
       }
     },
+    "Enabled" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فعال"
+          }
+        }
+      }
+    },
     "Enter Duration" : {
       "localizations" : {
         "fa" : {
@@ -1197,6 +1307,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "همهٔ داده‌هایی که همگام‌سازی می‌شوند، از جمله تصاویر، به‌صورت سرتاسری رمزگذاری می‌شوند. Apple فقط تعداد موارد، اندازهٔ آن‌ها و زمان تغییرشان را می‌بیند."
+          }
+        }
+      }
+    },
+    "Extensions" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزونه‌ها"
+          }
+        }
+      }
+    },
+    "Features still being tried out. They may change or go away." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ویژگی‌هایی که هنوز در حال آزمایش‌اند. ممکن است تغییر کنند یا حذف شوند."
           }
         }
       }
@@ -1487,6 +1617,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اطلاعات"
+          }
+        }
+      }
+    },
+    "Install" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نصب"
+          }
+        }
+      }
+    },
+    "Install Extension…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نصب افزونه…"
+          }
+        }
+      }
+    },
+    "Install an extension to add its commands to Whippet." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزونه‌ای نصب کنید تا فرمان‌هایش به Whippet اضافه شود."
           }
         }
       }
@@ -1821,6 +1981,36 @@
         }
       }
     },
+    "No Actions" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدون عملکرد"
+          }
+        }
+      }
+    },
+    "No Extensions" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزونه‌ای نیست"
+          }
+        }
+      }
+    },
+    "No Results" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نتیجه‌ای نیست"
+          }
+        }
+      }
+    },
     "No clipboard history" : {
       "localizations" : {
         "fa" : {
@@ -1901,6 +2091,16 @@
         }
       }
     },
+    "Nothing logged yet" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هنوز چیزی ثبت نشده"
+          }
+        }
+      }
+    },
     "Notifications" : {
       "localizations" : {
         "fa" : {
@@ -1927,6 +2127,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اعدادی که کپی می‌کنید اینجا نمایش داده می‌شوند"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باشه"
           }
         }
       }
@@ -1977,6 +2187,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اجرای فرمان"
+          }
+        }
+      }
+    },
+    "Open Extensions Folder" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن پوشهٔ افزونه‌ها"
           }
         }
       }
@@ -2481,6 +2701,16 @@
         }
       }
     },
+    "Required" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الزامی"
+          }
+        }
+      }
+    },
     "Reset" : {
       "localizations" : {
         "fa" : {
@@ -2601,6 +2831,16 @@
         }
       }
     },
+    "Search %@…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جست‌وجو در %@…"
+          }
+        }
+      }
+    },
     "Search Clipboard History" : {
       "localizations" : {
         "fa" : {
@@ -2717,6 +2957,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "همراه بازخورد شما ارسال می‌شود"
+          }
+        }
+      }
+    },
+    "Set %@ for %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ را برای %2$@ تنظیم کنید"
           }
         }
       }
@@ -3121,6 +3371,16 @@
         }
       }
     },
+    "This version asks for more access. Turn it on again to allow it." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این نسخه دسترسی بیشتری می‌خواهد. برای اجازه دادن، دوباره روشنش کنید."
+          }
+        }
+      }
+    },
     "Timer" : {
       "localizations" : {
         "fa" : {
@@ -3211,6 +3471,16 @@
         }
       }
     },
+    "Turn On" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "روشن کردن"
+          }
+        }
+      }
+    },
     "Turned off in System Settings" : {
       "localizations" : {
         "fa" : {
@@ -3287,6 +3557,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نشانی"
+          }
+        }
+      }
+    },
+    "Uninstall" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف نصب"
           }
         }
       }
@@ -3377,6 +3657,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نسخه"
+          }
+        }
+      }
+    },
+    "View Log" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مشاهدهٔ گزارش"
           }
         }
       }

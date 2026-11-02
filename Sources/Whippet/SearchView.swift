@@ -48,6 +48,12 @@ struct SearchView: View {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     StopwatchSwitcher(model: model)
+                } else if model.mode == .extensionView, !model.showsExtensionSearchField {
+                    // A detail or a form, which has nothing to search, shows its title.
+                    Text(model.extensionTitle)
+                        .font(.system(size: 20))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 } else if model.mode == .timers {
                     Text("Timers")
                         .font(.system(size: 20))
@@ -96,6 +102,11 @@ struct SearchView: View {
                 if model.mode == .clipboard {
                     ClipboardKindMenu(model: model)
                 }
+
+                if model.mode == .extensionView, model.extensionSession?.view.isLoading == true {
+                    ProgressView()
+                        .controlSize(.small)
+                }
             }
             .padding(.horizontal, 16)
             .frame(height: 56)
@@ -112,6 +123,7 @@ struct SearchView: View {
                 case .stopwatch: StopwatchView(model: model)
                 case .timers: TimersView(model: model)
                 case .changelog: ChangelogView(model: model)
+                case .extensionView: ExtensionContent(model: model)
                 }
             }
         }
@@ -146,12 +158,13 @@ struct SearchView: View {
         case .calculator: String(localized: "Type a calculation…")
         case .clipboard: String(localized: "Type to filter entries…")
         case .changelog: String(localized: "Type to filter changes…")
+        case .extensionView: model.extensionPlaceholder
         case .stopwatch, .timers: ""
         }
     }
 }
 
-private struct RootResults: View {
+struct RootResults: View {
     let model: LauncherModel
 
     var body: some View {
@@ -192,15 +205,21 @@ private struct RootResults: View {
             }
             .frame(maxHeight: .infinity)
 
-            HStack {
-                Spacer()
-                if results.indices.contains(model.selection) {
-                    ResultActions(model: model, result: results[model.selection])
+            // An extension's list offers its own actions while it has no items, so its footer follows the extension's
+            // actions rather than the selected row.
+            if model.mode == .extensionView {
+                ExtensionFooter(model: model, primaryKeys: ["return"])
+            } else {
+                HStack {
+                    Spacer()
+                    if results.indices.contains(model.selection) {
+                        ResultActions(model: model, result: results[model.selection])
+                    }
                 }
+                .font(.system(size: 13, weight: .medium))
+                .padding(.horizontal, 10)
+                .frame(height: 44)
             }
-            .font(.system(size: 13, weight: .medium))
-            .padding(.horizontal, 10)
-            .frame(height: 44)
         }
     }
 
@@ -252,12 +271,16 @@ struct ResultRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            icon
-                .resizable()
-                .scaledToFit()
+            iconView
                 .frame(width: 22, height: 22)
             Text(result.title)
                 .lineLimit(1)
+            // An extension's item keeps its subtitle beside the title, leaving the end of the row for accessories.
+            if case .extensionItem(let item) = result, let subtitle = item.subtitle {
+                Text(subtitle)
+                    .foregroundStyle(Color.launcherSecondary)
+                    .lineLimit(1)
+            }
             Spacer()
             if result.isAdminOnly {
                 AdminBadge()
@@ -275,8 +298,18 @@ struct ResultRow: View {
         .contentShape(Rectangle())
     }
 
+    @ViewBuilder
+    private var iconView: some View {
+        switch result {
+        case .extensionCommand(let info): ExtensionIcon(name: info.icon, directory: info.directory)
+        case .extensionItem(let item): ExtensionIcon(name: item.icon)
+        default: icon.resizable().scaledToFit()
+        }
+    }
+
     private var icon: Image {
         switch result {
+        case .extensionCommand, .extensionItem: Image(systemName: "puzzlepiece.extension")
         case .app(let app): Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
         case .clipboardHistory: Image(systemName: "list.clipboard")
         case .calculator: Image(systemName: "plus.forwardslash.minus")
@@ -333,6 +366,8 @@ private struct ResultSubtitle: View {
                         .monospacedDigit()
                 }
             }
+        } else if case .extensionItem(let item) = result {
+            ExtensionAccessories(accessories: item.accessories)
         } else {
             Text(result.subtitle)
         }

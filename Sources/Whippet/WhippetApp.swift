@@ -24,7 +24,9 @@ struct WhippetApp: App {
                 feedbackStore: appDelegate.feedbackStore,
                 navigation: appDelegate.settingsNavigation,
                 updater: appDelegate.updater,
-                quicklinks: appDelegate.quicklinks
+                quicklinks: appDelegate.quicklinks,
+                extensions: appDelegate.extensions,
+                featureFlags: appDelegate.featureFlags
             )
         }
         .windowToolbarStyle(.unified)

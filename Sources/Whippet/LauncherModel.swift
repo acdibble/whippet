@@ -45,6 +45,10 @@ enum LauncherResult: Identifiable, Hashable {
     case timerPreset(TimerPreset)
     case app(AppEntry)
     case clipboard(ClipboardItem)
+    /// A command an extension adds.
+    case extensionCommand(ExtensionCommandInfo)
+    /// An item in an extension's list.
+    case extensionItem(ExtensionListItem)
 
     var id: String {
         switch self {
@@ -81,6 +85,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .timerPreset(let preset): preset.launchKey
         case .app(let app): "app:\(app.url.path)"
         case .clipboard(let item): "clipboard:\(item.id)"
+        case .extensionCommand(let info): "extension:\(info.key)"
+        case .extensionItem(let item): "extension-item:\(item.id)"
         }
     }
 
@@ -125,6 +131,8 @@ enum LauncherResult: Identifiable, Hashable {
                 ?? TimerNaming.defaultTimerName(seconds: preset.seconds)
         case .app(let app): app.name
         case .clipboard(let item): item.title
+        case .extensionCommand(let info): info.title
+        case .extensionItem(let item): item.title
         }
     }
 
@@ -150,6 +158,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .ringingTimer: String(localized: "Done")
         case .app: String(localized: "Application")
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
+        case .extensionCommand(let info): info.command.subtitle ?? info.extensionName
+        case .extensionItem(let item): item.subtitle ?? ""
         }
     }
 
@@ -187,14 +197,19 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .quicklink(let quicklink): quicklink.searchText
         case .release(let release): release.searchText
+        case .extensionCommand(let info): "\(info.title) \(info.extensionName)"
+        case .extensionItem(let item): item.searchText
         default: title
         }
     }
 
-    /// Return on it asks for text, and the quicklink is only counted as used once it opens with that text.
-    var startsQuicklinkArgument: Bool {
-        if case .quicklink(let quicklink) = self { return quicklink.takesArgument }
-        return false
+    /// Return on it asks for text, and the quicklink or command is only counted as used once it runs with that text.
+    var startsArgument: Bool {
+        switch self {
+        case .quicklink(let quicklink): quicklink.takesArgument
+        case .extensionCommand(let info): info.command.argument != nil
+        default: false
+        }
     }
 
     /// The key launches are recorded under: an app's bundle identifier, or a command's identifier. Calculations,
@@ -207,7 +222,9 @@ enum LauncherResult: Identifiable, Hashable {
         case .searchClipboard: LauncherResult.clipboardHistory.id
         // Counted as using the timer it starts, which then ranks among Recent Timers.
         case .startTimer(let seconds, let name): TimerPreset(name: name, seconds: seconds).launchKey
-        case .calculation, .pastCalculation, .clipboard, .quit, .timer, .ringingTimer, .whatsNew, .release: nil
+        case .calculation, .pastCalculation, .clipboard, .quit, .timer, .ringingTimer, .whatsNew, .release,
+            .extensionItem:
+            nil
         default: id
         }
     }
@@ -240,6 +257,15 @@ enum LauncherResult: Identifiable, Hashable {
         case .ringingTimer: String(localized: "Stop")
         case .app: String(localized: "Open Application")
         case .clipboard: String(localized: "Copy to Clipboard")
+        case .extensionCommand(let info):
+            if info.command.argument != nil {
+                String(localized: "Enter Text")
+            } else if info.command.mode == .noView {
+                String(localized: "Run Command")
+            } else {
+                String(localized: "Open Command")
+            }
+        case .extensionItem(let item): item.actions.first?.title ?? String(localized: "No Actions")
         }
     }
 
@@ -271,6 +297,7 @@ enum ArgumentTarget: Equatable {
     case timerName(seconds: Int)
     case stopwatchName
     case rename(TimerItem)
+    case extensionCommand(ExtensionCommandInfo)
 
     var label: String {
         switch self {
@@ -279,6 +306,7 @@ enum ArgumentTarget: Equatable {
         case .timerName(let seconds): String(localized: "Timer for \(TimerNaming.duration(TimeInterval(seconds)))")
         case .stopwatchName: String(localized: "Start Stopwatch")
         case .rename(let item): String(localized: "Rename \(item.name)")
+        case .extensionCommand(let info): info.title
         }
     }
 
@@ -290,6 +318,8 @@ enum ArgumentTarget: Equatable {
             String(localized: "Name, or Return for “\(TimerNaming.defaultTimerName(seconds: seconds))”")
         case .stopwatchName: String(localized: "Name, or Return for “\(TimerNaming.defaultStopwatchName)”")
         case .rename: String(localized: "New name")
+        case .extensionCommand(let info):
+            info.command.argument?.placeholder ?? String(localized: "Type and press Return")
         }
     }
 }
@@ -428,6 +458,8 @@ final class LauncherModel {
         case stopwatch
         case timers
         case changelog
+        /// A view command from an extension, in `extensionSession`.
+        case extensionView
     }
 
     var query = "" {
@@ -435,6 +467,9 @@ final class LauncherModel {
             guard query != oldValue else { return }
             resetSelection()
             rememberInlineAnswer()
+            if mode == .extensionView {
+                extensionSession?.searchTextChanged(query)
+            }
         }
     }
     /// The last complete answer in the search bar, kept while the next part of the calculation is typed.
@@ -463,6 +498,11 @@ final class LauncherModel {
     @ObservationIgnored var onPopOutCalculator: (String?) -> Void = { _ in }
     @ObservationIgnored var onCreateQuicklink: () -> Void = {}
     @ObservationIgnored var onSaveImage: (ClipboardItem) -> Void = { _ in }
+    /// Opens Settings › Extensions, for preferences an extension needs before it runs.
+    @ObservationIgnored var onOpenExtensionSettings: () -> Void = {}
+
+    /// The extension view command that's open, while the mode is `.extensionView`.
+    private(set) var extensionSession: ExtensionSession?
 
     /// The stopwatch the stopwatch view shows.
     private var stopwatchID: UUID?
@@ -504,6 +544,8 @@ final class LauncherModel {
         let launchRevision: Int
         let quicklinks: [Quicklink]
         let exchangeRates: ExchangeRates?
+        let extensionCommands: [ExtensionCommandInfo]
+        let extensionRevision: Int
         /// Compared cheaply, since an unchanged array shares its storage.
         let apps: [AppEntry]
     }
@@ -526,6 +568,7 @@ final class LauncherModel {
     private let caffeine: Caffeine
     private let timers: Timers
     private let exchangeRates: ExchangeRateStore
+    let extensions: ExtensionManager
 
     /// True while the Hours, Minutes and Seconds fields of "Caffeinate for…" are shown beside the search field.
     private(set) var isEnteringDuration = false
@@ -539,8 +582,10 @@ final class LauncherModel {
         timers: Timers,
         history: LaunchHistory,
         quicklinks: Quicklinks,
-        exchangeRates: ExchangeRateStore
+        exchangeRates: ExchangeRateStore,
+        extensions: ExtensionManager
     ) {
+        self.extensions = extensions
         self.caffeine = caffeine
         self.timers = timers
         self.appIndex = appIndex
@@ -641,6 +686,7 @@ final class LauncherModel {
         case .quicklink(let quicklink)? where quicklink.takesArgument: beginArgument(for: quicklink)
         case .newTimer?: beginArgument(.timerDuration)
         case .newStopwatch?: beginArgument(.stopwatchName)
+        case .extensionCommand(let info)? where info.command.argument != nil: beginArgument(.extensionCommand(info))
         case .startTimer(let seconds, nil)?: beginArgument(.timerName(seconds: seconds))
         default: return false
         }
@@ -666,6 +712,8 @@ final class LauncherModel {
             launchRevision: history.revision,
             quicklinks: quicklinks.items,
             exchangeRates: exchangeRates.rates,
+            extensionCommands: extensions.commands,
+            extensionRevision: extensionSession?.revision ?? -1,
             apps: appIndex.apps
         )
         if let cachedResults, cachedResults.key == key {
@@ -710,6 +758,7 @@ final class LauncherModel {
             let candidates =
                 whatsNewRows + commands
                 + quicklinks.items.map(LauncherResult.quicklink)
+                + extensions.commands.map(LauncherResult.extensionCommand)
                 + timers.presets.map(LauncherResult.timerPreset)
                 + appIndex.apps.map(LauncherResult.app)
             guard query.isEmpty else {
@@ -747,6 +796,8 @@ final class LauncherModel {
                 releases
                 .filter { release in words.allSatisfy { release.searchText.localizedStandardContains($0) } }
                 .map(LauncherResult.release)
+        case .extensionView:
+            return extensionItems
         }
     }
 
@@ -840,6 +891,15 @@ final class LauncherModel {
     }
 
     func perform(_ action: ResultAction) {
+        // ⌘Return runs an extension's second action, or submits a form, whose first action is usually the submit.
+        if mode == .extensionView, action == .secondary {
+            if case .form = extensionSession?.view {
+                runExtensionAction(at: 0)
+            } else {
+                runExtensionAction(at: 1)
+            }
+            return
+        }
         guard let result = selectedResult, action.isAvailable(for: result) else { return }
         switch (action, result) {
         case (.primary, _):
@@ -1011,6 +1071,8 @@ final class LauncherModel {
 
     /// Switches view with an empty search and the default selection for that view.
     private func open(_ newMode: Mode) {
+        extensionSession?.close()
+        extensionSession = nil
         mode = newMode
         query = ""
         clipboardKind = nil
@@ -1054,6 +1116,10 @@ final class LauncherModel {
             activateInTimers()
             return
         }
+        if mode == .extensionView {
+            runExtensionAction(at: 0)
+            return
+        }
         // An unfinished calculation in the search bar has nothing to copy yet.
         if isCalculatingInline, inlineCalculation == nil {
             NSSound.beep()
@@ -1062,7 +1128,7 @@ final class LauncherModel {
         let results = results
         guard results.indices.contains(selection) else { return }
         // Apps are recorded by AppIndex.open, which their hotkeys use too, and a quicklink that takes text when it opens.
-        if !results[selection].isApp, !results[selection].startsQuicklinkArgument,
+        if !results[selection].isApp, !results[selection].startsArgument,
             let key = results[selection].launchKey
         {
             history.record(key)
@@ -1190,6 +1256,15 @@ final class LauncherModel {
         case .ringingTimer(let item):
             timers.stop(item.id)
             onDismiss()
+        case .extensionCommand(let info):
+            if info.command.argument != nil {
+                beginArgument(.extensionCommand(info))
+                return
+            }
+            launchExtension(info)
+        case .extensionItem:
+            // Handled above, with the rest of the extension view.
+            break
         }
     }
 
@@ -1259,6 +1334,10 @@ final class LauncherModel {
             }
             timers.rename(item.id, to: text)
             argumentTarget = nil
+        case .extensionCommand(let info):
+            history.record(LauncherResult.extensionCommand(info).id)
+            argumentTarget = nil
+            launchExtension(info, arguments: info.command.argument.map { [$0.name: argument] } ?? [:])
         }
     }
 
@@ -1279,7 +1358,7 @@ final class LauncherModel {
     }
 
     /// Without Accessibility permission the item stays copied and macOS is asked to show its permission prompt.
-    private func dismissAndPaste(copyOnly: Bool) {
+    func dismissAndPaste(copyOnly: Bool) {
         onDismiss()
         if !copyOnly, let targetWindow {
             Paster.paste(into: targetWindow)
@@ -1348,6 +1427,13 @@ final class LauncherModel {
             clipboardKind = nil
             return
         }
+        if mode == .extensionView, let session = extensionSession {
+            Task {
+                guard await !session.pop(), extensionSession === session else { return }
+                leaveExtensionView()
+            }
+            return
+        }
         if mode != .root {
             if openedDirectly {
                 onDismiss()
@@ -1362,6 +1448,172 @@ final class LauncherModel {
             return
         }
         onDismiss()
+    }
+
+    // MARK: - Extensions
+
+    /// An extension list's items, filtered by the search text unless the extension searches for itself.
+    private var extensionItems: [LauncherResult] {
+        guard let list = extensionSession?.list else { return [] }
+        let text = query.trimmingCharacters(in: .whitespaces)
+        guard list.filtering, !text.isEmpty else { return list.items.map(LauncherResult.extensionItem) }
+        return list.items.filter { FuzzyMatch.score(text, in: $0.searchText) != nil }.map(LauncherResult.extensionItem)
+    }
+
+    /// The selected item's actions, or the view's own when there's no item to select, as in a detail or a form.
+    var extensionActions: [ExtensionAction] {
+        guard mode == .extensionView, let session = extensionSession else { return [] }
+        if case .extensionItem(let item)? = selectedResult { return item.actions }
+        return session.view.actions
+    }
+
+    /// A list shows the search bar as a text field; a detail or a form shows its title there instead.
+    var showsExtensionSearchField: Bool {
+        switch extensionSession?.view {
+        case .detail?, .form?: false
+        default: true
+        }
+    }
+
+    /// True in an extension's detail or form, whose fields and scrolling take the arrow keys.
+    var leavesArrowsToExtension: Bool {
+        mode == .extensionView && argumentTarget == nil && !showsExtensionSearchField
+    }
+
+    var extensionTitle: String {
+        guard let session = extensionSession else { return "" }
+        return session.view.navigationTitle ?? session.command.title
+    }
+
+    var extensionPlaceholder: String {
+        extensionSession?.list?.searchBarPlaceholder
+            ?? String(localized: "Search \(extensionSession?.command.title ?? "")…")
+    }
+
+    func runExtensionAction(_ action: ExtensionAction) {
+        extensionSession?.run(action)
+    }
+
+    private func runExtensionAction(at index: Int) {
+        let actions = extensionActions
+        guard actions.indices.contains(index) else {
+            NSSound.beep()
+            return
+        }
+        runExtensionAction(actions[index])
+    }
+
+    /// Runs the selected item's action whose shortcut was pressed, returning false when none has it.
+    func performExtensionShortcut(_ key: Character, modifiers: NSEvent.ModifierFlags) -> Bool {
+        var wanted: ExtensionShortcut.Modifiers = []
+        if modifiers.contains(.command) { wanted.insert(.command) }
+        if modifiers.contains(.shift) { wanted.insert(.shift) }
+        if modifiers.contains(.option) { wanted.insert(.option) }
+        if modifiers.contains(.control) { wanted.insert(.control) }
+        let shortcut = ExtensionShortcut(key: String(key), modifiers: wanted)
+        guard let action = extensionActions.first(where: { $0.shortcut == shortcut }) else { return false }
+        runExtensionAction(action)
+        return true
+    }
+
+    /// Opens a view command in the panel, or runs a command without a view after closing it. A command whose required
+    /// preferences are empty opens Settings instead, since it would only fail.
+    func launchExtension(_ info: ExtensionCommandInfo, arguments: [String: String] = [:]) {
+        guard let installed = extensions.installed(id: info.extensionID) else {
+            NSSound.beep()
+            return
+        }
+        let missing = extensions.missingPreferences(for: installed)
+        if !missing.isEmpty {
+            let names = missing.map(\.title).formatted(.list(type: .and))
+            Toast.shared.show(String(localized: "Set \(names) for \(installed.manifest.name)"), symbol: "gearshape")
+            onOpenExtensionSettings()
+            return
+        }
+        guard let runtime = extensions.runtime(for: info.extensionID) else {
+            NSSound.beep()
+            return
+        }
+        switch info.command.mode {
+        case .view:
+            open(.extensionView)
+            let session = ExtensionSession(command: info, runtime: runtime)
+            extensionSession = session
+            session.launch(arguments: arguments)
+        case .noView:
+            onDismiss()
+            runtime.launch(session: UUID().uuidString, command: info.command.name, mode: .noView, arguments: arguments)
+        }
+    }
+
+    /// Escape on a command's first view goes back to the main list, or closes Whippet when the command was opened
+    /// from a hotkey.
+    private func leaveExtensionView() {
+        if openedDirectly {
+            onDismiss()
+        } else {
+            reset()
+        }
+    }
+
+    /// Draws a session's new view, keeping the selected item selected while the list changes under it.
+    func handleExtensionEvent(_ event: ExtensionRuntime.Event, from extensionID: String) {
+        switch event {
+        case .render(let sessionID, let depth, let view):
+            guard let session = extensionSession, session.id == sessionID else { return }
+            let selectedID = selectedResult?.id
+            if session.apply(view, depth: depth) {
+                // A view pushed or popped starts with an empty search, and its first item selected.
+                query = ""
+                selection = 0
+                return
+            }
+            let results = results
+            selection = results.firstIndex { $0.id == selectedID } ?? min(selection, max(results.count - 1, 0))
+        case .failed(let sessionID?, let message, _):
+            Toast.shared.show(message, symbol: "exclamationmark.triangle")
+            // A view command that failed to start has nothing to show, so it goes back rather than staying blank.
+            if extensionSession?.id == sessionID, case .loading = extensionSession?.view {
+                leaveExtensionView()
+            }
+        case .failed, .done, .log:
+            break
+        }
+    }
+
+    /// Does what an extension asked of Whippet.
+    func handleExtensionRequest(_ request: ExtensionRuntime.HostRequest) -> JSONValue {
+        switch request {
+        case .toast(let title, let message, let isFailure):
+            let text = [title, message].compactMap { $0 }.joined(separator: " · ")
+            Toast.shared.show(text, symbol: isFailure ? "xmark.circle" : "checkmark.circle")
+        case .closeMainWindow:
+            onDismiss()
+        case .popToRoot:
+            extensionSession?.popToRoot()
+        case .open(let url):
+            NSWorkspace.shared.open(url)
+        case .copy(let text):
+            clipboard.copy(text: text)
+        case .paste(let text):
+            clipboard.copy(text: text)
+            dismissAndPaste(copyOnly: false)
+        case .readClipboard:
+            return NSPasteboard.general.string(forType: .string).map(JSONValue.string) ?? .null
+        }
+        return .null
+    }
+
+    /// Starts the open command again when its extension was rebuilt, so changes show as they're saved.
+    func extensionsReloaded(_ ids: Set<String>) {
+        guard let session = extensionSession, ids.contains(session.command.extensionID) else { return }
+        guard let info = extensions.commands.first(where: { $0.key == session.command.key }) else {
+            reset()
+            return
+        }
+        let wasOpenedDirectly = openedDirectly
+        launchExtension(info, arguments: session.arguments)
+        openedDirectly = wasOpenedDirectly
     }
 
     /// Asks first for commands that can't be undone. Whippet is hidden once the panel closes, so it comes forward to
@@ -1407,6 +1659,8 @@ final class LauncherModel {
         guard results.indices.contains(index) else { return "" }
         switch results[index] {
         case .clipboard: return String(localized: "Clipboard History")
+        case .extensionItem(let item):
+            return item.section ?? extensionSession?.view.navigationTitle ?? extensionSession?.command.title ?? ""
         case .searchWithQuicklink, .searchClipboard: return String(localized: "Use “\(query)” with…")
         default: break
         }
@@ -1423,6 +1677,7 @@ final class LauncherModel {
         case .quicklink: return String(localized: "Quicklinks")
         case .timerPreset: return String(localized: "Recent Timers")
         case .window: return String(localized: "Window")
+        case .extensionCommand: return String(localized: "Extensions")
         default: return String(localized: "Commands")
         }
     }

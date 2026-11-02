@@ -19,6 +19,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     case shortcuts
     case clipboard
     case quicklinks
+    case extensions
     case notifications
     case cloudSync
     case usage
@@ -34,6 +35,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shortcuts: "Shortcuts"
         case .clipboard: "Clipboard History"
         case .quicklinks: "Quicklinks"
+        case .extensions: "Extensions"
         case .notifications: "Notifications"
         case .cloudSync: "Cloud Sync"
         case .usage: "Usage"
@@ -49,6 +51,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shortcuts: "command"
         case .clipboard: "list.clipboard.fill"
         case .quicklinks: "link"
+        case .extensions: "puzzlepiece.extension.fill"
         case .notifications: "bell.badge.fill"
         case .cloudSync: "icloud.fill"
         case .usage: "chart.bar.fill"
@@ -64,6 +67,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shortcuts: .purple
         case .clipboard: .teal
         case .quicklinks: .indigo
+        case .extensions: .pink
         case .notifications: .red
         case .cloudSync: .blue
         case .usage: .green
@@ -86,6 +90,8 @@ struct SettingsView: View {
     @Bindable var navigation: SettingsNavigation
     let updater: Updater
     let quicklinks: Quicklinks
+    let extensions: ExtensionManager
+    let featureFlags: FeatureFlags
     /// The Developer pane is for accounts with the CloudKit Admin role, and always shows in development builds; the
     /// Feedback pane also needs the feedback key on this Mac.
     @State private var hasAdminRole = false
@@ -111,9 +117,11 @@ struct SettingsView: View {
         } detail: {
             Group {
                 switch navigation.pane ?? .general {
-                case .general: GeneralPane(caffeine: caffeine, timers: timers, updater: updater)
-                case .shortcuts: ShortcutsPane(appIndex: appIndex, quicklinks: quicklinks)
+                case .general:
+                    GeneralPane(caffeine: caffeine, timers: timers, updater: updater, featureFlags: featureFlags)
+                case .shortcuts: ShortcutsPane(appIndex: appIndex, quicklinks: quicklinks, extensions: extensions)
                 case .quicklinks: QuicklinksPane(quicklinks: quicklinks, navigation: navigation)
+                case .extensions: ExtensionsPane(extensions: extensions)
                 case .notifications: NotificationsPane(timers: timers)
                 case .cloudSync: CloudSyncPane(cloudSync: cloudSync)
                 case .clipboard: ClipboardPane(clipboard: clipboard)
@@ -127,6 +135,12 @@ struct SettingsView: View {
             .navigationTitle(Text((navigation.pane ?? .general).title))
         }
         .frame(minWidth: 680, minHeight: 440)
+        // Turning off a beta feature hides its pane, so the window doesn't stay on it.
+        .onChange(of: featureFlags.enabled) {
+            if let pane = navigation.pane, !isShown(pane) {
+                navigation.pane = .general
+            }
+        }
         .onAppear { DockIcon.update() }
         .onDisappear { DockIcon.update() }
         .task {
@@ -139,6 +153,8 @@ struct SettingsView: View {
         switch pane {
         case .feedback:
             return canReadFeedback
+        case .extensions:
+            return featureFlags.isEnabled(.extensions)
         case .developer:
             #if DEBUG
                 return true
@@ -169,6 +185,7 @@ private struct GeneralPane: View {
     let caffeine: Caffeine
     let timers: Timers
     @Bindable var updater: Updater
+    let featureFlags: FeatureFlags
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
     @State private var canPaste = Paster.isTrusted
     @State private var language = AppLanguage.current
@@ -236,6 +253,23 @@ private struct GeneralPane: View {
                         .disabled(!updater.canCheckForUpdates)
                 }
             }
+
+            Section {
+                ForEach(FeatureFlag.allCases) { flag in
+                    Toggle(
+                        isOn: Binding(
+                            get: { featureFlags.isEnabled(flag) }, set: { featureFlags.setEnabled(flag, $0) })
+                    ) {
+                        Text(flag.title)
+                        Text(flag.summary)
+                    }
+                }
+            } header: {
+                Text("Beta Features")
+            } footer: {
+                Text("Features still being tried out. They may change or go away.")
+                    .foregroundStyle(.secondary)
+            }
         }
         .toggleStyle(.switch)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
@@ -259,12 +293,14 @@ private struct GeneralPane: View {
 private struct ShortcutsPane: View {
     let appIndex: AppIndex
     let quicklinks: Quicklinks
+    let extensions: ExtensionManager
     @State private var search = ""
 
     var body: some View {
         let commands = CommandShortcut.allCases.filter { matches($0.title) }
         let windowCommands = WindowCommand.allCases.filter { matches($0.title) }
         let quicklinks = quicklinks.items.filter { matches($0.name) }
+        let extensionCommands = extensions.commands.filter { matches($0.title) || matches($0.extensionName) }
         let apps = appIndex.apps.filter { matches($0.name) }
 
         Form {
@@ -299,6 +335,20 @@ private struct ShortcutsPane: View {
                     }
                 }
             }
+            if !extensionCommands.isEmpty {
+                Section("Extensions") {
+                    ForEach(extensionCommands, id: \.key) { info in
+                        KeyboardShortcuts.Recorder(for: info.shortcutName) {
+                            Label {
+                                Text(info.title)
+                            } icon: {
+                                ExtensionIcon(name: info.icon, directory: info.directory)
+                                    .frame(width: 16, height: 16)
+                            }
+                        }
+                    }
+                }
+            }
             if !apps.isEmpty {
                 Section("Applications") {
                     ForEach(apps) { app in
@@ -316,7 +366,7 @@ private struct ShortcutsPane: View {
             }
         }
         .overlay {
-            if commands.isEmpty, windowCommands.isEmpty, quicklinks.isEmpty, apps.isEmpty {
+            if commands.isEmpty, windowCommands.isEmpty, quicklinks.isEmpty, extensionCommands.isEmpty, apps.isEmpty {
                 ContentUnavailableView.search(text: search)
             }
         }
