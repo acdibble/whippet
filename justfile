@@ -2,6 +2,7 @@ project := "Whippet.xcodeproj"
 scheme := "Whippet"
 destination := "platform=macOS"
 dev_app := "Whippet Dev"
+dev_bundle_id := "codes.dibble.whippet.dev"
 dev_build := "build/dev"
 
 # Lists the recipes.
@@ -24,8 +25,10 @@ run: build stop
 # Quits Whippet Dev.
 stop:
     -@pkill -x "{{dev_app}}"
-    @# Waits for it to exit, so `open` launches the new build instead of reactivating the old one.
+    @# Waits for it to exit, so `open` launches the new build instead of reactivating the old one, and then for
+    @# LaunchServices to forget it, which lags behind: `open` sent to a copy that's gone fails with error -600.
     @while pgrep -x "{{dev_app}}" > /dev/null; do sleep 0.1; done
+    @while [ -n "$(lsappinfo find bundleid={{dev_bundle_id}})" ]; do sleep 0.1; done
 
 # Runs the tests without signing, as CI does, or one suite or test, e.g. `UnitConversionTests/rates`.
 test filter="": generate
