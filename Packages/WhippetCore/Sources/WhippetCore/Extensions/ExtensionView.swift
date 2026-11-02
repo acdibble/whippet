@@ -15,6 +15,15 @@ public struct ExtensionNode: Decodable, Hashable, Sendable {
         self.children = children
     }
 
+    /// Reads a node from what `JSONSerialization` returns.
+    init?(object: [String: Any]) {
+        guard let id = object["id"] as? Int, let type = object["type"] as? String else { return nil }
+        self.id = id
+        self.type = type
+        props = (object["props"] as? [String: Any] ?? [:]).mapValues(JSONValue.init(object:))
+        children = (object["children"] as? [[String: Any]] ?? []).compactMap(ExtensionNode.init(object:))
+    }
+
     func string(_ key: String) -> String? {
         props[key]?.string
     }

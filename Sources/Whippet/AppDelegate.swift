@@ -196,6 +196,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Runs the panel shortcut for a key, returning false when there is none.
     private func performShortcut(_ key: Character, modifiers: NSEvent.ModifierFlags) -> Bool {
+        // An extension's own shortcuts come first in its view, so its ⌃X or ⇧⌘C isn't taken by Whippet's actions for
+        // other results. ⌘K still opens the menu.
+        if model.mode == .extensionView, !(key == "k" && modifiers == [.command]),
+            model.performExtensionShortcut(key, modifiers: modifiers)
+        {
+            return true
+        }
         switch (key, modifiers) {
         case ("p", [.command, .shift]): model.perform(.togglePin)
         case ("c", [.command, .shift]): model.perform(.copyPath)
@@ -211,7 +218,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case ("k", [.command]): showActions()
         case ("q", [.command]): NSApp.terminate(nil)
         case (",", [.command]): showSettings()
-        default: return model.performExtensionShortcut(key, modifiers: modifiers)
+        default: return false
         }
         return true
     }

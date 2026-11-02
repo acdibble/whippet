@@ -269,33 +269,31 @@ public final class ExtensionRuntime: @unchecked Sendable {
         return id
     }
 
-    private struct Envelope: Decodable {
-        let type: String
-        let session: String?
-        let depth: Int?
-        let route: String?
-        let tree: ExtensionNode?
-        let message: String?
-        let stack: String?
-        let level: String?
-    }
-
+    /// Parses with `JSONSerialization` rather than `Codable`, since a long list makes a render of a megabyte or more,
+    /// which `JSONDecoder` reads several times slower.
     private func receive(_ text: String) {
-        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: Data(text.utf8)) else { return }
-        switch envelope.type {
+        guard
+            let object = try? JSONSerialization.jsonObject(with: Data(text.utf8)),
+            let message = object as? [String: Any], let type = message["type"] as? String
+        else { return }
+        let session = message["session"] as? String
+        switch type {
         case "render":
-            guard let session = envelope.session else { return }
+            guard let session else { return }
+            let tree = (message["tree"] as? [String: Any]).flatMap(ExtensionNode.init(object:))
             onEvent(
                 .render(
-                    session: session, depth: envelope.depth ?? 1, route: envelope.route ?? "",
-                    view: ExtensionView(envelope.tree)))
+                    session: session, depth: message["depth"] as? Int ?? 1, route: message["route"] as? String ?? "",
+                    view: ExtensionView(tree)))
         case "done":
-            guard let session = envelope.session else { return }
+            guard let session else { return }
             onEvent(.done(session: session))
         case "error":
-            onEvent(.failed(session: envelope.session, message: envelope.message ?? "", stack: envelope.stack))
+            onEvent(
+                .failed(
+                    session: session, message: message["message"] as? String ?? "", stack: message["stack"] as? String))
         case "log":
-            onEvent(.log(level: envelope.level ?? "log", message: envelope.message ?? ""))
+            onEvent(.log(level: message["level"] as? String ?? "log", message: message["message"] as? String ?? ""))
         default:
             break
         }

@@ -92,8 +92,10 @@ Add `--watch` while working on it; Whippet reloads the extension, and the open c
 install React's (`npm install -D react@19.3.1 @types/react`) and point `@whippet/api` at `Extensions/api` in this
 repository, whose `npm run build` writes its declarations to `dist/`.
 
-The examples in `Extensions/examples` build with `npm run build:examples` in `Extensions/api`: `hello` shows each
-kind of view and command, and `github` searches GitHub's API as you type.
+The example in `Extensions/examples/pokedex`, a Pokédex built on [PokéAPI](https://pokeapi.co), builds with
+`npm run build:examples` in `Extensions/api`. It uses most of the API: a list Whippet filters, with sprites as icons,
+favourites and sections; details in Markdown with artwork; routes for details and evolutions, and replacing the page
+for next and previous; a form; a preference; `LocalStorage`; and a command without a view that takes an argument.
 
 ## The manifest
 
@@ -118,7 +120,8 @@ Everything is imported from `@whippet/api`, and hooks from `react`.
   Whippet filters the items by title, subtitle and keywords as the user types. A list with `onSearchTextChange` searches
   for itself instead; add `throttle` to wait until typing pauses, as for a search that goes over the network.
   `isLoading` shows a spinner.
-- **`Detail`**: Markdown (`markdown`), with headings, lists, quotes, code and links.
+- **`Detail`**: Markdown (`markdown`), with headings, lists, quotes, code, links and images. Images load only from
+  hosts in the manifest's `network` permission, as do item icons given as URLs.
 - **`Form`**: `Form.TextField`, `Form.TextArea`, `Form.PasswordField`, `Form.Checkbox` and `Form.Dropdown` with
   `Form.Dropdown.Item`. Each field has an `id`; `Action.SubmitForm` receives the values keyed by it.
 

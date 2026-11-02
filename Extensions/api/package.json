@@ -14,7 +14,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "node build.mjs",
-    "build:examples": "node build-extension.mjs ../examples/hello && node build-extension.mjs ../examples/github",
+    "build:examples": "node build-extension.mjs ../examples/pokedex",
     "check": "tsc -p ../examples/tsconfig.json"
   },
   "peerDependencies": {

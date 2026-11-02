@@ -228,6 +228,20 @@ final class ExtensionRuntimeTests {
           }
         };
 
+        exports.Many = function Many() {
+          const items = [];
+          for (let i = 0; i < 1000; i++) {
+            items.push(h(List.Item, { key: i, id: "item-" + i, title: "Item " + i, subtitle: "Subtitle " + i,
+              icon: "https://example.com/" + i + ".png", keywords: [String(i)], accessories: [{ text: "#" + i }],
+              actions: h(ActionPanel, null,
+                h(Action, { title: "One", onAction: () => {} }),
+                h(Action, { title: "Two", onAction: () => {}, shortcut: { modifiers: ["cmd"], key: "e" } }),
+                h(Action.CopyToClipboard, { content: "Item " + i }),
+                h(Action.OpenInBrowser, { url: "https://example.com/" + i })) }));
+          }
+          return h(List, null, items);
+        };
+
         exports.Broken = function Broken() {
           throw new Error("boom");
         };
@@ -359,6 +373,19 @@ final class ExtensionRuntimeTests {
         #expect(logs.last?.hasPrefix("blocked: Whippet blocked a request to blocked.example") == true)
         let stored = try Data(contentsOf: directory.appending(path: "data/storage.json"))
         #expect(try JSONDecoder().decode([String: String].self, from: stored) == ["greeting": "hello Ada"])
+    }
+
+    /// A list as long as a Pokédex, each item with several actions, which makes a large render to send and parse.
+    @Test func rendersAThousandItems() async throws {
+        let (runtime, stream) = try start()
+        let start = ContinuousClock.now
+        runtime.launch(session: "m", command: "Many", mode: .view)
+        let rendered = try await next(stream, Self.list)
+        let elapsed = ContinuousClock.now - start
+        #expect(rendered.list.items.count == 1000)
+        #expect(rendered.list.items[999].actions.count == 4)
+        print("Rendering 1000 items took \(elapsed)")
+        #expect(elapsed < .seconds(2))
     }
 
     @Test func reportsErrorsAgainstTheSession() async throws {

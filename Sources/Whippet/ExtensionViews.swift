@@ -268,6 +268,7 @@ private struct ExtensionFormView: View {
 /// blocks and rules.
 struct MarkdownView: View {
     let markdown: String
+    @Environment(\.extensionContext) private var context
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -285,6 +286,8 @@ struct MarkdownView: View {
         case quote
         case listItem(marker: String, depth: Int)
         case rule
+        /// An image on its own line, with its alt text.
+        case image(URL)
     }
 
     private struct Block {
@@ -324,6 +327,21 @@ struct MarkdownView: View {
             .padding(.leading, CGFloat(depth - 1) * 16)
         case .rule:
             Divider()
+        case .image(let url):
+            // Only from hosts the manifest lists, since loading an image sends a request; otherwise the alt text.
+            if let host = url.host(), context.permissions.allowsHost(host) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFit()
+                } placeholder: {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                .frame(maxWidth: 240, maxHeight: 200, alignment: .leading)
+                .accessibilityLabel(Text(block.text))
+            } else {
+                Text(block.text)
+                    .foregroundStyle(Color.launcherSecondary)
+            }
         }
     }
 
@@ -338,6 +356,12 @@ struct MarkdownView: View {
         var currentIntent: PresentationIntent?
         for run in parsed.runs {
             var text = AttributedString(parsed[run.range])
+            if let url = run.imageURL {
+                blocks.append(Block(kind: .image(url), text: text))
+                // Text after the image in the same paragraph starts a block of its own.
+                currentIntent = nil
+                continue
+            }
             if run.inlinePresentationIntent?.contains(.code) == true {
                 text.font = .system(.body, design: .monospaced)
             }
