@@ -85,7 +85,8 @@ public final class ExtensionRuntime: @unchecked Sendable {
     // MARK: - Commands
 
     public func launch(
-        session: String, command: String, mode: ExtensionCommand.Mode, arguments: [String: String] = [:]
+        session: String, command: String, mode: ExtensionCommand.Mode, arguments: [String: String] = [:],
+        fallbackText: String? = nil
     ) {
         queue.async {
             guard let whippet = self.whippet else {
@@ -94,7 +95,8 @@ public final class ExtensionRuntime: @unchecked Sendable {
             }
             let arguments = JSONValue.object(arguments.mapValues(JSONValue.string)).jsonString
             self.run(in: session) {
-                whippet.invokeMethod("launch", withArguments: [session, command, mode.rawValue, arguments])
+                whippet.invokeMethod(
+                    "launch", withArguments: [session, command, mode.rawValue, arguments, fallbackText ?? NSNull()])
             }
         }
     }

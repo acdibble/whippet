@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Extension commands can be offered for whatever you type, under “Use … with”, alongside quicklinks, by marking them
+  `fallback` in their manifest. A list opens already searched for the text.
+
 ## [1.3.2] - 2026-11-02
 
 ### Added

@@ -19,6 +19,7 @@ struct ExtensionManifestTests {
         #expect(manifest.permissions.isEmpty)
         #expect(manifest.preferences.isEmpty)
         #expect(manifest.commands.first?.mode == .view)
+        #expect(manifest.commands.first?.fallback == false)
     }
 
     @Test func readsCommandsPermissionsAndPreferences() throws {
@@ -28,7 +29,7 @@ struct ExtensionManifestTests {
              "permissions": {"network": ["api.github.com"], "clipboard": true},
              "preferences": [{"name": "token", "title": "Token", "type": "secret", "required": true}],
              "commands": [
-               {"name": "repos", "title": "Search Repositories"},
+               {"name": "repos", "title": "Search Repositories", "fallback": true},
                {"name": "issue", "title": "Open Issue", "mode": "no-view",
                 "argument": {"name": "number", "placeholder": "Number"}}
              ]}
@@ -38,6 +39,8 @@ struct ExtensionManifestTests {
         #expect(manifest.preferences.first?.required == true)
         #expect(manifest.commands[1].mode == .noView)
         #expect(manifest.commands[1].argument == ExtensionArgument(name: "number", placeholder: "Number"))
+        #expect(manifest.commands[0].fallback)
+        #expect(!manifest.commands[1].fallback)
     }
 
     @Test(arguments: [
@@ -211,9 +214,9 @@ final class ExtensionRuntimeTests {
           return h(Detail, { markdown: "Note on " + state.name });
         }
 
-        exports.Fruit = function Fruit({ arguments: args }) {
+        exports.Fruit = function Fruit({ arguments: args, fallbackText }) {
           return h(Routes, null,
-            h(Route, { path: "/", element: h(FruitList, { start: args.start }) }),
+            h(Route, { path: "/", element: h(FruitList, { start: args.start ?? fallbackText }) }),
             h(Route, { path: "/fruit/:name", element: h(FruitDetail) }),
             h(Route, { path: "/note", element: h(FruitNote) }));
         };
@@ -302,6 +305,13 @@ final class ExtensionRuntimeTests {
             Self.list(event).flatMap { $0.list.items.count == 2 ? $0.list : nil }
         }
         #expect(filtered.items.map(\.title) == ["Apple", "Cherry"])
+    }
+
+    @Test func passesTheFallbackText() async throws {
+        let (runtime, stream) = try start()
+        runtime.launch(session: "s", command: "Fruit", mode: .view, fallbackText: "ch")
+        let first = try await next(stream, Self.list)
+        #expect(first.list.items.map(\.title) == ["Cherry"])
     }
 
     private static func detail(_ event: ExtensionRuntime.Event) -> (depth: Int, route: String, markdown: String)? {

@@ -49,9 +49,10 @@ const whippet = {
   },
 
   /** Shows a view command, or runs one without a view and reports when it finishes. */
-  launch(session: string, command: string, mode: string, argumentsJSON: string) {
+  launch(session: string, command: string, mode: string, argumentsJSON: string, fallbackText: string | null) {
     API.environment.commandName = command;
     const props: API.LaunchProps = { arguments: JSON.parse(argumentsJSON) };
+    if (fallbackText !== null) props.fallbackText = fallbackText;
     const entry = commands[command];
     if (typeof entry !== "function") {
       reportError(session, new Error(`The extension doesn't export a function named "${command}".`));

@@ -112,12 +112,6 @@ export async function loadType(type: string): Promise<Entry[]> {
     .filter((entry) => entry.id <= LAST_NUMBER);
 }
 
-export function speciesName(nameOrNumber: string | number) {
-  return getJSON<Species>(`${API}/pokemon-species/${nameOrNumber}`).then(
-    (species) => english(species.names)?.name ?? String(nameOrNumber),
-  );
-}
-
 export function english<T extends Localized>(entries: T[]): T | undefined {
   return entries.find((entry) => entry.language.name === "en");
 }

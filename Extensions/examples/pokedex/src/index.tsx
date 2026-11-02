@@ -1,7 +1,6 @@
 import {
   Action,
   ActionPanel,
-  Clipboard,
   Detail,
   Form,
   List,
@@ -9,12 +8,11 @@ import {
   Route,
   Routes,
   getPreferenceValues,
-  showHUD,
   showToast,
   useNavigate,
   useParams,
 } from "@whippet/api";
-import type { FormValues, LaunchProps } from "@whippet/api";
+import type { FormValues } from "@whippet/api";
 import { useEffect, useState } from "react";
 import {
   LAST_NUMBER,
@@ -30,7 +28,6 @@ import {
   loadSpecies,
   loadType,
   pokedexNumber,
-  speciesName,
   sprite,
   type ChainLink,
   type Entry,
@@ -131,18 +128,6 @@ export function RandomPokemon() {
       {pokemonRoutes(favourites)}
     </Routes>
   );
-}
-
-/** Copies the name of the Pokémon with the number typed after Tab, without opening a view. */
-export async function copyPokemonName({ arguments: args }: LaunchProps) {
-  const number = Number(args.number);
-  if (!Number.isInteger(number) || number < 1 || number > LAST_NUMBER) {
-    await showToast({ title: `Pokédex numbers go from 1 to ${LAST_NUMBER}`, style: "failure" });
-    return;
-  }
-  const name = await speciesName(number);
-  await Clipboard.copy(name);
-  await showHUD(`Copied ${name}`);
 }
 
 function randomNumber() {

@@ -95,7 +95,8 @@ repository, whose `npm run build` writes its declarations to `dist/`.
 The example in `Extensions/examples/pokedex`, a Pokédex built on [PokéAPI](https://pokeapi.co), builds with
 `npm run build:examples` in `Extensions/api`. It uses most of the API: a list Whippet filters, with sprites as icons,
 favourites and sections; details in Markdown with artwork; routes for details and evolutions, and replacing the page
-for next and previous; a form; a preference; `LocalStorage`; and a command without a view that takes an argument.
+for next and previous; a form; a preference; `LocalStorage`; and a fallback, Search Pokémon, offered for anything
+typed in the search bar.
 
 ## The manifest
 
@@ -108,7 +109,7 @@ for next and previous; a form; a preference; `LocalStorage`; and a command witho
 | `icon` | | An SF Symbol name, an emoji or an image file in the extension's folder. |
 | `permissions` | | `network`: hosts `fetch` may reach, such as `api.github.com`, `*.example.com` or `*` for any. `clipboard`: `true` to read the clipboard. |
 | `preferences` | | Settings the user fills in: `name`, `title`, `type` (`text`, `secret` or `checkbox`), `description`, `placeholder`, `required` and `default`. Secrets are kept in the Keychain. A command whose required preferences are empty opens Settings instead of running. |
-| `commands` | required | `name` (the export: a component for a view, capitalized, or a function), `title`, `subtitle`, `icon`, `mode` (`view`, the default, or `no-view`) and `argument` (`{ "name", "placeholder" }`, typed after Tab). |
+| `commands` | required | `name` (the export: a component for a view, capitalized, or a function), `title`, `subtitle`, `icon`, `mode` (`view`, the default, or `no-view`), `argument` (`{ "name", "placeholder" }`, typed after Tab) and `fallback` (see below). |
 
 ## The API
 
@@ -166,7 +167,12 @@ and the selected item of the page returned to.
 | `getPreferenceValues()` | The values of the manifest's preferences. |
 | `environment` | `extensionID`, `extensionName`, `commandName` and `whippetVersion`. |
 
-A command receives `{ arguments }`, with the text typed for its argument under the argument's name.
+A command receives `{ arguments, fallbackText }`, with the text typed for its argument under the argument's name.
+
+A command with `"fallback": true` is offered for whatever is typed in the search bar, under “Use … with”, beside
+quicklinks that take text. Chosen there, it runs with that text: as its argument if it has one, and always as
+`fallbackText`. A view command without an argument also starts with the text in its search bar, so a list Whippet
+filters opens already searched for it. `fallbackText` is undefined when the command is chosen any other way.
 
 ### What's available
 

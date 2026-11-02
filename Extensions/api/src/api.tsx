@@ -337,4 +337,9 @@ export const environment: Environment = {
 /** What a command receives: the text typed for its argument, keyed by the argument's name. */
 export interface LaunchProps {
   arguments: Record<string, string>;
+  /**
+   * The search text a command marked `fallback` in its manifest was chosen for, under "Use … with". Undefined when the
+   * command was chosen any other way.
+   */
+  fallbackText?: string;
 }

@@ -28,6 +28,8 @@ enum LauncherResult: Identifiable, Hashable {
     case createQuicklink
     /// A quicklink offered for the whole search text, opened with it straight away.
     case searchWithQuicklink(Quicklink)
+    /// An extension command marked `fallback`, offered for the whole search text and run with it straight away.
+    case searchWithExtension(ExtensionCommandInfo)
     /// Clipboard history offered for the whole search text.
     case searchClipboard
     /// A timer typed into the search bar, such as `25m tea`.
@@ -74,6 +76,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .quicklink(let quicklink): "quicklink:\(quicklink.uuid)"
         case .createQuicklink: "command:create-quicklink"
         case .searchWithQuicklink(let quicklink): "with:quicklink:\(quicklink.uuid)"
+        case .searchWithExtension(let info): "with:extension:\(info.key)"
         case .searchClipboard: "with:clipboard-history"
         case .startTimer: "timer:start"
         case .newTimer: "command:start-timer"
@@ -108,6 +111,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .quicklink(let quicklink): quicklink.name
         case .createQuicklink: String(localized: "Create Quicklink")
         case .searchWithQuicklink(let quicklink): quicklink.name
+        case .searchWithExtension(let info): info.title
         case .searchClipboard: String(localized: "Search Clipboard History")
         case .quit: String(localized: "Quit Whippet")
         case .clipboardHistory: String(localized: "Clipboard History")
@@ -158,7 +162,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .ringingTimer: String(localized: "Done")
         case .app: String(localized: "Application")
         case .clipboard(let item): item.copiedAt.formatted(.relative(presentation: .named))
-        case .extensionCommand(let info): info.command.subtitle ?? info.extensionName
+        case .extensionCommand(let info), .searchWithExtension(let info): info.command.subtitle ?? info.extensionName
         case .extensionItem(let item): item.subtitle ?? ""
         }
     }
@@ -219,6 +223,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .app(let app): app.stableID
         // Counted as using the quicklink or command itself.
         case .searchWithQuicklink(let quicklink): LauncherResult.quicklink(quicklink).id
+        case .searchWithExtension(let info): LauncherResult.extensionCommand(info).id
         case .searchClipboard: LauncherResult.clipboardHistory.id
         // Counted as using the timer it starts, which then ranks among Recent Timers.
         case .startTimer(let seconds, let name): TimerPreset(name: name, seconds: seconds).launchKey
@@ -246,6 +251,8 @@ enum LauncherResult: Identifiable, Hashable {
             quicklink.takesArgument ? String(localized: "Enter Text") : String(localized: "Open Quicklink")
         case .createQuicklink: String(localized: "Open Command")
         case .searchWithQuicklink: String(localized: "Open Quicklink")
+        case .searchWithExtension(let info):
+            info.command.mode == .noView ? String(localized: "Run Command") : String(localized: "Open Command")
         case .searchClipboard: String(localized: "Search")
         case .quit: String(localized: "Quit")
         case .startTimer, .timerPreset: String(localized: "Start Timer")
@@ -1211,6 +1218,10 @@ final class LauncherModel {
                 return
             }
             onDismiss()
+        case .searchWithExtension(let info):
+            let text = query.trimmingCharacters(in: .whitespaces)
+            history.record(LauncherResult.extensionCommand(info).id)
+            launchExtension(info, arguments: info.command.argument.map { [$0.name: text] } ?? [:], fallbackText: text)
         case .searchClipboard:
             let text = query
             open(.clipboard)
@@ -1522,7 +1533,9 @@ final class LauncherModel {
 
     /// Opens a view command in the panel, or runs a command without a view after closing it. A command whose required
     /// preferences are empty opens Settings instead, since it would only fail.
-    func launchExtension(_ info: ExtensionCommandInfo, arguments: [String: String] = [:]) {
+    /// Runs an extension's command. `fallbackText` is the search text it was chosen for under "Use … with", which a
+    /// command without an argument also starts with in its search bar.
+    func launchExtension(_ info: ExtensionCommandInfo, arguments: [String: String] = [:], fallbackText: String? = nil) {
         guard let installed = extensions.installed(id: info.extensionID) else {
             NSSound.beep()
             return
@@ -1543,10 +1556,15 @@ final class LauncherModel {
             open(.extensionView)
             let session = ExtensionSession(command: info, runtime: runtime)
             extensionSession = session
-            session.launch(arguments: arguments)
+            session.launch(arguments: arguments, fallbackText: fallbackText)
+            if let fallbackText, info.command.argument == nil {
+                query = fallbackText
+            }
         case .noView:
             onDismiss()
-            runtime.launch(session: UUID().uuidString, command: info.command.name, mode: .noView, arguments: arguments)
+            runtime.launch(
+                session: UUID().uuidString, command: info.command.name, mode: .noView, arguments: arguments,
+                fallbackText: fallbackText)
         }
     }
 
@@ -1568,8 +1586,14 @@ final class LauncherModel {
             let previousDepth = session.depth
             let previousQuery = query
             let selectedID = selectedResult?.id
+            let isFirstView = if case .loading = session.view { true } else { false }
             switch session.apply(view, depth: depth, route: route) {
             case .update:
+                // A list that searches for itself only hears of the search text once it's shown, so text the command
+                // started with, from "Use … with", is passed on now.
+                if isFirstView, !query.isEmpty {
+                    session.searchTextChanged(query)
+                }
                 let results = results
                 if let pending = pendingExtensionSelection, let index = results.firstIndex(where: { $0.id == pending })
                 {
@@ -1638,7 +1662,7 @@ final class LauncherModel {
             return
         }
         let wasOpenedDirectly = openedDirectly
-        launchExtension(info, arguments: session.arguments)
+        launchExtension(info, arguments: session.arguments, fallbackText: session.fallbackText)
         openedDirectly = wasOpenedDirectly
     }
 
@@ -1663,11 +1687,13 @@ final class LauncherModel {
         }
     }
 
-    /// What the search text can be used with even when it matches nothing by name: quicklinks that take text, most used
-    /// first, then clipboard history.
+    /// What the search text can be used with even when it matches nothing by name: quicklinks that take text and
+    /// extension commands marked `fallback`, most used first, then clipboard history.
     private var textFallbacks: [LauncherResult] {
-        let quicklinkResults = quicklinks.items.filter(\.takesArgument).map(LauncherResult.searchWithQuicklink)
-        let ordered = quicklinkResults.enumerated().sorted { lhs, rhs in
+        let takingText =
+            quicklinks.items.filter(\.takesArgument).map(LauncherResult.searchWithQuicklink)
+            + extensions.commands.filter(\.command.fallback).map(LauncherResult.searchWithExtension)
+        let ordered = takingText.enumerated().sorted { lhs, rhs in
             let left = frecency(of: lhs.element)
             let right = frecency(of: rhs.element)
             return left != right ? left > right : lhs.offset < rhs.offset
@@ -1687,7 +1713,8 @@ final class LauncherModel {
         case .clipboard: return String(localized: "Clipboard History")
         case .extensionItem(let item):
             return item.section ?? extensionSession?.view.navigationTitle ?? extensionSession?.command.title ?? ""
-        case .searchWithQuicklink, .searchClipboard: return String(localized: "Use “\(query)” with…")
+        case .searchWithQuicklink, .searchWithExtension, .searchClipboard:
+            return String(localized: "Use “\(query)” with…")
         default: break
         }
         if mode == .timers {

@@ -20,6 +20,7 @@ final class ExtensionSession {
     private(set) var formValues: [String: JSONValue] = [:]
     /// What the command was launched with, to launch it again after its extension reloads.
     private(set) var arguments: [String: String] = [:]
+    private(set) var fallbackText: String?
 
     @ObservationIgnored private var pendingSearch: Task<Void, Never>?
 
@@ -31,9 +32,11 @@ final class ExtensionSession {
         self.runtime = runtime
     }
 
-    func launch(arguments: [String: String]) {
+    func launch(arguments: [String: String], fallbackText: String?) {
         self.arguments = arguments
-        runtime.launch(session: id, command: command.command.name, mode: .view, arguments: arguments)
+        self.fallbackText = fallbackText
+        runtime.launch(
+            session: id, command: command.command.name, mode: .view, arguments: arguments, fallbackText: fallbackText)
     }
 
     /// How a render moved through the command's history.

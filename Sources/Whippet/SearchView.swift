@@ -290,7 +290,8 @@ struct ResultRow: View {
     @ViewBuilder
     private var iconView: some View {
         switch result {
-        case .extensionCommand(let info): ExtensionIcon(name: info.icon, directory: info.directory)
+        case .extensionCommand(let info), .searchWithExtension(let info):
+            ExtensionIcon(name: info.icon, directory: info.directory)
         case .extensionItem(let item): ExtensionIcon(name: item.icon)
         default: icon.resizable().scaledToFit()
         }
@@ -298,7 +299,7 @@ struct ResultRow: View {
 
     private var icon: Image {
         switch result {
-        case .extensionCommand, .extensionItem: Image(systemName: "puzzlepiece.extension")
+        case .extensionCommand, .searchWithExtension, .extensionItem: Image(systemName: "puzzlepiece.extension")
         case .app(let app): Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
         case .clipboardHistory: Image(systemName: "list.clipboard")
         case .calculator: Image(systemName: "plus.forwardslash.minus")

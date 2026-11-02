@@ -18,15 +18,8 @@
     }
   ],
   "commands": [
-    { "name": "Pokedex", "title": "Search Pokémon", "icon": "magnifyingglass" },
+    { "name": "Pokedex", "title": "Search Pokémon", "icon": "magnifyingglass", "fallback": true },
     { "name": "PokemonByType", "title": "Find Pokémon by Type", "icon": "line.3.horizontal.decrease.circle" },
-    { "name": "RandomPokemon", "title": "Random Pokémon", "icon": "dice" },
-    {
-      "name": "copyPokemonName",
-      "title": "Copy Pokémon Name",
-      "mode": "no-view",
-      "icon": "doc.on.doc",
-      "argument": { "name": "number", "placeholder": "Pokédex number, such as 25" }
-    }
+    { "name": "RandomPokemon", "title": "Random Pokémon", "icon": "dice" }
   ]
 }

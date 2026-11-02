@@ -228,10 +228,13 @@ public struct ExtensionCommand: Codable, Hashable, Sendable {
     public let mode: Mode
     /// Text typed after Tab, or asked for when the command is chosen, passed to it as `arguments[name]`.
     public let argument: ExtensionArgument?
+    /// Offers the command for whatever is typed in the search bar, under "Use … with". It gets the text as its argument,
+    /// or else as `fallbackText`, with a list starting out searched for it.
+    public let fallback: Bool
 
     public init(
         name: String, title: String, subtitle: String? = nil, icon: String? = nil, mode: Mode = .view,
-        argument: ExtensionArgument? = nil
+        argument: ExtensionArgument? = nil, fallback: Bool = false
     ) {
         self.name = name
         self.title = title
@@ -239,10 +242,11 @@ public struct ExtensionCommand: Codable, Hashable, Sendable {
         self.icon = icon
         self.mode = mode
         self.argument = argument
+        self.fallback = fallback
     }
 
     private enum CodingKeys: String, CodingKey {
-        case name, title, subtitle, icon, mode, argument
+        case name, title, subtitle, icon, mode, argument, fallback
     }
 
     public init(from decoder: Decoder) throws {
@@ -253,6 +257,7 @@ public struct ExtensionCommand: Codable, Hashable, Sendable {
         icon = try container.decodeIfPresent(String.self, forKey: .icon)
         mode = try container.decodeIfPresent(Mode.self, forKey: .mode) ?? .view
         argument = try container.decodeIfPresent(ExtensionArgument.self, forKey: .argument)
+        fallback = try container.decodeIfPresent(Bool.self, forKey: .fallback) ?? false
     }
 }
 
