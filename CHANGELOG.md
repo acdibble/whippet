@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-11-02
+
 ### Added
 
 - Beta Features in Settings › General, for trying features before they're finished.
@@ -361,7 +363,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/acdibble/whippet/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/acdibble/whippet/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/acdibble/whippet/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/acdibble/whippet/compare/v1.2.0...v1.2.1
