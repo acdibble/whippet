@@ -15,8 +15,9 @@ export {
   popToRoot,
   showHUD,
   showToast,
-  useNavigation,
 } from "./api";
+export { matchPath, Route, Routes, useLocation, useNavigate, useParams } from "./router";
+export type { Location, NavigateFunction, NavigateOptions, RouteProps } from "./router";
 export type {
   Accessory,
   ActionPanelProps,
@@ -35,7 +36,6 @@ export type {
   ListProps,
   ListSectionProps,
   Modifier,
-  Navigation,
   Shortcut,
   TextFieldProps,
   ToastOptions,

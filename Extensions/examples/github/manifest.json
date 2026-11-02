@@ -6,7 +6,11 @@
   "description": "Search GitHub's repositories as you type.",
   "author": "Whippet",
   "icon": "chevron.left.forwardslash.chevron.right",
-  "permissions": { "network": ["api.github.com"] },
+  "permissions": {
+    "network": [
+      "api.github.com"
+    ]
+  },
   "preferences": [
     {
       "name": "token",
@@ -16,5 +20,10 @@
       "placeholder": "Optional"
     }
   ],
-  "commands": [{ "name": "searchRepositories", "title": "Search GitHub Repositories" }]
+  "commands": [
+    {
+      "name": "SearchRepositories",
+      "title": "Search GitHub Repositories"
+    }
+  ]
 }

@@ -176,22 +176,46 @@ final class ExtensionRuntimeTests {
         id: "com.example.test", name: "Test", version: "1.0.0",
         permissions: ExtensionPermissions(network: ["allowed.example"]),
         commands: [
-            ExtensionCommand(name: "fruit", title: "Fruit"),
+            ExtensionCommand(name: "Fruit", title: "Fruit"),
             ExtensionCommand(name: "quick", title: "Quick", mode: .noView),
         ])
 
     private static let script = """
         const React = require("react");
-        const { List, ActionPanel, Action, Detail, LocalStorage, getPreferenceValues } = require("@whippet/api");
+        const {
+          List, ActionPanel, Action, Detail, LocalStorage, getPreferenceValues,
+          Routes, Route, useNavigate, useParams, useLocation,
+        } = require("@whippet/api");
         const h = React.createElement;
 
-        exports.fruit = function Fruit({ arguments: args }) {
-          const [query, setQuery] = React.useState(args.start ?? "");
+        function FruitList({ start }) {
+          const navigate = useNavigate();
+          const [query, setQuery] = React.useState(start ?? "");
           const names = ["Apple", "Banana", "Cherry"].filter((name) => name.toLowerCase().includes(query.toLowerCase()));
           return h(List, { onSearchTextChange: setQuery },
             names.map((name) => h(List.Item, { key: name, id: name, title: name,
               actions: h(ActionPanel, null,
-                h(Action.Push, { title: "Show", target: h(Detail, { markdown: "# " + name }) })) })));
+                h(Action, { title: "Show", onAction: () => navigate("/fruit/" + name) }),
+                h(Action, { title: "Note", onAction: () => navigate("note", { state: { name } }) }),
+                h(Action, { title: "Swap", onAction: () => navigate("/fruit/Swapped", { replace: true }) })) })));
+        }
+
+        function FruitDetail() {
+          const { name } = useParams();
+          return h(Detail, { markdown: "# " + name });
+        }
+
+        // Rendering from the location's state, without <Routes>.
+        function FruitNote() {
+          const { state } = useLocation();
+          return h(Detail, { markdown: "Note on " + state.name });
+        }
+
+        exports.Fruit = function Fruit({ arguments: args }) {
+          return h(Routes, null,
+            h(Route, { path: "/", element: h(FruitList, { start: args.start }) }),
+            h(Route, { path: "/fruit/:name", element: h(FruitDetail) }),
+            h(Route, { path: "/note", element: h(FruitNote) }));
         };
 
         exports.quick = async function () {
@@ -204,7 +228,7 @@ final class ExtensionRuntimeTests {
           }
         };
 
-        exports.broken = function () {
+        exports.Broken = function Broken() {
           throw new Error("boom");
         };
         """
@@ -246,13 +270,13 @@ final class ExtensionRuntimeTests {
     }
 
     private static func list(_ event: ExtensionRuntime.Event) -> (depth: Int, list: ExtensionList)? {
-        guard case .render(_, let depth, .list(let list)) = event else { return nil }
+        guard case .render(_, let depth, _, .list(let list)) = event else { return nil }
         return (depth, list)
     }
 
     @Test func rendersAListAndFiltersIt() async throws {
         let (runtime, stream) = try start()
-        runtime.launch(session: "s", command: "fruit", mode: .view, arguments: ["start": "an"])
+        runtime.launch(session: "s", command: "Fruit", mode: .view, arguments: ["start": "an"])
         let first = try await next(stream, Self.list)
         #expect(first.depth == 1)
         #expect(first.list.items.map(\.title) == ["Banana"])
@@ -266,21 +290,48 @@ final class ExtensionRuntimeTests {
         #expect(filtered.items.map(\.title) == ["Apple", "Cherry"])
     }
 
-    @Test func pushesAndPopsViews() async throws {
+    private static func detail(_ event: ExtensionRuntime.Event) -> (depth: Int, route: String, markdown: String)? {
+        guard case .render(_, let depth, let route, .detail(let detail)) = event else { return nil }
+        return (depth, route, detail.markdown)
+    }
+
+    @Test func navigatesToARouteAndBack() async throws {
         let (runtime, stream) = try start()
-        runtime.launch(session: "s", command: "fruit", mode: .view)
+        runtime.launch(session: "s", command: "Fruit", mode: .view)
         let first = try await next(stream, Self.list)
         let show = try #require(first.list.items.first?.actions.first?.handler)
 
         runtime.dispatch(session: "s", handler: show)
-        let markdown = try await next(stream) { event -> String? in
-            guard case .render(_, 2, .detail(let detail)) = event else { return nil }
-            return detail.markdown
-        }
-        #expect(markdown == "# Apple")
+        let detail = try await next(stream, Self.detail)
+        #expect(detail.depth == 2)
+        #expect(detail.markdown == "# Apple")
 
         #expect(await runtime.pop(session: "s"))
         _ = try await next(stream) { event in Self.list(event).flatMap { $0.depth == 1 ? true : nil } }
+        #expect(await !runtime.pop(session: "s"))
+    }
+
+    @Test func rendersFromTheLocationsState() async throws {
+        let (runtime, stream) = try start()
+        runtime.launch(session: "s", command: "Fruit", mode: .view)
+        let first = try await next(stream, Self.list)
+        let note = try #require(first.list.items[1].actions[1].handler)
+
+        runtime.dispatch(session: "s", handler: note)
+        let detail = try await next(stream, Self.detail)
+        #expect(detail.markdown == "Note on Banana")
+    }
+
+    @Test func replacesTheCurrentEntry() async throws {
+        let (runtime, stream) = try start()
+        runtime.launch(session: "s", command: "Fruit", mode: .view)
+        let first = try await next(stream, Self.list)
+        let swap = try #require(first.list.items.first?.actions[2].handler)
+
+        runtime.dispatch(session: "s", handler: swap)
+        let detail = try await next(stream, Self.detail)
+        #expect(detail.depth == 1)
+        #expect(detail.markdown == "# Swapped")
         #expect(await !runtime.pop(session: "s"))
     }
 
@@ -312,9 +363,9 @@ final class ExtensionRuntimeTests {
 
     @Test func reportsErrorsAgainstTheSession() async throws {
         let (runtime, stream) = try start()
-        runtime.launch(session: "b", command: "broken", mode: .view)
+        runtime.launch(session: "b", command: "Broken", mode: .view)
         let markdown = try await next(stream) { event -> String? in
-            guard case .render("b", _, .detail(let detail)) = event else { return nil }
+            guard case .render("b", _, _, .detail(let detail)) = event else { return nil }
             return detail.markdown
         }
         #expect(markdown.contains("boom"))
@@ -336,7 +387,7 @@ final class ExtensionRuntimeTests {
             guard case .failed(nil, _, _) = event else { return nil }
             return true
         }
-        runtime.launch(session: "x", command: "fruit", mode: .view)
+        runtime.launch(session: "x", command: "Fruit", mode: .view)
         _ = try await next(stream) { event -> Bool? in
             guard case .failed("x", _, _) = event else { return nil }
             return true

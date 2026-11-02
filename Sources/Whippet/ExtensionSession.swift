@@ -13,6 +13,8 @@ final class ExtensionSession {
 
     private(set) var view = ExtensionView.loading
     private(set) var depth = 1
+    private(set) var route = ""
+
     /// Bumped with each render, so the launcher's cached results know to update.
     private(set) var revision = 0
     private(set) var formValues: [String: JSONValue] = [:]
@@ -34,11 +36,35 @@ final class ExtensionSession {
         runtime.launch(session: id, command: command.command.name, mode: .view, arguments: arguments)
     }
 
-    /// Takes a new render, returning true when it's a different view in the stack, which starts with an empty search.
-    @discardableResult
-    func apply(_ view: ExtensionView, depth: Int) -> Bool {
-        let isNewView = depth != self.depth
-        if isNewView {
+    /// How a render moved through the command's history.
+    enum Transition {
+        /// The same page, changed.
+        case update
+        /// A new page on top, as from `navigate("/path")`.
+        case forward
+        /// Back to an earlier page, as from Escape or `navigate(-1)`.
+        case back
+        /// Another page in place of this one, as from `navigate(path, { replace: true })`.
+        case replace
+    }
+
+    /// The search text and selected item of each page in the history, kept as the command moves forward so going back
+    /// restores them.
+    @ObservationIgnored private var savedPages: [Int: (query: String, selectedID: String?)] = [:]
+
+    /// Takes a new render and says how it moved through the history.
+    func apply(_ view: ExtensionView, depth: Int, route: String) -> Transition {
+        let transition: Transition =
+            if route == self.route || self.route.isEmpty {
+                .update
+            } else if depth > self.depth {
+                .forward
+            } else if depth < self.depth {
+                .back
+            } else {
+                .replace
+            }
+        if transition != .update {
             formValues = [:]
         }
         if case .form(let form) = view {
@@ -52,8 +78,21 @@ final class ExtensionSession {
         }
         self.view = view
         self.depth = depth
+        self.route = route
         revision += 1
-        return isNewView
+        return transition
+    }
+
+    /// Remembers a page's search text and selection as the command moves forward from it.
+    func save(query: String, selectedID: String?, at depth: Int) {
+        savedPages[depth] = (query, selectedID)
+    }
+
+    /// The search text and selection of the page gone back to, forgetting those of the pages after it.
+    func restore(at depth: Int) -> (query: String, selectedID: String?)? {
+        let saved = savedPages[depth]
+        savedPages = savedPages.filter { $0.key < depth }
+        return saved
     }
 
     var list: ExtensionList? {

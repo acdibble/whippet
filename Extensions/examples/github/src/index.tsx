@@ -12,7 +12,7 @@ interface Repository {
 }
 
 /** A list that searches for itself as you type, waiting for typing to pause since each search is a request. */
-export function searchRepositories() {
+export function SearchRepositories() {
   const [query, setQuery] = useState("");
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [isLoading, setLoading] = useState(false);

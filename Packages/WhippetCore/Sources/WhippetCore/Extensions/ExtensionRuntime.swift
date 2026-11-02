@@ -11,8 +11,9 @@ import JavaScriptCore
 public final class ExtensionRuntime: @unchecked Sendable {
     /// What the extension sends Whippet.
     public enum Event: Sendable {
-        /// A view command's top view, after each change. `depth` is how many views are stacked.
-        case render(session: String, depth: Int, view: ExtensionView)
+        /// A view command's view, after each change. `depth` is how long the command's history is, and `route`
+        /// identifies the entry shown, so a new page can be told from a change to the same one.
+        case render(session: String, depth: Int, route: String, view: ExtensionView)
         /// A command without a view finished.
         case done(session: String)
         /// The extension threw. Without a session, it failed loading or outside any command.
@@ -108,7 +109,7 @@ public final class ExtensionRuntime: @unchecked Sendable {
         }
     }
 
-    /// Goes back a view, returning false on the command's first view.
+    /// Goes back in the command's history, returning false on its first entry.
     public func pop(session: String) async -> Bool {
         await withCheckedContinuation { continuation in
             queue.async {
@@ -272,6 +273,7 @@ public final class ExtensionRuntime: @unchecked Sendable {
         let type: String
         let session: String?
         let depth: Int?
+        let route: String?
         let tree: ExtensionNode?
         let message: String?
         let stack: String?
@@ -283,7 +285,10 @@ public final class ExtensionRuntime: @unchecked Sendable {
         switch envelope.type {
         case "render":
             guard let session = envelope.session else { return }
-            onEvent(.render(session: session, depth: envelope.depth ?? 1, view: ExtensionView(envelope.tree)))
+            onEvent(
+                .render(
+                    session: session, depth: envelope.depth ?? 1, route: envelope.route ?? "",
+                    view: ExtensionView(envelope.tree)))
         case "done":
             guard let session = envelope.session else { return }
             onEvent(.done(session: session))

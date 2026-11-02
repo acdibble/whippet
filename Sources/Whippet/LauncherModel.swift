@@ -503,6 +503,8 @@ final class LauncherModel {
 
     /// The extension view command that's open, while the mode is `.extensionView`.
     private(set) var extensionSession: ExtensionSession?
+    /// The item to select once it appears, after going back to a list that searches again for its restored text.
+    @ObservationIgnored private var pendingExtensionSelection: String?
 
     /// The stopwatch the stopwatch view shows.
     private var stopwatchID: UUID?
@@ -1559,17 +1561,39 @@ final class LauncherModel {
     /// Draws a session's new view, keeping the selected item selected while the list changes under it.
     func handleExtensionEvent(_ event: ExtensionRuntime.Event, from extensionID: String) {
         switch event {
-        case .render(let sessionID, let depth, let view):
+        case .render(let sessionID, let depth, let route, let view):
             guard let session = extensionSession, session.id == sessionID else { return }
+            let previousDepth = session.depth
+            let previousQuery = query
             let selectedID = selectedResult?.id
-            if session.apply(view, depth: depth) {
-                // A view pushed or popped starts with an empty search, and its first item selected.
+            switch session.apply(view, depth: depth, route: route) {
+            case .update:
+                let results = results
+                if let pending = pendingExtensionSelection, let index = results.firstIndex(where: { $0.id == pending })
+                {
+                    pendingExtensionSelection = nil
+                    selection = index
+                    return
+                }
+                selection = results.firstIndex { $0.id == selectedID } ?? min(selection, max(results.count - 1, 0))
+            case .forward:
+                // A new page starts with an empty search and its first item selected; the page it came from is kept
+                // for going back.
+                session.save(query: previousQuery, selectedID: selectedID, at: previousDepth)
+                pendingExtensionSelection = nil
                 query = ""
                 selection = 0
-                return
+            case .back:
+                let saved = session.restore(at: depth)
+                query = saved?.query ?? ""
+                let index = saved?.selectedID.flatMap { id in results.firstIndex { $0.id == id } }
+                pendingExtensionSelection = index == nil ? saved?.selectedID : nil
+                selection = index ?? 0
+            case .replace:
+                pendingExtensionSelection = nil
+                query = ""
+                selection = 0
             }
-            let results = results
-            selection = results.firstIndex { $0.id == selectedID } ?? min(selection, max(results.count - 1, 0))
         case .failed(let sessionID?, let message, _):
             Toast.shared.show(message, symbol: "exclamationmark.triangle")
             // A view command that failed to start has nothing to show, so it goes back rather than staying blank.

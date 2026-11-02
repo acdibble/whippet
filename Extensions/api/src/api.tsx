@@ -1,16 +1,6 @@
 // What extensions import from "@whippet/api": the components Whippet draws natively, the actions they offer, and the
 // functions that reach Whippet and the Mac.
-import {
-  Component,
-  createContext,
-  createElement,
-  useContext,
-  useMemo,
-  useState,
-  type ErrorInfo,
-  type ReactElement,
-  type ReactNode,
-} from "react";
+import { createElement, type ReactElement, type ReactNode } from "react";
 import { call } from "./native";
 
 /** An SF Symbol name such as `"star.fill"`, an emoji, an `https` image URL or an image file in the extension's folder. */
@@ -239,12 +229,6 @@ Action.OpenInBrowser = function OpenInBrowser(props: Omit<ActionProps, "title" |
   });
 };
 
-Action.Push = function Push(props: Omit<ActionProps, "onAction"> & { target: ReactElement }) {
-  const { target, ...rest } = props;
-  const { push } = useNavigation();
-  return host("action", { icon: "arrow.right", ...rest, onAction: () => push(target) });
-};
-
 Action.SubmitForm = function SubmitForm(props: Omit<ActionProps, "title" | "onAction"> & {
   title?: string;
   onSubmit: (values: FormValues) => void | Promise<void>;
@@ -259,73 +243,6 @@ Action.SubmitForm = function SubmitForm(props: Omit<ActionProps, "title" | "onAc
     onAction: onSubmit,
   });
 };
-
-// MARK: - Navigation
-
-export interface Navigation {
-  /** Shows another view on top of this one. Escape goes back. */
-  push(view: ReactElement): void;
-  pop(): void;
-}
-
-const NavigationContext = createContext<Navigation>({ push: () => {}, pop: () => {} });
-
-export function useNavigation(): Navigation {
-  return useContext(NavigationContext);
-}
-
-/** Lets Whippet pop the stack from outside React, on Escape. */
-export interface NavigationController {
-  pop(): boolean;
-  popToRoot(): void;
-}
-
-/** Every view in the stack stays mounted, each in its own `view`, so going back keeps its state. */
-export function NavigationRoot({ initial, controller }: { initial: ReactElement; controller: (c: NavigationController) => void }) {
-  const [stack, setStack] = useState<ReactElement[]>([initial]);
-  const navigation = useMemo<Navigation>(
-    () => ({
-      push: (view) => setStack((current) => [...current, view]),
-      pop: () => setStack((current) => (current.length > 1 ? current.slice(0, -1) : current)),
-    }),
-    [],
-  );
-  controller({
-    pop: () => {
-      if (stack.length <= 1) return false;
-      navigation.pop();
-      return true;
-    },
-    popToRoot: () => setStack((current) => current.slice(0, 1)),
-  });
-  return createElement(
-    NavigationContext.Provider,
-    { value: navigation },
-    stack.map((view, index) =>
-      createElement(ErrorBoundary, { key: index }, host("view", { depth: index + 1 }, view)),
-    ),
-  );
-}
-
-/** Shows an error in place of a view that threw while rendering, rather than leaving the panel empty. */
-class ErrorBoundary extends Component<{ children?: ReactNode }, { error: Error | null }> {
-  state = { error: null as Error | null };
-
-  static getDerivedStateFromError(error: Error) {
-    return { error };
-  }
-
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error(error, info.componentStack);
-  }
-
-  render() {
-    const { error } = this.state;
-    if (!error) return this.props.children;
-    const markdown = `## Something went wrong\n\n${error.message}\n\n\`\`\`\n${error.stack ?? ""}\n\`\`\``;
-    return host("view", { depth: 0 }, host("detail", { markdown }));
-  }
-}
 
 // MARK: - Functions
 

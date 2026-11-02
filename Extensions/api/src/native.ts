@@ -19,7 +19,7 @@ export const native: Native = __native;
 
 /** A message to Whippet. */
 export type Message =
-  | { type: "render"; session: string; depth: number; tree: SerializedNode | null }
+  | { type: "render"; session: string; depth: number; route: string; tree: SerializedNode | null }
   | { type: "done"; session: string }
   | { type: "error"; session?: string; message: string; stack?: string }
   | { type: "log"; level: string; message: string };

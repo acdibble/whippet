@@ -1,4 +1,19 @@
-import { Action, ActionPanel, Clipboard, Detail, Form, List, LocalStorage, showHUD, showToast, useNavigation } from "@whippet/api";
+import {
+  Action,
+  ActionPanel,
+  Clipboard,
+  Detail,
+  Form,
+  List,
+  LocalStorage,
+  Route,
+  Routes,
+  showHUD,
+  showToast,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "@whippet/api";
 import type { FormValues, LaunchProps } from "@whippet/api";
 import { useEffect, useState } from "react";
 
@@ -10,25 +25,36 @@ const allFruit = [
   { name: "Lemon", emoji: "🍋", colour: "Yellow", season: "Winter" },
 ];
 
-/** A list Whippet filters by itself, with a detail pushed from each item. */
-export function fruit() {
+/** URL routing: each page is a route, and its URL says which fruit to show. Escape goes back. */
+export function BrowseFruit() {
+  return (
+    <Routes>
+      <Route path="/" element={<FruitList />} />
+      <Route path="/fruit/:name" element={<FruitDetail />} />
+    </Routes>
+  );
+}
+
+/** A list Whippet filters by itself. */
+function FruitList() {
+  const navigate = useNavigate();
   return (
     <List searchBarPlaceholder="Search fruit…">
       <List.Section title="Fruit">
-        {allFruit.map((item) => (
+        {allFruit.map((fruit) => (
           <List.Item
-            key={item.name}
-            id={item.name}
-            title={item.name}
-            subtitle={item.colour}
-            icon={item.emoji}
-            keywords={[item.season]}
-            accessories={[{ text: item.season, icon: "calendar" }]}
+            key={fruit.name}
+            id={fruit.name}
+            title={fruit.name}
+            subtitle={fruit.colour}
+            icon={fruit.emoji}
+            keywords={[fruit.season]}
+            accessories={[{ text: fruit.season, icon: "calendar" }]}
             actions={
               <ActionPanel>
-                <Action.Push title="Show Details" target={<FruitDetail name={item.name} />} />
-                <Action.CopyToClipboard content={`${item.emoji} ${item.name}`} />
-                <Action.Paste content={item.name} shortcut={{ modifiers: ["cmd", "shift"], key: "v" }} />
+                <Action title="Show Details" icon="info.circle" onAction={() => navigate(`/fruit/${fruit.name}`)} />
+                <Action.CopyToClipboard content={`${fruit.emoji} ${fruit.name}`} />
+                <Action.Paste content={fruit.name} shortcut={{ modifiers: ["cmd", "shift"], key: "v" }} />
               </ActionPanel>
             }
           />
@@ -38,24 +64,26 @@ export function fruit() {
   );
 }
 
-function FruitDetail({ name }: { name: string }) {
-  const item = allFruit.find((candidate) => candidate.name === name)!;
+function FruitDetail() {
+  const { name } = useParams<{ name: string }>();
+  const fruit = allFruit.find((candidate) => candidate.name === name);
+  if (!fruit) return <Detail markdown={`# No fruit called ${name}`} />;
   const markdown = [
-    `# ${item.emoji} ${item.name}`,
-    `**Colour:** ${item.colour}`,
-    `**In season:** ${item.season}`,
+    `# ${fruit.emoji} ${fruit.name}`,
+    `**Colour:** ${fruit.colour}`,
+    `**In season:** ${fruit.season}`,
     "## Ways to eat it",
     "- Fresh\n- In a crumble\n- With `yoghurt`",
     "> Detail views take Markdown: headings, lists, quotes and code.",
   ].join("\n\n");
   return (
     <Detail
-      navigationTitle={item.name}
+      navigationTitle={fruit.name}
       markdown={markdown}
       actions={
         <ActionPanel>
-          <Action.CopyToClipboard title="Copy Name" content={item.name} />
-          <Action.OpenInBrowser url={`https://en.wikipedia.org/wiki/${item.name}`} />
+          <Action.CopyToClipboard title="Copy Name" content={fruit.name} />
+          <Action.OpenInBrowser url={`https://en.wikipedia.org/wiki/${fruit.name}`} />
         </ActionPanel>
       }
     />
@@ -76,31 +104,59 @@ async function saveNotes(notes: Note[]) {
   await LocalStorage.setItem("notes", JSON.stringify(notes));
 }
 
-/** A list of notes kept in LocalStorage, with a form pushed to add one. */
-export function notes() {
-  const [items, setItems] = useState<Note[] | null>(null);
+/**
+ * Conditional rendering: the command keeps the notes, and what it shows follows the location. Opening a note navigates
+ * with the note as its state, and the form has a path of its own. Escape goes back either way.
+ */
+export function Notes() {
+  const navigate = useNavigate();
+  const { pathname, state: openNote } = useLocation<Note | undefined>();
+  const [notes, setNotes] = useState<Note[] | null>(null);
 
-  const reload = () => loadNotes().then(setItems);
+  const reload = () => loadNotes().then(setNotes);
   useEffect(() => {
     reload();
   }, []);
 
   const remove = async (note: Note) => {
-    const remaining = (items ?? []).filter((item) => item.id !== note.id);
+    const remaining = (notes ?? []).filter((item) => item.id !== note.id);
     await saveNotes(remaining);
-    setItems(remaining);
+    setNotes(remaining);
     await showToast({ title: "Deleted", message: note.title });
   };
 
-  const newNote = <Action.Push title="New Note" icon="plus" shortcut={{ modifiers: ["cmd"], key: "n" }} target={<NoteForm onSave={reload} />} />;
+  if (pathname === "/new") {
+    return (
+      <NoteForm
+        onSave={() => {
+          reload();
+          navigate(-1);
+        }}
+      />
+    );
+  }
+
+  if (openNote) {
+    return (
+      <Detail
+        navigationTitle={openNote.title}
+        markdown={`# ${openNote.title}\n\n${openNote.body}`}
+        actions={
+          <ActionPanel>
+            <Action.CopyToClipboard content={openNote.body} />
+          </ActionPanel>
+        }
+      />
+    );
+  }
+
+  const newNote = (
+    <Action title="New Note" icon="plus" shortcut={{ modifiers: ["cmd"], key: "n" }} onAction={() => navigate("/new")} />
+  );
 
   return (
-    <List
-      isLoading={items === null}
-      searchBarPlaceholder="Search notes…"
-      actions={<ActionPanel>{newNote}</ActionPanel>}
-    >
-      {(items ?? []).map((note) => (
+    <List isLoading={notes === null} searchBarPlaceholder="Search notes…" actions={<ActionPanel>{newNote}</ActionPanel>}>
+      {(notes ?? []).map((note) => (
         <List.Item
           key={note.id}
           id={note.id}
@@ -109,7 +165,7 @@ export function notes() {
           icon="note.text"
           actions={
             <ActionPanel>
-              <Action.Push title="Open" target={<Detail navigationTitle={note.title} markdown={`# ${note.title}\n\n${note.body}`} />} />
+              <Action title="Open" icon="doc.text" onAction={() => navigate("/note", { state: note })} />
               <Action.CopyToClipboard content={note.body} />
               {newNote}
               <ActionPanel.Section title="Danger">
@@ -129,8 +185,7 @@ export function notes() {
   );
 }
 
-function NoteForm({ onSave }: { onSave?: () => void }) {
-  const { pop } = useNavigation();
+function NoteForm({ onSave }: { onSave: () => void }) {
   const [titleError, setTitleError] = useState(false);
 
   const submit = async (values: FormValues) => {
@@ -145,8 +200,7 @@ function NoteForm({ onSave }: { onSave?: () => void }) {
     notes.unshift({ id: crypto.randomUUID(), title, body: values.important ? `**Important.** ${body}` : body });
     await saveNotes(notes);
     await showToast({ title: "Saved", message: title, style: "success" });
-    onSave?.();
-    pop();
+    onSave();
   };
 
   return (
@@ -169,12 +223,12 @@ function NoteForm({ onSave }: { onSave?: () => void }) {
   );
 }
 
-/** A form as a command of its own. */
-export function addNote() {
-  return <NoteForm />;
+/** A form as a command of its own, which closes once the note is saved. */
+export function AddNote() {
+  return <NoteForm onSave={() => showHUD("Saved the note")} />;
 }
 
-/** A command without a view: it runs, then the panel closes. */
+/** A command without a view: a plain function, which runs, then the panel closes. */
 export async function copyUUID() {
   await Clipboard.copy(crypto.randomUUID());
   await showHUD("Copied a UUID");

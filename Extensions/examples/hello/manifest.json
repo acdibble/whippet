@@ -7,15 +7,35 @@
   "author": "Whippet",
   "icon": "hand.wave",
   "commands": [
-    { "name": "fruit", "title": "Browse Fruit", "icon": "🍎" },
-    { "name": "notes", "title": "Notes", "icon": "note.text" },
-    { "name": "addNote", "title": "Add Note", "icon": "square.and.pencil" },
-    { "name": "copyUUID", "title": "Copy UUID", "mode": "no-view", "icon": "number" },
+    {
+      "name": "BrowseFruit",
+      "title": "Browse Fruit",
+      "icon": "🍎"
+    },
+    {
+      "name": "Notes",
+      "title": "Notes",
+      "icon": "note.text"
+    },
+    {
+      "name": "AddNote",
+      "title": "Add Note",
+      "icon": "square.and.pencil"
+    },
+    {
+      "name": "copyUUID",
+      "title": "Copy UUID",
+      "mode": "no-view",
+      "icon": "number"
+    },
     {
       "name": "greet",
       "title": "Greet",
       "mode": "no-view",
-      "argument": { "name": "name", "placeholder": "Name" }
+      "argument": {
+        "name": "name",
+        "placeholder": "Name"
+      }
     }
   ]
 }

@@ -223,20 +223,17 @@ function serialize(instance: Instance, handlers: Session["handlers"]): Serialize
   return { id: instance.id, type: instance.type, props, children };
 }
 
-/**
- * Sends the top view of the navigation stack. Views underneath stay mounted, so their state is still there when the
- * user goes back, but Whippet only draws the top one.
- */
+/** Sends the command's view, with how deep its history is and which entry it shows, so Whippet knows when it moved. */
 function send(container: Container) {
   const entry = sessions.get(container.session);
   if (!entry) return;
-  const views = container.children.filter((child) => child.type === "view");
-  const top = views[views.length - 1];
+  const view = container.children.find((child) => child.type === "view");
   entry.handlers.clear();
   post({
     type: "render",
     session: container.session,
-    depth: views.length,
-    tree: top ? serialize(top, entry.handlers) : null,
+    depth: Number(view?.props.depth ?? 1),
+    route: String(view?.props.route ?? ""),
+    tree: view ? serialize(view, entry.handlers) : null,
   });
 }

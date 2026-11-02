@@ -29,18 +29,29 @@ hello/
   "apiVersion": 1,
   "icon": "hand.wave",
   "commands": [
-    { "name": "fruit", "title": "Browse Fruit" },
+    { "name": "BrowseFruit", "title": "Browse Fruit" },
     { "name": "copyUUID", "title": "Copy UUID", "mode": "no-view" }
   ]
 }
 ```
 
-`src/index.tsx` exports one function per command, named as in the manifest:
+`src/index.tsx` exports one function per command, named as in the manifest. A command with a view is a component, so
+its name is capitalized; one without a view is a plain function.
 
 ```tsx
-import { Action, ActionPanel, Clipboard, Detail, List, showHUD } from "@whippet/api";
+import { Action, ActionPanel, Clipboard, Detail, List, Route, Routes, showHUD, useNavigate, useParams } from "@whippet/api";
 
-export function fruit() {
+export function BrowseFruit() {
+  return (
+    <Routes>
+      <Route path="/" element={<FruitList />} />
+      <Route path="/fruit/:name" element={<FruitDetail />} />
+    </Routes>
+  );
+}
+
+function FruitList() {
+  const navigate = useNavigate();
   return (
     <List>
       {["Apple", "Banana", "Cherry"].map((name) => (
@@ -49,7 +60,7 @@ export function fruit() {
           title={name}
           actions={
             <ActionPanel>
-              <Action.Push title="Show Details" target={<Detail markdown={`# ${name}`} />} />
+              <Action title="Show Details" onAction={() => navigate(`/fruit/${name}`)} />
               <Action.CopyToClipboard content={name} />
             </ActionPanel>
           }
@@ -57,6 +68,11 @@ export function fruit() {
       ))}
     </List>
   );
+}
+
+function FruitDetail() {
+  const { name } = useParams();
+  return <Detail markdown={`# ${name}`} />;
 }
 
 export async function copyUUID() {
@@ -90,7 +106,7 @@ kind of view and command, and `github` searches GitHub's API as you type.
 | `icon` | | An SF Symbol name, an emoji or an image file in the extension's folder. |
 | `permissions` | | `network`: hosts `fetch` may reach, such as `api.github.com`, `*.example.com` or `*` for any. `clipboard`: `true` to read the clipboard. |
 | `preferences` | | Settings the user fills in: `name`, `title`, `type` (`text`, `secret` or `checkbox`), `description`, `placeholder`, `required` and `default`. Secrets are kept in the Keychain. A command whose required preferences are empty opens Settings instead of running. |
-| `commands` | required | `name` (the exported function), `title`, `subtitle`, `icon`, `mode` (`view`, the default, or `no-view`) and `argument` (`{ "name", "placeholder" }`, typed after Tab). |
+| `commands` | required | `name` (the export: a component for a view, capitalized, or a function), `title`, `subtitle`, `icon`, `mode` (`view`, the default, or `no-view`) and `argument` (`{ "name", "placeholder" }`, typed after Tab). |
 
 ## The API
 
@@ -113,16 +129,34 @@ are in the ⌘K menu. In a form, Return in a text field and ⌘Return both run t
 ### Actions
 
 `Action` (`title`, `icon`, `shortcut`, `style: "destructive"`, `onAction`), `Action.CopyToClipboard`, `Action.Paste`,
-`Action.OpenInBrowser`, `Action.Push` (shows `target` on top; Escape goes back) and `Action.SubmitForm`.
-`ActionPanel.Section` groups actions under a title in the menu.
+`Action.OpenInBrowser` and `Action.SubmitForm`. `ActionPanel.Section` groups actions under a title in the menu.
+
+### Navigation
+
+A command has a URL and a history, in the manner of react-router. It starts at `/`, and its component stays mounted as
+it navigates, so state kept there lasts; what changes is what it renders.
+
+- `useNavigate()` returns `navigate(to, { state, replace })`, and `navigate(-1)` to go back. A path without a leading
+  slash is relative to the current one.
+- `<Routes>` renders the first `<Route path element>` that matches, and `useParams()` reads its `:name` segments.
+- `useLocation()` returns `pathname` and the `state` passed to `navigate`. A command can render from these directly,
+  without `<Routes>`, such as showing a note when `state` holds one:
+
+  ```tsx
+  const { state: note } = useLocation<Note | undefined>();
+  if (note) return <Detail markdown={note.body} />;
+  ```
+
+Escape goes back through the history, and leaves the command from its first entry. Going back restores the search text
+and the selected item of the page returned to.
 
 ### Functions
 
 | | |
 |---|---|
-| `useNavigation()` | `push(view)` and `pop()`. |
 | `showToast({ title, message, style })`, `showHUD(title)` | A message over the screen. `showHUD` closes the panel first. |
-| `closeMainWindow()`, `popToRoot()` | |
+| `closeMainWindow()` | |
+| `popToRoot()` | Goes back to the command's first entry. |
 | `open(url)` | Opens a web or app link. File URLs aren't allowed. |
 | `Clipboard.copy(text)`, `Clipboard.paste(text)`, `Clipboard.readText()` | Pasting closes the panel and pastes into the app it opened over. Reading needs the `clipboard` permission. |
 | `LocalStorage` | `getItem`, `setItem`, `removeItem`, `allItems` and `clear`: strings kept for the extension between launches. |
@@ -141,8 +175,9 @@ modules; an extension can only `require` React and `@whippet/api`. What it logs 
 ## How it works
 
 Whippet's runtime (`Extensions/api`) is React with a custom renderer, from `react-reconciler`. Its host elements are
-plain objects. After each commit, the top view of a command's navigation stack is serialized to JSON and sent to Swift,
-with each function in its props replaced by an id. `ExtensionRuntime` (in WhippetCore) parses it into an
+plain objects. After each commit, a command's view is serialized to JSON and sent to Swift, with each function in its
+props replaced by an id, and with the length of its history and the key of the entry shown, so Whippet can tell going
+forward from going back. `ExtensionRuntime` (in WhippetCore) parses it into an
 `ExtensionView`, which the launcher draws, and sends ids back when the user acts. Messages both ways are JSON, so the
 runtime could move into a separate process later.
 

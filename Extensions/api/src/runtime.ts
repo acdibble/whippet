@@ -5,7 +5,8 @@ import "./globals";
 import * as React from "react";
 import * as JSXRuntime from "react/jsx-runtime";
 import * as API from "./api";
-import { NavigationRoot, type NavigationController } from "./api";
+import * as PublicAPI from "./index";
+import { RouterRoot, type RouterController } from "./router";
 import { post } from "./native";
 import { dispatch, mount, unmount } from "./renderer";
 
@@ -14,11 +15,11 @@ const modules: Record<string, unknown> = {
   react: React,
   "react/jsx-runtime": JSXRuntime,
   "react/jsx-dev-runtime": JSXRuntime,
-  "@whippet/api": API,
+  "@whippet/api": PublicAPI,
 };
 
 let commands: Record<string, unknown> = {};
-const controllers = new Map<string, NavigationController>();
+const controllers = new Map<string, RouterController>();
 
 function reportError(session: string | undefined, error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
@@ -63,12 +64,12 @@ const whippet = {
         .catch((error) => reportError(session, error));
       return;
     }
-    const initial = React.createElement(entry as React.FunctionComponent<API.LaunchProps>, props);
+    const element = React.createElement(entry as React.FunctionComponent<API.LaunchProps>, props);
     mount(
       session,
-      React.createElement(NavigationRoot, {
-        initial,
-        controller: (controller: NavigationController) => controllers.set(session, controller),
+      React.createElement(RouterRoot, {
+        command: element,
+        controller: (controller: RouterController) => controllers.set(session, controller),
       }),
     );
   },
@@ -77,9 +78,9 @@ const whippet = {
     dispatch(session, handler, JSON.parse(argsJSON));
   },
 
-  /** Escape: goes back a view, returning false on the first one so Whippet can leave the command. */
+  /** Escape: goes back in the command's history, returning false on its first entry so Whippet can leave it. */
   pop(session: string): boolean {
-    return controllers.get(session)?.pop() ?? false;
+    return controllers.get(session)?.back() ?? false;
   },
 
   popToRoot(session: string) {
