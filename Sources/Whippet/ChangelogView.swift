@@ -11,10 +11,9 @@ struct ChangelogView: View {
         let selected = releases.indices.contains(model.selection) ? releases[model.selection] : nil
 
         VStack(spacing: 0) {
-            HStack(spacing: 0) {
+            SplitPane {
                 ReleaseList(model: model, releases: releases)
-                    .frame(width: 300)
-                Divider()
+            } detail: {
                 if let selected {
                     ReleaseDetail(release: selected)
                         .id(selected.id)
@@ -24,31 +23,13 @@ struct ChangelogView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .frame(maxHeight: .infinity)
-            Divider()
-            HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "list.bullet.rectangle.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white)
-                        .frame(width: 20, height: 20)
-                        .background(.indigo, in: RoundedRectangle(cornerRadius: 5))
-                    Text("Changelog")
-                }
-                .padding(.leading, 6)
-                .padding(.trailing, 12)
-                .padding(.vertical, 4)
-                .background(.primary.opacity(0.08), in: Capsule())
-
-                Spacer()
-
-                if let selected {
-                    ResultActions(model: model, result: .release(selected))
-                }
-            }
-            .font(.system(size: 13, weight: .medium))
-            .padding(.horizontal, 10)
-            .frame(height: 44)
+            CommandFooter(
+                model: model,
+                title: "Changelog",
+                symbol: "list.bullet.rectangle.fill",
+                tint: .indigo,
+                result: selected.map { .release($0) }
+            )
         }
     }
 }

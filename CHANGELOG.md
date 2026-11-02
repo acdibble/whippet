@@ -12,6 +12,10 @@ versions follow [Semantic Versioning](https://semver.org/).
   or a form in the panel, or run without one. Install them in Settings › Extensions, which shows what each one may
   access and its preferences. See `docs/extensions.md`.
 
+### Fixed
+
+- Clipboard History and the Changelog draw a line under the search bar, where the line between their panes begins.
+
 ## [1.3.1] - 2026-11-02
 
 ### Added

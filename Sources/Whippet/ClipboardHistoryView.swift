@@ -27,49 +27,26 @@ struct ClipboardHistoryView: View {
 
     var body: some View {
         let items = model.clipboardItems
+        let selected = items.indices.contains(model.selection) ? items[model.selection] : nil
 
         VStack(spacing: 0) {
-            HStack(spacing: 0) {
+            SplitPane {
                 ItemList(model: model, items: items)
-                    .frame(width: 300)
-                Divider()
-                if items.indices.contains(model.selection) {
-                    let item = items[model.selection]
-                    ItemDetail(item: item, imageURL: model.imageURL(for: item))
+            } detail: {
+                if let selected {
+                    ItemDetail(item: selected, imageURL: model.imageURL(for: selected))
                 } else {
                     EmptyDetail()
                 }
             }
-            .frame(maxHeight: .infinity)
-            Divider()
-            footer(selected: items.indices.contains(model.selection) ? items[model.selection] : nil)
+            CommandFooter(
+                model: model,
+                title: "Clipboard History",
+                symbol: "list.clipboard.fill",
+                tint: .orange,
+                result: selected.map { .clipboard($0) }
+            )
         }
-    }
-
-    private func footer(selected: ClipboardItem?) -> some View {
-        HStack {
-            HStack(spacing: 8) {
-                Image(systemName: "list.clipboard.fill")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white)
-                    .frame(width: 20, height: 20)
-                    .background(.orange, in: RoundedRectangle(cornerRadius: 5))
-                Text("Clipboard History")
-            }
-            .padding(.leading, 6)
-            .padding(.trailing, 12)
-            .padding(.vertical, 4)
-            .background(.primary.opacity(0.08), in: Capsule())
-
-            Spacer()
-
-            if let selected {
-                ResultActions(model: model, result: .clipboard(selected))
-            }
-        }
-        .font(.system(size: 13, weight: .medium))
-        .padding(.horizontal, 10)
-        .frame(height: 44)
     }
 }
 
