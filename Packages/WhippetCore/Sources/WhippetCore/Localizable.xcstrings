@@ -61,6 +61,26 @@
         }
       }
     },
+    "Connect to %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اتصال به %@"
+          }
+        }
+      }
+    },
+    "Connect to any website" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اتصال به هر وب‌سایتی"
+          }
+        }
+      }
+    },
     "Conversion" : {
       "localizations" : {
         "fa" : {
@@ -441,6 +461,26 @@
         }
       }
     },
+    "Read the clipboard" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خواندن کلیپ‌بورد"
+          }
+        }
+      }
+    },
+    "Reading the clipboard needs the clipboard permission in the manifest." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خواندن کلیپ‌بورد به مجوز clipboard در manifest نیاز دارد."
+          }
+        }
+      }
+    },
     "Remainder" : {
       "localizations" : {
         "fa" : {
@@ -511,12 +551,102 @@
         }
       }
     },
+    "The arguments for %@ aren't valid." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آرگومان‌های %@ معتبر نیستند."
+          }
+        }
+      }
+    },
+    "The command name “%@” should be letters, digits and underscores." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نام فرمان «%@» باید فقط حرف، رقم و زیرخط باشد."
+          }
+        }
+      }
+    },
+    "The extension has no commands." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزونه هیچ فرمانی ندارد."
+          }
+        }
+      }
+    },
+    "The extension has no name." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزونه نامی ندارد."
+          }
+        }
+      }
+    },
+    "The extension needs API version %lld, and this Whippet supports version 1." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزونه به نسخهٔ %lld از API نیاز دارد و این Whippet از نسخهٔ ۱ پشتیبانی می‌کند."
+          }
+        }
+      }
+    },
+    "The id “%@” should be reverse-DNS, such as com.example.github." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شناسهٔ «%@» باید به شکل DNS معکوس باشد، مانند com.example.github."
+          }
+        }
+      }
+    },
     "The key for iCloud sync is missing or damaged." : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "کلید همگام‌سازی iCloud وجود ندارد یا آسیب دیده است."
+          }
+        }
+      }
+    },
+    "There's more than one command named “%@”." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بیش از یک فرمان با نام «%@» وجود دارد."
+          }
+        }
+      }
+    },
+    "There's no index.js in the extension's folder. Build the extension first." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در پوشهٔ افزونه index.js وجود ندارد. ابتدا افزونه را بسازید."
+          }
+        }
+      }
+    },
+    "There's no manifest.json in the folder." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در این پوشه manifest.json وجود ندارد."
           }
         }
       }
@@ -591,6 +721,66 @@
         }
       }
     },
+    "Whippet blocked a request to %@, which the extension's manifest doesn't list." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whippet درخواستی به %@ را مسدود کرد، چون در manifest افزونه فهرست نشده است."
+          }
+        }
+      }
+    },
+    "Whippet couldn't start JavaScript." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whippet نتوانست JavaScript را اجرا کند."
+          }
+        }
+      }
+    },
+    "Whippet has no function named %@." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whippet تابعی به نام %@ ندارد."
+          }
+        }
+      }
+    },
+    "Whippet's extension runtime didn't start." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محیط اجرای افزونه‌های Whippet راه‌اندازی نشد."
+          }
+        }
+      }
+    },
+    "Whippet's extension runtime is missing." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محیط اجرای افزونه‌های Whippet پیدا نشد."
+          }
+        }
+      }
+    },
+    "fetch needs an http or https URL." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fetch به نشانی http یا https نیاز دارد."
+          }
+        }
+      }
+    },
     "iCloud is restricted on this Mac." : {
       "localizations" : {
         "fa" : {
@@ -607,6 +797,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "iCloud موقتاً در دسترس نیست."
+          }
+        }
+      }
+    },
+    "index.js couldn't be read as JavaScript." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "index.js را نمی‌توان به‌عنوان JavaScript خواند."
+          }
+        }
+      }
+    },
+    "manifest.json isn't valid: %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "manifest.json معتبر نیست: %@"
+          }
+        }
+      }
+    },
+    "“%@” isn't a host name, such as api.example.com." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«%@» نام میزبان نیست، مانند api.example.com."
           }
         }
       }

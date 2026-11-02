@@ -87,6 +87,12 @@ only what the app uses as `public`. The app chooses where data lives (`Clipboard
 - **`CloudSync`** syncs clipboard and calculator history through `CKSyncEngine` in the private database. It's
   end-to-end encrypted: record names are keyed hashes, and all fields are in `encryptedValues`. Feedback goes to the
   public database (`Feedback.swift`). The schema and security roles are in `docs/cloudkit.md`.
+- **Extensions**, behind the `extensions` feature flag, run JavaScript with React in JavaScriptCore, one context per extension (`ExtensionRuntime` in
+  WhippetCore). Whippet's runtime in `Extensions/api` renders to plain objects with `react-reconciler`, and each
+  commit's top view goes to Swift as JSON (`ExtensionView`). `ExtensionManager` finds, watches and enables extensions,
+  and `ExtensionSession` holds an open view command. The bundled runtime,
+  `Packages/WhippetCore/Sources/WhippetCore/Resources/ExtensionRuntime.js`, is committed: after changing
+  `Extensions/api/src`, run `npm install && npm run build` there. See `docs/extensions.md`.
 - **Changelog**: `CHANGELOG.md` is bundled as a resource and parsed at runtime (`Changelog.swift`) for the Changelog
   command and What's New. It must keep the Keep a Changelog format: `## [x.y.z] - date`, `###` sections, and `- `
   items whose wrapped lines are indented by two spaces.
@@ -108,6 +114,9 @@ free of app-only dependencies.
   tone of the surrounding code.
 - **Dependencies** in `project.yml` and `Packages/WhippetCore/Package.swift` are pinned to exact commits on purpose.
   GRDB is in both, at the same commit. GitHub Actions are pinned to full SHAs with a version comment.
+- **Feature flags**: an unfinished feature ships behind a `FeatureFlag` (`FeatureFlags.swift`), off by default and
+  turned on under Settings › General › Beta Features. Whatever it gates should do no work while it's off, and start
+  or stop from `FeatureFlags.onChange` in `AppDelegate`.
 - **Commits** use Conventional Commits (`feat:`, `fix:`, `ci:`, `chore:`) and go straight to `main`. User-visible
   changes get an entry under `## [Unreleased]` in `CHANGELOG.md`.
 

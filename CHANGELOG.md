@@ -5,6 +5,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Beta Features in Settings › General, for trying features before they're finished.
+- Extensions, as a beta feature: commands written in TypeScript or JavaScript with React, which show a list, a detail
+  or a form in the panel, or run without one. Install them in Settings › Extensions, which shows what each one may
+  access and its preferences. See `docs/extensions.md`.
+
 ## [1.3.1] - 2026-11-02
 
 ### Added

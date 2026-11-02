@@ -2,8 +2,8 @@
 import PackageDescription
 
 // What Whippet's apps share: clipboard and calculator history with its database and end-to-end encrypted iCloud
-// sync, quicklinks, and the calculator with unit, currency and time conversion. It uses no AppKit or UIKit, so it
-// builds for iOS as well as macOS.
+// sync, quicklinks, the calculator with unit, currency and time conversion, and the extension runtime. It uses no
+// AppKit or UIKit, so it builds for iOS as well as macOS.
 let package = Package(
     name: "WhippetCore",
     defaultLocalization: "en",
@@ -26,7 +26,10 @@ let package = Package(
             dependencies: [
                 .product(name: "GRDB", package: "GRDB.swift"),
                 .product(name: "Units", package: "Units"),
-            ]
+            ],
+            // React and Whippet's extension API, bundled from Extensions/api by `npm run build` there, and loaded into
+            // each extension's JavaScript context.
+            resources: [.copy("Resources/ExtensionRuntime.js")]
         )
     ]
 )

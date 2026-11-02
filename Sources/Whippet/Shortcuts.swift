@@ -65,6 +65,13 @@ extension Quicklink {
     }
 }
 
+extension ExtensionCommandInfo {
+    /// Keyed by extension and command name, so a hotkey survives the extension being updated.
+    var shortcutName: KeyboardShortcuts.Name {
+        KeyboardShortcuts.Name("extension.\(key)")
+    }
+}
+
 extension AppEntry {
     /// Keyed by bundle identifier so a hotkey survives the app moving folders.
     var shortcutName: KeyboardShortcuts.Name {
@@ -88,6 +95,7 @@ extension LauncherResult {
             case .stopwatch: CommandShortcut.stopwatch.name
             case .timersView: CommandShortcut.timers.name
             case .quicklink(let quicklink): quicklink.shortcutName
+            case .extensionCommand(let info): info.shortcutName
             case .window(let command): command.shortcutName
             default: nil
             }

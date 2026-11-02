@@ -1,0 +1,32 @@
+{
+  "id": "codes.dibble.whippet.pokedex",
+  "name": "Pokédex",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "description": "Look up Pokémon with PokéAPI: search them all, see their stats and evolutions, keep favourites and find them by type.",
+  "author": "Whippet",
+  "icon": "🔴",
+  "permissions": {
+    "network": ["pokeapi.co", "raw.githubusercontent.com"]
+  },
+  "preferences": [
+    {
+      "name": "shiny",
+      "title": "Show Shiny Sprites",
+      "type": "checkbox",
+      "description": "Shows each Pokémon in its shiny colours."
+    }
+  ],
+  "commands": [
+    { "name": "Pokedex", "title": "Search Pokémon", "icon": "magnifyingglass" },
+    { "name": "PokemonByType", "title": "Find Pokémon by Type", "icon": "line.3.horizontal.decrease.circle" },
+    { "name": "RandomPokemon", "title": "Random Pokémon", "icon": "dice" },
+    {
+      "name": "copyPokemonName",
+      "title": "Copy Pokémon Name",
+      "mode": "no-view",
+      "icon": "doc.on.doc",
+      "argument": { "name": "number", "placeholder": "Pokédex number, such as 25" }
+    }
+  ]
+}

@@ -35,6 +35,15 @@ jobs:
       - name: Lint
         run: git ls-files -z '*.swift' | xargs -0 xcrun swift-format lint --strict --parallel
 
+      # The extension runtime is built from Extensions/api and committed, so building Whippet needs no Node. This
+      # checks the committed bundle matches its source.
+      - name: Check the extension runtime is built
+        working-directory: Extensions/api
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+          git diff --exit-code -- ../../Packages/WhippetCore/Sources/WhippetCore/Resources/ExtensionRuntime.js
+
       - name: Generate the Xcode project
         run: |
           curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" \
