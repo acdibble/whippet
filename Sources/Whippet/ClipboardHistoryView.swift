@@ -55,28 +55,18 @@ private struct ItemList: View {
     let items: [ClipboardItem]
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 2) {
-                    ForEach(sections, id: \.title) { section in
-                        SectionHeader(title: section.title)
-                        ForEach(section.rows, id: \.item.id) { row in
-                            ItemRow(
-                                item: row.item,
-                                imageURL: model.imageURL(for: row.item),
-                                isSelected: row.index == model.selection
-                            )
-                            .id(row.item.id)
-                            .onTapGesture { model.selection = row.index }
-                        }
-                    }
+        SelectableList(ids: items.map(\.id), selection: model.selection) {
+            ForEach(sections, id: \.title) { section in
+                SectionHeader(title: section.title)
+                ForEach(section.rows, id: \.item.id) { row in
+                    ItemRow(
+                        item: row.item,
+                        imageURL: model.imageURL(for: row.item),
+                        isSelected: row.index == model.selection
+                    )
+                    .id(row.item.id)
+                    .onTapGesture { model.selection = row.index }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-            }
-            .onChange(of: model.selection) { _, selection in
-                guard items.indices.contains(selection) else { return }
-                proxy.scrollTo(items[selection].id)
             }
         }
     }
@@ -124,11 +114,7 @@ private struct ItemRow: View {
                     .layoutPriority(-1)
             }
         }
-        .font(.system(size: 13))
-        .padding(.horizontal, 8)
-        .frame(height: 32)
-        .background(isSelected ? Color.primary.opacity(0.1) : .clear, in: RoundedRectangle(cornerRadius: 8))
-        .contentShape(Rectangle())
+        .listRow(isSelected: isSelected, compact: true)
     }
 
     @ViewBuilder
@@ -356,26 +342,6 @@ private struct EmptyDetail: View {
         Text("No clipboard history")
             .foregroundStyle(Color.launcherSecondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-struct KeyCap: View {
-    private let label: Text
-
-    init(symbol: String) {
-        label = Text(Image(systemName: symbol))
-    }
-
-    init(_ key: String) {
-        label = Text(key)
-    }
-
-    var body: some View {
-        label
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(Color.launcherSecondary)
-            .frame(width: 20, height: 20)
-            .background(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.launcherSecondary.opacity(0.5)))
     }
 }
 

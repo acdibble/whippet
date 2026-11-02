@@ -39,21 +39,11 @@ private struct ReleaseList: View {
     let releases: [Release]
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 2) {
-                    ForEach(Array(releases.enumerated()), id: \.element.id) { index, release in
-                        ReleaseRow(release: release, isSelected: index == model.selection)
-                            .id(release.id)
-                            .onTapGesture { model.selection = index }
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-            }
-            .onChange(of: model.selection) { _, selection in
-                guard releases.indices.contains(selection) else { return }
-                proxy.scrollTo(releases[selection].id)
+        SelectableList(ids: releases.map(\.id), selection: model.selection) {
+            ForEach(Array(releases.enumerated()), id: \.element.id) { index, release in
+                ReleaseRow(release: release, isSelected: index == model.selection)
+                    .id(release.id)
+                    .onTapGesture { model.selection = index }
             }
         }
     }
@@ -75,11 +65,7 @@ private struct ReleaseRow: View {
                 .lineLimit(1)
                 .foregroundStyle(Color.launcherSecondary)
         }
-        .font(.system(size: 13))
-        .padding(.horizontal, 8)
-        .frame(height: 32)
-        .background(isSelected ? Color.primary.opacity(0.1) : .clear, in: RoundedRectangle(cornerRadius: 8))
-        .contentShape(Rectangle())
+        .listRow(isSelected: isSelected, compact: true)
     }
 }
 

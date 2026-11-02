@@ -181,30 +181,20 @@ struct RootResults: View {
                 if model.showsCalculatorLayout {
                     CalculatorResults(model: model, results: results)
                 } else {
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            // One flat list of headers and rows, each with its own identity. Rows nested in a ForEach
-                            // per section left stale selection highlights on the wrong rows as the selection moved.
-                            LazyVStack(alignment: .leading, spacing: 2) {
-                                ForEach(listItems(of: results)) { item in
-                                    switch item {
-                                    case .header(let title):
-                                        SectionHeader(title: title)
-                                    case .row(let index, let result):
-                                        ResultRow(result: result, isSelected: index == model.selection)
-                                            .onTapGesture {
-                                                model.selection = index
-                                                model.activate()
-                                            }
+                    // One flat list of headers and rows, each with its own identity. Rows nested in a ForEach per
+                    // section left stale selection highlights on the wrong rows as the selection moved.
+                    SelectableList(ids: results.map(\.id), selection: model.selection) {
+                        ForEach(listItems(of: results)) { item in
+                            switch item {
+                            case .header(let title):
+                                SectionHeader(title: title)
+                            case .row(let index, let result):
+                                ResultRow(result: result, isSelected: index == model.selection)
+                                    .onTapGesture {
+                                        model.selection = index
+                                        model.activate()
                                     }
-                                }
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 6)
-                        }
-                        .onChange(of: model.selection) { _, selection in
-                            guard results.indices.contains(selection) else { return }
-                            proxy.scrollTo(results[selection].id)
                         }
                     }
                 }
@@ -216,15 +206,12 @@ struct RootResults: View {
             if model.mode == .extensionView {
                 ExtensionFooter(model: model, primaryKeys: ["return"])
             } else {
-                HStack {
+                FooterBar {
                     Spacer()
                     if results.indices.contains(model.selection) {
                         ResultActions(model: model, result: results[model.selection])
                     }
                 }
-                .font(.system(size: 13, weight: .medium))
-                .padding(.horizontal, 10)
-                .frame(height: 44)
             }
         }
     }
@@ -297,11 +284,7 @@ struct ResultRow: View {
             ResultSubtitle(result: result)
                 .foregroundStyle(Color.launcherSecondary)
         }
-        .font(.system(size: 14))
-        .padding(.horizontal, 10)
-        .frame(height: 40)
-        .background(isSelected ? Color.primary.opacity(0.1) : .clear, in: RoundedRectangle(cornerRadius: 8))
-        .contentShape(Rectangle())
+        .listRow(isSelected: isSelected)
     }
 
     @ViewBuilder
@@ -445,39 +428,6 @@ struct HoverHighlight<Label: View>: View {
         if isPressed { return 0.16 }
         if isHovered { return 0.08 }
         return 0
-    }
-}
-
-/// The footer's main action for the selected result, and the ⌘K menu with the rest.
-struct ResultActions: View {
-    let model: LauncherModel
-    let result: LauncherResult
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Button {
-                model.activate()
-            } label: {
-                HStack(spacing: 8) {
-                    Text(model.actionTitle(for: result))
-                    KeyCap(symbol: "return")
-                }
-            }
-            .launcherButtonStyle()
-            Divider()
-                .frame(height: 16)
-            Button {
-                model.onShowActions()
-            } label: {
-                HStack(spacing: 4) {
-                    Text("Actions")
-                        .padding(.trailing, 4)
-                    KeyCap(symbol: "command")
-                    KeyCap("K")
-                }
-            }
-            .launcherButtonStyle()
-        }
     }
 }
 

@@ -154,38 +154,16 @@ struct ExtensionFooter: View {
     let primaryKeys: [String]
 
     var body: some View {
-        HStack(spacing: 4) {
+        FooterBar {
             Spacer()
             if let primary = model.extensionActions.first {
-                Button {
+                FooterButton(Text(primary.title), keys: primaryKeys.map { KeyCap(symbol: $0) }) {
                     model.runExtensionAction(primary)
-                } label: {
-                    HStack(spacing: 8) {
-                        Text(primary.title)
-                        HStack(spacing: 4) {
-                            ForEach(primaryKeys, id: \.self) { KeyCap(symbol: $0) }
-                        }
-                    }
                 }
-                .launcherButtonStyle()
-                Divider()
-                    .frame(height: 16)
-                Button {
-                    model.onShowActions()
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("Actions")
-                            .padding(.trailing, 4)
-                        KeyCap(symbol: "command")
-                        KeyCap("K")
-                    }
-                }
-                .launcherButtonStyle()
+                FooterDivider()
+                ActionsButton(model: model)
             }
         }
-        .font(.system(size: 13, weight: .medium))
-        .padding(.horizontal, 10)
-        .frame(height: 44)
     }
 }
 

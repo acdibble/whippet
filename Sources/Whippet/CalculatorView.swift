@@ -21,36 +21,26 @@ struct CalculatorResults: View {
             return false
         }
 
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
-                    SectionHeader(title: String(localized: "Calculator"))
-                    if let current, case .calculation(let calculation) = current.result {
-                        CalculationCard(calculation: calculation, isSelected: current.index == model.selection)
-                            .id(current.result.id)
-                            .onTapGesture {
-                                model.selection = current.index
-                                model.activate()
-                            }
-                    } else {
-                        Text("Type a calculation")
-                            .foregroundStyle(Color.launcherSecondary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 130)
-                            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        SelectableList(ids: results.map(\.id), selection: model.selection) {
+            SectionHeader(title: String(localized: "Calculator"))
+            if let current, case .calculation(let calculation) = current.result {
+                CalculationCard(calculation: calculation, isSelected: current.index == model.selection)
+                    .id(current.result.id)
+                    .onTapGesture {
+                        model.selection = current.index
+                        model.activate()
                     }
-
-                    HStack(alignment: .top, spacing: 8) {
-                        column(title: "History", rows: history, emptyText: "Answers you copy appear here")
-                        column(title: "Numbers", rows: numbers, emptyText: "Numbers you copy appear here")
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
+            } else {
+                Text("Type a calculation")
+                    .foregroundStyle(Color.launcherSecondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 130)
+                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
             }
-            .onChange(of: model.selection) { _, selection in
-                guard results.indices.contains(selection) else { return }
-                proxy.scrollTo(results[selection].id)
+
+            HStack(alignment: .top, spacing: 8) {
+                column(title: "History", rows: history, emptyText: "Answers you copy appear here")
+                column(title: "Numbers", rows: numbers, emptyText: "Numbers you copy appear here")
             }
         }
     }

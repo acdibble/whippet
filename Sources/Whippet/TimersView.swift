@@ -10,43 +10,30 @@ struct TimersView: View {
         let results = model.results
 
         VStack(spacing: 0) {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 2) {
-                        if !results.contains(where: \.isTimerRow) {
-                            SectionHeader(title: String(localized: "Timers"))
-                            Text("No timers running. Press N to start one.")
-                                .foregroundStyle(Color.launcherSecondary)
-                                .padding(.horizontal, 10)
-                                .frame(height: 40)
-                        }
-                        ForEach(Array(results.enumerated()), id: \.element.id) { index, result in
-                            if index == 0 || model.sectionTitle(at: index) != model.sectionTitle(at: index - 1) {
-                                SectionHeader(title: model.sectionTitle(at: index))
-                            }
-                            TimerRow(model: model, result: result, index: index)
-                                .id(result.id)
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
+            SelectableList(ids: results.map(\.id), selection: model.selection) {
+                if !results.contains(where: \.isTimerRow) {
+                    SectionHeader(title: String(localized: "Timers"))
+                    Text("No timers running. Press N to start one.")
+                        .foregroundStyle(Color.launcherSecondary)
+                        .padding(.horizontal, 10)
+                        .frame(height: 40)
                 }
-                .onChange(of: model.selection) { _, selection in
-                    guard results.indices.contains(selection) else { return }
-                    proxy.scrollTo(results[selection].id)
+                ForEach(Array(results.enumerated()), id: \.element.id) { index, result in
+                    if index == 0 || model.sectionTitle(at: index) != model.sectionTitle(at: index - 1) {
+                        SectionHeader(title: model.sectionTitle(at: index))
+                    }
+                    TimerRow(model: model, result: result, index: index)
+                        .id(result.id)
                 }
             }
             .frame(maxHeight: .infinity)
 
-            HStack {
+            FooterBar {
                 Spacer()
                 if let result = model.selectedResult {
                     ResultActions(model: model, result: result)
                 }
             }
-            .font(.system(size: 13, weight: .medium))
-            .padding(.horizontal, 10)
-            .frame(height: 44)
         }
     }
 }
@@ -66,14 +53,7 @@ private struct TimerRow: View {
                 .frame(width: 170, alignment: .leading)
             content
         }
-        .font(.system(size: 14))
-        .padding(.horizontal, 10)
-        .frame(height: 40)
-        .background(
-            index == model.selection ? Color.primary.opacity(0.1) : .clear,
-            in: RoundedRectangle(cornerRadius: 8)
-        )
-        .contentShape(Rectangle())
+        .listRow(isSelected: index == model.selection)
         .onTapGesture { model.selection = index }
     }
 

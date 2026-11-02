@@ -32,21 +32,12 @@ struct StopwatchView: View {
                 .frame(height: 150)
                 Divider()
                 Spacer()
-                HStack {
+                FooterBar {
                     Spacer()
-                    Button {
+                    FooterButton("Start", keys: [KeyCap(symbol: "return")]) {
                         model.activate()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text("Start")
-                            KeyCap(symbol: "return")
-                        }
                     }
-                    .launcherButtonStyle()
                 }
-                .font(.system(size: 13, weight: .medium))
-                .padding(.horizontal, 10)
-                .frame(height: 44)
             }
         }
     }
@@ -170,57 +161,22 @@ private struct Footer: View {
     let stopwatch: TimerItem
 
     var body: some View {
-        HStack(spacing: 4) {
+        FooterBar {
             Spacer()
-            Button {
+            FooterButton("Lap", keys: [KeyCap("L")]) {
                 model.perform(.lap)
-            } label: {
-                HStack(spacing: 4) {
-                    Text("Lap")
-                        .padding(.trailing, 4)
-                    KeyCap("L")
-                }
             }
-            .launcherButtonStyle()
             .disabled(stopwatch.isPaused)
-            Button {
+            FooterButton("Reset", keys: [KeyCap("R")]) {
                 model.perform(.restart)
-            } label: {
-                HStack(spacing: 4) {
-                    Text("Reset")
-                        .padding(.trailing, 4)
-                    KeyCap("R")
-                }
             }
-            .launcherButtonStyle()
-            Divider()
-                .frame(height: 16)
-            Button {
+            FooterDivider()
+            FooterButton(stopwatch.isPaused ? Text("Start") : Text("Pause"), keys: [KeyCap(symbol: "return")]) {
                 model.activate()
-            } label: {
-                HStack(spacing: 8) {
-                    stopwatch.isPaused ? Text("Start") : Text("Pause")
-                    KeyCap(symbol: "return")
-                }
             }
-            .launcherButtonStyle()
-            Divider()
-                .frame(height: 16)
-            Button {
-                model.onShowActions()
-            } label: {
-                HStack(spacing: 4) {
-                    Text("Actions")
-                        .padding(.trailing, 4)
-                    KeyCap(symbol: "command")
-                    KeyCap("K")
-                }
-            }
-            .launcherButtonStyle()
+            FooterDivider()
+            ActionsButton(model: model)
         }
-        .font(.system(size: 13, weight: .medium))
-        .padding(.horizontal, 10)
-        .frame(height: 44)
     }
 }
 
