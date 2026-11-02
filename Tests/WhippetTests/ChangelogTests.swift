@@ -127,6 +127,17 @@ struct ChangelogTests {
         #expect(whatsNew.pending(at: start.addingTimeInterval(WhatsNew.duration)) == nil)
     }
 
+    @Test func aBetaIsntRecorded() {
+        let whatsNew = whatsNew()
+        let start = Date(timeIntervalSince1970: 1_000_000)
+        whatsNew.recordLaunch(of: "1.3.1", at: start)
+        whatsNew.recordLaunch(of: "1.4.0-beta.d226ff9", at: start)
+        #expect(whatsNew.pending(at: start) == nil)
+
+        whatsNew.recordLaunch(of: "1.4.0", at: start)
+        #expect(whatsNew.pending(at: start) == "1.3.1")
+    }
+
     @Test func updatesBeforeItsSeenAreShownTogether() {
         let whatsNew = whatsNew()
         let start = Date(timeIntervalSince1970: 1_000_000)

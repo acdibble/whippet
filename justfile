@@ -40,6 +40,19 @@ format:
 lint:
     git ls-files -z '*.swift' | xargs -0 xcrun swift-format lint --strict --parallel
 
+# Publishes a beta of the current branch, once pushed, as a GitHub prerelease such as 1.4.0-beta.d226ff9.
+beta:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    branch="$(git branch --show-current)"
+    git fetch --quiet origin "$branch"
+    if [ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$branch")" ]; then
+        echo "Push $branch first: the beta is built from what's on GitHub." >&2
+        exit 1
+    fi
+    gh workflow run release.yml --ref "$branch"
+    echo "Started a beta of $branch at $(git rev-parse --short=7 HEAD). Follow it with: gh run watch"
+
 # Opens the project in Xcode.
 open: generate
     open {{project}}

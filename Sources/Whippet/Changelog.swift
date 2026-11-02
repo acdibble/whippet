@@ -163,8 +163,11 @@ struct WhatsNew {
 
     var defaults = UserDefaults.standard
 
-    /// Called once at launch. A first launch has nothing to show, since everything is new.
+    /// Called once at launch. A first launch has nothing to show, since everything is new. A beta, such as
+    /// `1.4.0-beta.d226ff9`, isn't recorded, so updating from it to the release shows what's new since the release
+    /// before the beta.
     func recordLaunch(of version: String, at now: Date = .now) {
+        guard !Self.isBeta(version) else { return }
         if let last = defaults.string(forKey: Keys.lastRunVersion), Changelog.isVersion(version, newerThan: last) {
             if pending(at: now) == nil {
                 defaults.set(last, forKey: Keys.since)
@@ -187,5 +190,10 @@ struct WhatsNew {
     func dismiss() {
         defaults.removeObject(forKey: Keys.since)
         defaults.removeObject(forKey: Keys.until)
+    }
+
+    /// Betas are the next version with a suffix after a hyphen.
+    static func isBeta(_ version: String) -> Bool {
+        version.contains("-")
     }
 }

@@ -2,9 +2,15 @@ name: Release
 
 # A release starts from a pushed commit titled "chore: release X.Y.Z". It's checked, tested, then built, signed and
 # published, and publishing creates its vX.Y.Z tag. Every other push to main stops at the check.
+#
+# A beta starts from running this workflow by hand on any branch (Actions › Release › Run workflow, or `just beta`).
+# It's the next minor version with the commit's short hash, such as 1.4.0-beta.d226ff9, with the Unreleased section
+# of CHANGELOG.md as its notes, and is published as a prerelease with only its DMG. Betas don't update themselves to
+# later betas; they update to the next release through its appcast.
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -25,14 +31,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      # Empty unless this push is a release that passed every check.
+      # Empty unless this push is a release, or this run a beta, that passed every check.
       version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
     steps:
       - name: Find a release commit
         id: commit
         env:
           MESSAGE: ${{ github.event.head_commit.message }}
         run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            echo "beta=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           subject="${MESSAGE%%$'\n'*}"
           if [[ "$subject" =~ ^chore:\ release\ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
             echo "version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
@@ -41,21 +52,27 @@ jobs:
           fi
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: steps.commit.outputs.version != ''
+        if: steps.commit.outputs.version != '' || steps.commit.outputs.beta == 'true'
         with:
           persist-credentials: false
 
-      # project.yml holds the version, so the commit's version must match it, CHANGELOG.md must have notes for it,
-      # which become the release notes, and it mustn't have been released already.
+      # project.yml holds the version, so a release commit's version must match it, CHANGELOG.md must have notes for
+      # it, which become the release notes, and it mustn't have been released already. A beta's version follows from
+      # project.yml's, and its notes are whatever is under Unreleased.
       - name: Check the version and its release notes
         id: check
-        if: steps.commit.outputs.version != ''
+        if: steps.commit.outputs.version != '' || steps.commit.outputs.beta == 'true'
         env:
           VERSION: ${{ steps.commit.outputs.version }}
+          BETA: ${{ steps.commit.outputs.beta }}
           GH_TOKEN: ${{ github.token }}
         run: |
           project_version="$(awk '/MARKETING_VERSION:/ { print $2 }' project.yml)"
-          if [ "$project_version" != "$VERSION" ]; then
+          if [ "$BETA" = true ]; then
+            IFS=. read -r major minor _ <<< "$project_version"
+            VERSION="$major.$((minor + 1)).0-beta.${GITHUB_SHA::7}"
+            echo "This is a beta, $VERSION."
+          elif [ "$project_version" != "$VERSION" ]; then
             echo "::error::The commit releases $VERSION, but project.yml has MARKETING_VERSION $project_version."
             exit 1
           fi
@@ -67,17 +84,20 @@ jobs:
             echo "::error::WhippetFeedbackPublicKey in project.yml is still a placeholder, so feedback wouldn't be sealed."
             exit 1
           fi
-          awk -v heading="## [$VERSION]" 'index($0, heading) == 1 { found = 1; next } found && /^## \[/ { exit } found { print }' \
-            CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
-          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release-notes.md"; then
-            echo "::error::CHANGELOG.md has no section for $VERSION."
-            exit 1
+          if [ "$BETA" != true ]; then
+            awk -v heading="## [$VERSION]" 'index($0, heading) == 1 { found = 1; next } found && /^## \[/ { exit } found { print }' \
+              CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
+            if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release-notes.md"; then
+              echo "::error::CHANGELOG.md has no section for $VERSION."
+              exit 1
+            fi
           fi
           if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$VERSION" --silent 2>/dev/null; then
             echo "::error::v$VERSION is already released."
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "prerelease=${BETA:-false}" >> "$GITHUB_OUTPUT"
 
   test:
     needs: check
@@ -101,17 +121,33 @@ jobs:
     env:
       VERSION: ${{ needs.check.outputs.version }}
       TAG: v${{ needs.check.outputs.version }}
+      PRERELEASE: ${{ needs.check.outputs.prerelease }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Read the release notes
+      # Sparkle offers an update when its build number is higher, so the build number follows the version: a beta's
+      # is below its release's and above every earlier release's. A beta then never gets an older release, such as a
+      # fix for the version before, and updates to its own release when that's out. Minor and patch versions stay
+      # below 100 for this to hold.
+      - name: Read the release notes and work out the build number
         run: |
           notes="$RUNNER_TEMP/release-notes.md"
-          awk -v heading="## [$VERSION]" 'index($0, heading) == 1 { found = 1; next } found && /^## \[/ { exit } found { print }' \
+          if [ "$PRERELEASE" = true ]; then
+            heading="## [Unreleased]"
+          else
+            heading="## [$VERSION]"
+          fi
+          awk -v heading="$heading" 'index($0, heading) == 1 { found = 1; next } found && /^## \[/ { exit } found { print }' \
             CHANGELOG.md > "$notes"
-          echo "BUILD_NUMBER=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          core="${VERSION%%-*}"
+          IFS=. read -r major minor patch <<< "$core"
+          build=$((major * 1000000 + minor * 10000 + patch * 100))
+          if [ "$PRERELEASE" != true ]; then
+            build=$((build + 99))
+          fi
+          echo "BUILD_NUMBER=$build" >> "$GITHUB_ENV"
           echo "RELEASE_NOTES=$notes" >> "$GITHUB_ENV"
 
       # The generated project is what xcodebuild runs with the Developer ID keychain unlocked, so XcodeGen is a
@@ -168,6 +204,7 @@ jobs:
             -configuration Release \
             -archivePath "$RUNNER_TEMP/Whippet.xcarchive" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/packages" \
+            MARKETING_VERSION="$VERSION" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN"
 
@@ -236,6 +273,7 @@ jobs:
       # SUPublicEDKey. sign_update comes from the pinned Sparkle package, whose binaries Swift Package Manager checks
       # against their checksums.
       - name: Sign the update and write the appcast
+        if: env.PRERELEASE != 'true'
         env:
           PATH: ${{ env.SYSTEM_PATH }}
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
@@ -269,10 +307,26 @@ jobs:
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        # Creates the tag on the commit that was checked and tested.
+        # Creates the tag on the commit that was checked and tested. A beta is a prerelease, which never becomes the
+        # latest release, so the appcast at releases/latest stays the last release's.
         run: |
-          gh release create "$TAG" "$DMG" "$APPCAST" --target "$GITHUB_SHA" --title "Whippet $VERSION" \
-            --notes-file "$RELEASE_NOTES"
+          if [ "$PRERELEASE" = true ]; then
+            notes="$RUNNER_TEMP/beta-notes.md"
+            {
+              printf '%s %s\n' \
+                "A beta of Whippet ${VERSION%%-*}, built from \`${GITHUB_SHA::7}\` on \`$GITHUB_REF_NAME\`. Install it from the DMG" \
+                "below. It won't update itself to later betas, and updates to ${VERSION%%-*} once that's released."
+              if grep -q '[^[:space:]]' "$RELEASE_NOTES"; then
+                echo
+                cat "$RELEASE_NOTES"
+              fi
+            } > "$notes"
+            gh release create "$TAG" "$DMG" --target "$GITHUB_SHA" --title "Whippet $VERSION" --notes-file "$notes" \
+              --prerelease --latest=false
+          else
+            gh release create "$TAG" "$DMG" "$APPCAST" --target "$GITHUB_SHA" --title "Whippet $VERSION" \
+              --notes-file "$RELEASE_NOTES" --latest
+          fi
 
       - name: Remove signing material
         if: always()
