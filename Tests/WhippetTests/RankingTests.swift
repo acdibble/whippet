@@ -76,4 +76,24 @@ struct RankingTests {
         #expect(reloaded.lastOpened["command:calculator"] == now)
         #expect(reloaded.frecency(of: "command:calculator", now: now) == 1)
     }
+
+    @MainActor
+    @Test func favoritesKeepTheirOrderAndPersist() throws {
+        let suite = "WhippetTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let history = LaunchHistory(defaults: defaults)
+        let revision = history.revision
+        history.toggleFavorite("command:calculator")
+        history.toggleFavorite("com.apple.Safari")
+        history.toggleFavorite("command:settings")
+        history.toggleFavorite("com.apple.Safari")
+        #expect(history.revision == revision + 4)
+        #expect(history.isFavorite("command:calculator"))
+        #expect(!history.isFavorite("com.apple.Safari"))
+
+        let reloaded = LaunchHistory(defaults: defaults)
+        #expect(reloaded.favorites == ["command:calculator", "command:settings"])
+    }
 }

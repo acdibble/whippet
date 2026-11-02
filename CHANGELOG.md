@@ -9,6 +9,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 - Extension commands can be offered for whatever you type, under “Use … with”, alongside quicklinks, by marking them
   `fallback` in their manifest. A list opens already searched for the text.
+- Favorites: ⇧⌘F, or Add to Favorites in ⌘K, keeps an app, command or quicklink at the top of the list, above
+  Suggestions. Favorite quicklinks and commands also come first under “Use … with”.
 
 ## [1.3.2] - 2026-11-02
 

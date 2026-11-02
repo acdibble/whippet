@@ -234,6 +234,16 @@ enum LauncherResult: Identifiable, Hashable {
         }
     }
 
+    /// The key a favorite is kept under, for what the empty search lists: apps, commands, quicklinks, extension
+    /// commands and recent timers. Rows offered for the search text count as their quicklink or command, but are only
+    /// there while text is typed, so they aren't offered as favorites.
+    var favoriteKey: String? {
+        switch self {
+        case .searchWithQuicklink, .searchWithExtension, .searchClipboard, .startTimer: nil
+        default: launchKey
+        }
+    }
+
     var actionTitle: String {
         switch self {
         case .calculation, .pastCalculation: String(localized: "Copy Answer")
@@ -350,6 +360,7 @@ enum ResultAction: CaseIterable {
     case copyPath
     case startTimer
     case popOut
+    case toggleFavorite
     case delete
 
     func isAvailable(for result: LauncherResult) -> Bool {
@@ -368,6 +379,7 @@ enum ResultAction: CaseIterable {
             item.kind == .image
         case (.startTimer, .calculation(let calculation)): calculation.timerSeconds() != nil
         case (.popOut, .calculation), (.popOut, .pastCalculation), (.popOut, .calculator): true
+        case (.toggleFavorite, _): result.favoriteKey != nil
         default: false
         }
     }
@@ -404,6 +416,9 @@ enum ResultAction: CaseIterable {
                 String(localized: "Start Timer")
             }
         case .popOut: String(localized: "Pop Out Calculator")
+        case .toggleFavorite:
+            model.isFavorite(result)
+                ? String(localized: "Remove from Favorites") : String(localized: "Add to Favorites")
         case .delete:
             switch result {
             case .timer: result.isStopwatch ? String(localized: "Stop Stopwatch") : String(localized: "Cancel Timer")
@@ -432,6 +447,7 @@ enum ResultAction: CaseIterable {
         case .copyPath: "link"
         case .startTimer: "timer"
         case .popOut: "macwindow.on.rectangle"
+        case .toggleFavorite: "star"
         case .delete: "trash"
         }
     }
@@ -450,6 +466,7 @@ enum ResultAction: CaseIterable {
         case .copyPath: ("c", [.command, .shift])
         case .startTimer: ("t", [.command])
         case .popOut: ("o", [.command, .shift])
+        case .toggleFavorite: ("f", [.command, .shift])
         case .delete, .dismiss: ("x", [.control])
         }
     }
@@ -568,6 +585,8 @@ final class LauncherModel {
     private let quicklinks: Quicklinks
     /// How many of the results lead the empty search's Suggestions section; set with the results.
     @ObservationIgnored private var suggestionCount = 0
+    /// How many favorites come before the Suggestions; set with the results.
+    @ObservationIgnored private var favoriteCount = 0
     /// How many running and ringing timers lead the empty search, under Timers; set with the results.
     @ObservationIgnored private var timerRowCount = 0
     /// One while What's New leads the empty search, above the timers; set with the results.
@@ -772,6 +791,7 @@ final class LauncherModel {
                 + appIndex.apps.map(LauncherResult.app)
             guard query.isEmpty else {
                 suggestionCount = 0
+                favoriteCount = 0
                 timerRowCount = 0
                 whatsNewRowCount = 0
                 let typedTimer = TimerDuration.parse(query).map {
@@ -781,13 +801,21 @@ final class LauncherModel {
                     timerRows + candidates, query: query, title: \.searchText, frecency: frecency(of:))
                 return (typedTimer.map { [$0] } ?? []) + ranked + textFallbacks
             }
-            let others = Array(candidates.dropFirst(whatsNewRows.count))
+            let all = Array(candidates.dropFirst(whatsNewRows.count))
+            let byFavoriteKey = Dictionary(
+                all.compactMap { result in result.favoriteKey.map { ($0, result) } },
+                uniquingKeysWith: { first, _ in first })
+            // A favorite whose app was removed or whose command is gone is kept, in case it comes back, but not listed.
+            let favorites = history.favorites.compactMap { byFavoriteKey[$0] }
+            let favoriteIDs = Set(favorites.map(\.id))
+            let others = all.filter { !favoriteIDs.contains($0.id) }
             let suggestions = Ranking.suggestions(others, limit: Self.suggestionLimit, frecency: frecency(of:))
             let suggestedIDs = Set(suggestions.map(\.id))
             suggestionCount = suggestions.count
+            favoriteCount = favorites.count
             timerRowCount = timerRows.count
             whatsNewRowCount = whatsNewRows.count
-            return whatsNewRows + timerRows + suggestions + others.filter { !suggestedIDs.contains($0.id) }
+            return whatsNewRows + timerRows + favorites + suggestions + others.filter { !suggestedIDs.contains($0.id) }
         case .calculator:
             return calculatorResults(Calculator.calculate(query, rates: exchangeRates.rates))
         case .clipboard:
@@ -957,6 +985,11 @@ final class LauncherModel {
             clipboard.copy(text: app.url.path)
             onDismiss()
             Toast.shared.show(String(localized: "Copied Path"), symbol: "link")
+        case (.toggleFavorite, _):
+            guard let key = result.favoriteKey else { return }
+            history.toggleFavorite(key)
+            // The result moves into or out of Favorites in the empty search, and stays selected.
+            selection = results.firstIndex { $0.id == result.id } ?? 0
         case (.delete, .clipboard(let item)):
             clipboard.delete(item)
             clampSelection()
@@ -1688,7 +1721,8 @@ final class LauncherModel {
     }
 
     /// What the search text can be used with even when it matches nothing by name: quicklinks that take text and
-    /// extension commands marked `fallback`, most used first, then clipboard history.
+    /// extension commands marked `fallback`, most used first, then clipboard history. Each row counts as the quicklink
+    /// or command it stands for, so favorite ones come first, in the order they were added, clipboard history included.
     private var textFallbacks: [LauncherResult] {
         let takingText =
             quicklinks.items.filter(\.takesArgument).map(LauncherResult.searchWithQuicklink)
@@ -1698,14 +1732,24 @@ final class LauncherModel {
             let right = frecency(of: rhs.element)
             return left != right ? left > right : lhs.offset < rhs.offset
         }
-        return ordered.map(\.element) + [.searchClipboard]
+        let all = ordered.map(\.element) + [.searchClipboard]
+        let favoriteOrder = Dictionary(
+            history.favorites.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        let position = { (result: LauncherResult) in result.launchKey.flatMap { favoriteOrder[$0] } }
+        let favorites = all.filter { position($0) != nil }.sorted { position($0)! < position($1)! }
+        return favorites + all.filter { position($0) == nil }
+    }
+
+    func isFavorite(_ result: LauncherResult) -> Bool {
+        result.favoriteKey.map(history.isFavorite) ?? false
     }
 
     private func frecency(of result: LauncherResult) -> Double {
         result.launchKey.map { history.frecency(of: $0) } ?? 0
     }
 
-    /// With an empty search, the most used apps and commands come first under Suggestions, then the rest by kind.
+    /// With an empty search, favorites come first, then the most used apps and commands under Suggestions, then the rest
+    /// by kind.
     func sectionTitle(at index: Int) -> String {
         let results = results
         guard results.indices.contains(index) else { return "" }
@@ -1724,7 +1768,10 @@ final class LauncherModel {
         guard mode == .root, query.isEmpty else { return String(localized: "Results") }
         if index < whatsNewRowCount { return String(localized: "Whippet Updated") }
         if index < whatsNewRowCount + timerRowCount { return String(localized: "Timers") }
-        if index < whatsNewRowCount + timerRowCount + suggestionCount { return String(localized: "Suggestions") }
+        if index < whatsNewRowCount + timerRowCount + favoriteCount { return String(localized: "Favorites") }
+        if index < whatsNewRowCount + timerRowCount + favoriteCount + suggestionCount {
+            return String(localized: "Suggestions")
+        }
         switch results[index] {
         case .app: return String(localized: "Applications")
         case .quicklink: return String(localized: "Quicklinks")

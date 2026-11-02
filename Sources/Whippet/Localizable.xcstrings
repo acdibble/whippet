@@ -231,6 +231,16 @@
         }
       }
     },
+    "Add to Favorites" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزودن به علاقه‌مندی‌ها"
+          }
+        }
+      }
+    },
     "Added" : {
       "localizations" : {
         "fa" : {
@@ -1317,6 +1327,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "افزونه‌ها"
+          }
+        }
+      }
+    },
+    "Favorites" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "علاقه‌مندی‌ها"
           }
         }
       }
@@ -2627,6 +2647,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حذف تصویر"
+          }
+        }
+      }
+    },
+    "Remove from Favorites" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف از علاقه‌مندی‌ها"
           }
         }
       }

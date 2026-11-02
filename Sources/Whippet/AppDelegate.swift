@@ -211,6 +211,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let dismisses = model.selectedResult.map(ResultAction.dismiss.isAvailable(for:)) ?? false
             model.perform(dismisses ? .dismiss : .delete)
         case ("o", [.command, .shift]): model.perform(.popOut)
+        case ("f", [.command, .shift]): model.perform(.toggleFavorite)
         case ("=", [.command]): model.perform(.addMinute)
         case ("l", [.command]): model.perform(.lap)
         case ("r", [.command]): model.perform(.restart)
@@ -237,7 +238,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private static let usKeys: [Int: Character] = [
         kVK_ANSI_P: "p", kVK_ANSI_C: "c", kVK_ANSI_X: "x", kVK_ANSI_K: "k", kVK_ANSI_Q: "q", kVK_ANSI_Comma: ",",
-        kVK_ANSI_Equal: "=", kVK_ANSI_L: "l", kVK_ANSI_R: "r", kVK_ANSI_T: "t",
+        kVK_ANSI_Equal: "=", kVK_ANSI_L: "l", kVK_ANSI_R: "r", kVK_ANSI_T: "t", kVK_ANSI_F: "f",
     ]
 
     /// Clicking the Dock icon, which only shows while Settings is open, brings Settings forward.

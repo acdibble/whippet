@@ -3,13 +3,16 @@ import Observation
 import WhippetCore
 
 /// How often and how recently each app and command was opened from Whippet, which ranks search results and fills the
-/// Suggestions section. Apps are keyed by bundle identifier, commands by their result identifier.
+/// Suggestions section, and which ones are favorites, kept at the top of the empty search. Apps are keyed by bundle
+/// identifier, commands by their result identifier.
 @MainActor
 @Observable
 final class LaunchHistory {
     private(set) var counts: [String: Int]
     private(set) var lastOpened: [String: Date]
-    /// Bumped on every launch, so cached results know to rank again.
+    /// In the order they were added, which is the order they're listed in.
+    private(set) var favorites: [String]
+    /// Bumped on every launch and change to the favorites, so cached results know to rank again.
     private(set) var revision = 0
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -19,6 +22,7 @@ final class LaunchHistory {
         // Counts kept the name they had when only apps were counted.
         counts = defaults.dictionary(forKey: "appLaunchCounts") as? [String: Int] ?? [:]
         lastOpened = defaults.dictionary(forKey: "launchDates") as? [String: Date] ?? [:]
+        favorites = defaults.stringArray(forKey: "favorites") ?? []
     }
 
     func record(_ key: String, at date: Date = .now) {
@@ -27,6 +31,21 @@ final class LaunchHistory {
         revision += 1
         defaults.set(counts, forKey: "appLaunchCounts")
         defaults.set(lastOpened, forKey: "launchDates")
+    }
+
+    func isFavorite(_ key: String) -> Bool {
+        favorites.contains(key)
+    }
+
+    /// Adds a favorite at the end of the list, or removes it.
+    func toggleFavorite(_ key: String) {
+        if let index = favorites.firstIndex(of: key) {
+            favorites.remove(at: index)
+        } else {
+            favorites.append(key)
+        }
+        revision += 1
+        defaults.set(favorites, forKey: "favorites")
     }
 
     func frecency(of key: String, now: Date = .now) -> Double {
