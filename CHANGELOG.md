@@ -5,6 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The calculator reads a currency symbol before a number as its unit, so `$30/hour`, `€5 * 3`, `US$30` and
+  `$30/h * 8 h` work out like `30 dollars/hour`. Money worked out this way shows as money, such as `$30.00/h`, and
+  converts to another currency, keeping its rate or changing it, as in `$30/hour to €` or `$30/h to euros per day`.
+
 ## [1.4.0] - 2026-11-02
 
 ### Added

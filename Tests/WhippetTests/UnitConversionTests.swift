@@ -185,6 +185,32 @@ struct UnitConversionTests {
     }
 
     @Test(arguments: [
+        ("$30/hour", "30", "$30.00/h", "30.00 US dollars per hour"),
+        ("$30 per hour", "30", "$30.00/h", "30.00 US dollars per hour"),
+        ("30 dollars/hour", "30", "$30.00/h", "30.00 US dollars per hour"),
+        ("€5 * 3", "15", "€15.00", "15.00 euros"),
+        ("US$30/hour", "30", "$30.00/h", "30.00 US dollars per hour"),
+        ("R$5 * 2", "10", "R$10.00", "10.00 Brazilian reals"),
+        ("2 * CN¥5", "10", "CN¥10.00", "10.00 Chinese yuan"),
+        ("5€ + 2€", "7", "€7.00", "7.00 euros"),
+        ("$30/h * 8 h", "240", "$240.00", "240.00 US dollars"),
+        ("$30/h + 5 dollars/h", "35", "$35.00/h", "35.00 US dollars per hour"),
+        ("(£1 + £2) / 3", "1", "£1.00", "1.00 British pounds"),
+        ("$2,400/month to per week", "551.9507187", "$551.95/week", "551.95 US dollars per week"),
+    ])
+    func moneyIsCountedLikeAUnit(_ input: String, _ expected: String, _ output: String, _ outputLong: String) throws {
+        let calculation = try #require(Calculator.calculate(input), "\(input)")
+        #expect(calculation.answer == expected)
+        #expect(calculation.conversion?.output == output)
+        #expect(calculation.conversion?.outputLong == outputLong)
+    }
+
+    @Test(arguments: ["$30 / 2 apples", "$30/h + 5 euros/h", "5 $30", "$30 * $2", "¥5 + CN¥5", "XY$5 * 2"])
+    func moneyThatDoesntWorkOut(_ input: String) {
+        #expect(Calculator.calculate(input) == nil, "got \(Calculator.calculate(input)?.displayAnswer ?? "")")
+    }
+
+    @Test(arguments: [
         ("9.35 items per second in hours", "33660"),
         ("9.35 items per second to per hour", "33660"),
         ("9.35 items/s to items per hour", "33660"),

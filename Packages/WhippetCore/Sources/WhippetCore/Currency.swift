@@ -1,4 +1,5 @@
 import Foundation
+import Units
 
 /// The European Central Bank's euro reference rates, which it publishes once each working day at about 16:00 CET for
 /// around 30 currencies. They're free, need no key, and are fetched as a whole, so nothing reveals what's converted.
@@ -49,7 +50,8 @@ public struct ExchangeRates: Codable, Hashable, Sendable {
 
 /// Converts `<amount> <currency> to|in <currency>`, such as `5 usd to eur`, `$20 in €`, `€1,000 to pounds` or
 /// `2 * 3 GBP as yen`. A currency is its ISO code, its symbol, or a name for it that's not shared with another one, so
-/// `peso` and `krone` need their codes.
+/// `peso` and `krone` need their codes. Money worked out like a unit converts too, as a rate when it's one, such as
+/// `$30/hour to €`, `$30/h to euros per day` or `$30/h * 8 h in gbp`.
 public enum CurrencyConversion {
     /// Pasted text is never a conversion, as for units.
     private static let maximumLength = 100
@@ -60,22 +62,79 @@ public enum CurrencyConversion {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard text.count <= maximumLength else { return nil }
         for (amountText, targetText) in UnitConversion.splits(text) {
-            guard
-                let target = currency(named: targetText),
-                let (amount, source) = amount(in: amountText),
-                let converted = rates.convert(amount, from: source, to: target),
-                converted.isFinite
-            else { continue }
-            let conversion = Conversion(
-                input: amount.formatted(.currency(code: source)),
-                output: converted.formatted(.currency(code: target)),
-                outputLong: converted.formatted(.currency(code: target).presentation(.fullName)),
-                kind: rates.kind,
-                answer: Calculator.format(converted, fractionDigits: fractionDigits(of: target))
-            )
-            return Calculation(tokens: [], value: converted, isRPN: false, conversion: conversion)
+            if let calculation = convert(amountText, to: targetText, rates: rates)
+                ?? convertMoney(amountText, to: targetText, rates: rates)
+            {
+                return calculation
+            }
         }
         return nil
+    }
+
+    private static func convert(_ amountText: String, to targetText: String, rates: ExchangeRates) -> Calculation? {
+        guard
+            let target = currency(named: targetText),
+            let (amount, source) = amount(in: amountText),
+            let converted = rates.convert(amount, from: source, to: target),
+            converted.isFinite
+        else { return nil }
+        let conversion = Conversion(
+            input: amount.formatted(.currency(code: source)),
+            output: converted.formatted(.currency(code: target)),
+            outputLong: converted.formatted(.currency(code: target).presentation(.fullName)),
+            kind: rates.kind,
+            answer: Calculator.format(converted, fractionDigits: fractionDigits(of: target))
+        )
+        return Calculation(tokens: [], value: converted, isRPN: false, conversion: conversion)
+    }
+
+    /// Money worked out like a unit, such as `$30/h`, in another currency, and per something else when the target
+    /// names it, as in `€/day`.
+    private static func convertMoney(_ amountText: String, to targetText: String, rates: ExchangeRates) -> Calculation?
+    {
+        guard
+            let target = moneyTarget(named: targetText),
+            let (amount, source, reading) = UnitConversion.money(in: amountText),
+            let targetReading = moneyReading(converting: reading, to: target),
+            let exchanged = rates.convert(amount, from: source, to: target.currency),
+            let converted = try? PhysicalMeasurement(value: exchanged, unit: reading.unit)
+                .convert(to: targetReading.unit).value,
+            converted.isFinite
+        else { return nil }
+        let conversion = Conversion(
+            input: UnitDisplay.format(amount, reading, style: .medium),
+            output: UnitDisplay.format(converted, targetReading, style: .medium),
+            outputLong: UnitDisplay.format(converted, targetReading, style: .long),
+            kind: rates.kind,
+            answer: Calculator.format(converted, fractionDigits: fractionDigits(of: target.currency))
+        )
+        return Calculation(tokens: [], value: converted, isRPN: false, conversion: conversion)
+    }
+
+    /// A currency to convert money into, with what it's per when it's a rate, such as `€/day` or `euros per hour`.
+    /// `pers` is nil when the target names only the currency, as in `€`, which keeps what the amount is per.
+    private static func moneyTarget(named text: String) -> (currency: String, pers: [PhysicalUnit]?)? {
+        if let code = currency(named: text) { return (code, nil) }
+        guard
+            let match = text.firstMatch(of: /\s+(?i:per)\s+|\s*\/\s*/),
+            let code = currency(named: String(text[..<match.range.lowerBound]))
+        else { return nil }
+        let pers = UnitConversion.units(named: String(text[match.range.upperBound...]))
+        return pers.isEmpty ? nil : (code, pers)
+    }
+
+    /// What money in `source` is in the target's currency: per the same thing, or per what the target names when it
+    /// measures the same, as `day` does `hour`, choosing `minutes` rather than metres for `m`.
+    private static func moneyReading(
+        converting source: UnitConversion.Reading,
+        to target: (currency: String, pers: [PhysicalUnit]?)
+    ) -> UnitConversion.Reading? {
+        guard let pers = target.pers else {
+            return UnitConversion.Reading(unit: source.unit, per: source.per, counted: target.currency)
+        }
+        guard let sourcePer = source.per, let per = pers.first(where: { $0.isDimensionallyEquivalent(to: sourcePer) })
+        else { return nil }
+        return UnitConversion.Reading(unit: PhysicalUnit.none / per, per: per, counted: target.currency)
     }
 
     /// True for a conversion on its way, such as `$5 t` or `5 usd to e`, so the launcher keeps the calculator showing
@@ -101,15 +160,22 @@ public enum CurrencyConversion {
         return false
     }
 
-    /// The currency a conversion is into, such as `EUR` for `5 usd to eur`, for showing an answer kept in history.
-    static func targetCurrency(of input: String) -> String? {
+    /// A conversion's answer, kept in history, shown in the currency it was converted into, such as `€5.00` for
+    /// `$10 to eur` or `€55.20/d` for `$30/h to €/day`.
+    static func displayAnswer(_ value: Double, of input: String) -> String? {
         let text = input.trimmingCharacters(in: .whitespaces)
         guard text.count <= maximumLength else { return nil }
-        return UnitConversion.splits(text).lazy
-            .compactMap { amountText, targetText in
-                amount(in: amountText) == nil ? nil : currency(named: targetText)
+        for (amountText, targetText) in UnitConversion.splits(text) {
+            if amount(in: amountText) != nil, let target = currency(named: targetText) {
+                return value.formatted(.currency(code: target))
             }
-            .first
+            if let target = moneyTarget(named: targetText), let (_, _, source) = UnitConversion.money(in: amountText),
+                let reading = moneyReading(converting: source, to: target)
+            {
+                return UnitDisplay.format(value, reading, style: .medium)
+            }
+        }
+        return nil
     }
 
     // MARK: - Parsing

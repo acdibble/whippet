@@ -40,13 +40,16 @@ public enum QuantityExpression {
                 guard let value = Calculator.parseNumber(String(text[index..<end])) else { return nil }
                 tokens.append(.number(value))
                 index = end
+            } else if let (value, unit, end) = prefixedAmount(in: text, at: index, after: tokens.last) {
+                tokens += [.number(value), .unit(unit)]
+                index = end
             } else if UnitConversion.isUnitStart(char) {
                 // A unit follows what it measures, so `km to mi` and `5 + km` aren't amounts.
                 switch tokens.last {
                 case .number?, .close?: break
                 default: return nil
                 }
-                let end = unitEnd(in: text, from: index)
+                let end = unitEnd(in: text, after: text.index(after: index))
                 tokens.append(.unit(String(text[index..<end])))
                 index = end
             } else {
@@ -62,11 +65,40 @@ public enum QuantityExpression {
         return tokens
     }
 
-    /// The end of a unit from its first character. It runs on through a space, `/` or `-` when another word follows,
-    /// as in `light years`, `km / h`, `items per second` or `light-years`, and into a power, as in `m2` or `m^2`, but
-    /// stops before a number, so `2100 s / 3` divides by 3.
-    private static func unitEnd(in text: String, from start: String.Index) -> String.Index {
-        var end = text.index(after: start)
+    /// An amount with a currency's symbol before it, as money is written, read as though the symbol followed the
+    /// number, so `$30/hour` is `30 $/hour`, `€5 * 3` is `5 € * 3` and `US$30` is `30 US$`. The symbol can't follow a
+    /// number or a bracket, which it would be the unit of instead, as in `5 $`.
+    private static func prefixedAmount(
+        in text: String,
+        at index: String.Index,
+        after previous: Token?
+    ) -> (value: Double, unit: String, end: String.Index)? {
+        switch previous {
+        case .number?, .close?: return nil
+        default: break
+        }
+        // The symbol ends at a currency sign, as in `$`, `R$` or `CN¥`.
+        guard
+            let sign = text[index...].prefix(maximumSymbolLength).firstIndex(where: \.isCurrencySymbol),
+            case let symbol = text[index...sign], CurrencyConversion.currency(named: String(symbol)) != nil,
+            case let start = text.index(after: sign), start < text.endIndex,
+            (text[start].isASCII && text[start].isNumber) || text[start] == "."
+        else { return nil }
+        let numberEnd = Calculator.numberEnd(in: text, from: start)
+        guard let value = Calculator.parseNumber(String(text[start..<numberEnd])) else { return nil }
+        // What the money is per, as in `$30/hour` or `$30 per hour`, carries on from after the number.
+        let end = unitEnd(in: text, after: numberEnd)
+        return (value, String(symbol) + text[numberEnd..<end], end)
+    }
+
+    /// The longest currency symbol, such as `US$`.
+    private static let maximumSymbolLength = 3
+
+    /// The end of a unit, from just after its first character. It runs on through a space, `/` or `-` when another
+    /// word follows, as in `light years`, `km / h`, `items per second` or `light-years`, and into a power, as in `m2` or
+    /// `m^2`, but stops before a number, so `2100 s / 3` divides by 3.
+    private static func unitEnd(in text: String, after start: String.Index) -> String.Index {
+        var end = start
         while end < text.endIndex {
             let char = text[end]
             let after = text.index(after: end)
@@ -103,14 +135,14 @@ public enum QuantityExpression {
         }
     }
 
-    /// A unit's meanings, or failing that, something counted, such as `items` or `page views`. A keyword or `per` can't
-    /// be counted, so `5 km to` and `5 per second` aren't read as counting.
+    /// A unit's meanings, or failing that, something counted, such as `items`, `page views` or money in `$`. A keyword
+    /// or `per` can't be counted, so `5 km to` and `5 per second` aren't read as counting.
     private static func readings(named text: String) -> [UnitConversion.Reading] {
         let readings = UnitConversion.readings(named: text)
         guard readings.isEmpty else { return readings }
         let words = text.split(separator: " ").map { $0.lowercased() }
         guard
-            text.allSatisfy({ $0.isLetter || $0 == " " }),
+            UnitConversion.isCountable(text),
             !words.contains(where: { UnitConversion.keywords.contains($0) || $0 == "per" })
         else { return [] }
         return [UnitConversion.Reading(unit: .none, counted: text)]
@@ -156,7 +188,7 @@ public enum QuantityExpression {
     /// An amount's value in another reading's unit, when they measure the same thing.
     private static func value(of quantity: Quantity, in target: UnitConversion.Reading) -> Double? {
         guard
-            let reading = quantity.reading, reading.counted?.lowercased() == target.counted?.lowercased(),
+            let reading = quantity.reading, UnitConversion.isSameCount(reading.counted, target.counted),
             let converted = try? PhysicalMeasurement(value: quantity.value, unit: reading.unit).convert(to: target.unit)
         else { return nil }
         return converted.value

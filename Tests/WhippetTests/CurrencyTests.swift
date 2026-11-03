@@ -29,6 +29,30 @@ struct CurrencyTests {
         #expect(answer(input) == expected, "got \(answer(input) ?? "nil")")
     }
 
+    @Test(arguments: [
+        ("US$10 to eur", "5.00", "€5.00", "5.00 euros"),
+        ("$30/hour to €", "15.00", "€15.00/h", "15.00 euros per hour"),
+        ("$30/h to euros per day", "360.00", "€360.00/d", "360.00 euros per d"),
+        ("30 dollars/hour to €/min", "0.25", "€0.25/m", "0.25 euros per minute"),
+        ("US$30/h in £/m", "0.12", "£0.12/m", "0.12 British pounds per minute"),
+        ("$30/h * 8 h in gbp", "60.00", "£60.00", "60.00 British pounds"),
+        ("€5 + €5 to yen", "1000", "¥1,000", "1,000 Japanese yen"),
+    ])
+    func convertsMoneyWorkedOutLikeAUnit(_ input: String, _ expected: String, _ output: String, _ outputLong: String)
+        throws
+    {
+        let conversion = try #require(Calculator.calculate(input, rates: rates)?.conversion, "\(input)")
+        #expect(conversion.answer == expected)
+        #expect(conversion.output == output)
+        #expect(conversion.outputLong == outputLong)
+        #expect(conversion.kind == "Currency")
+    }
+
+    @Test(arguments: ["$30/h to €/km", "$30 to €/day", "$30/h to chf", "5 km/h to €/day", "$30/h to €/banana"])
+    func moneyThatDoesntConvert(_ input: String) {
+        #expect(CurrencyConversion.convert(input, rates: rates) == nil)
+    }
+
     @Test func unitsWinOverCurrencies() {
         // Pounds are a weight unless the other side is money.
         #expect(answer("1 pound to kg") == "0.45359237")
@@ -56,9 +80,11 @@ struct CurrencyTests {
     }
 
     @Test func historyShowsTheTargetCurrency() {
-        #expect(CurrencyConversion.targetCurrency(of: "$10 to eur") == "EUR")
-        #expect(CurrencyConversion.targetCurrency(of: "5 pounds in yen") == "JPY")
-        #expect(CurrencyConversion.targetCurrency(of: "5 pounds in kg") == nil)
+        #expect(CurrencyConversion.displayAnswer(5, of: "$10 to eur") == "€5.00")
+        #expect(CurrencyConversion.displayAnswer(1000, of: "5 pounds in yen") == "¥1,000")
+        #expect(CurrencyConversion.displayAnswer(5, of: "5 pounds in kg") == nil)
+        #expect(CurrencyConversion.displayAnswer(360, of: "$30/h to euros per day") == "€360.00/d")
+        #expect(CurrencyConversion.displayAnswer(15, of: "$30/h to €") == "€15.00/h")
     }
 
     @Test(arguments: ["$5 t", "5 usd to", "5 usd to e", "€20 in dol", "5 pounds to $"])

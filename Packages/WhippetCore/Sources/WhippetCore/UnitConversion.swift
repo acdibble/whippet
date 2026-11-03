@@ -123,7 +123,7 @@ public enum UnitConversion {
         }
         for target in named where target.unit.isDimensionallyEquivalent(to: source.unit) {
             // `items per second to requests per hour` changes what's counted, which isn't a conversion.
-            if let counted = target.counted, counted.lowercased() != source.counted?.lowercased() { continue }
+            if target.counted != nil, !isSameCount(target.counted, source.counted) { continue }
             targets.append(target)
         }
         return targets
@@ -172,7 +172,21 @@ public enum UnitConversion {
     static let keywords: Set<String> = ["to", "in", "into", "as"]
 
     static func isUnitStart(_ character: Character) -> Bool {
-        character.isLetter || "°\"'μ".contains(character)
+        character.isLetter || character.isCurrencySymbol || "°\"'μ".contains(character)
+    }
+
+    /// Words, such as `items` or `page views`, or a currency, such as `$`, but not a number or a calculation, can be
+    /// counted when they aren't units.
+    static func isCountable(_ text: String) -> Bool {
+        text.allSatisfy { $0.isLetter || $0 == " " } || CurrencyConversion.currency(named: text) != nil
+    }
+
+    /// Whether two things counted are the same, in any case, with a currency's symbol, code and name all the same, so
+    /// `$30/h + 5 dollars/h` adds up.
+    static func isSameCount(_ lhs: String?, _ rhs: String?) -> Bool {
+        if lhs?.lowercased() == rhs?.lowercased() { return true }
+        guard let lhs, let rhs, let currency = CurrencyConversion.currency(named: lhs) else { return false }
+        return currency == CurrencyConversion.currency(named: rhs)
     }
 
     /// Each way to split the text into an amount and a target at a keyword, from the last keyword. The space after the
@@ -195,6 +209,16 @@ public enum UnitConversion {
 
     private static func amounts(_ tokens: [QuantityExpression.Token]) -> [(value: Double, reading: Reading)] {
         QuantityExpression.evaluate(tokens).compactMap { quantity in quantity.reading.map { (quantity.value, $0) } }
+    }
+
+    /// Money worked out from an amount, such as `$30/h * 8 h`, with its currency's code and its reading, which says
+    /// what it's per for a rate.
+    static func money(in text: String) -> (value: Double, currency: String, reading: Reading)? {
+        amounts(in: text).lazy
+            .compactMap { value, reading in
+                reading.counted.flatMap(CurrencyConversion.currency(named:)).map { (value, $0, reading) }
+            }
+            .first
     }
 
     /// The units an amount can be in, leaving out a count with no unit, such as `2 apples`, which is only a search
@@ -232,8 +256,7 @@ public enum UnitConversion {
             guard !numeratorText.isEmpty, !pers.isEmpty else { continue }
             let numerators = units(named: numeratorText)
             if numerators.isEmpty {
-                // Anything counted, such as `items` or `page views`, but not a number or a calculation.
-                guard numeratorText.allSatisfy({ $0.isLetter || $0 == " " }) else { continue }
+                guard isCountable(numeratorText) else { continue }
                 readings += pers.map { Reading(unit: PhysicalUnit.none / $0, per: $0, counted: numeratorText) }
             } else {
                 for numerator in numerators {
@@ -480,8 +503,8 @@ extension CalculationRecord {
     /// than at today's rates.
     public var displayAnswer: String {
         if let calculation = UnitConversion.convert(expression) { return calculation.displayAnswer }
-        if let currency = CurrencyConversion.targetCurrency(of: expression), let value = Double(answer) {
-            return value.formatted(.currency(code: currency))
+        if let value = Double(answer), let display = CurrencyConversion.displayAnswer(value, of: expression) {
+            return display
         }
         if let calculation = UnitConversion.workOut(expression) { return calculation.displayAnswer }
         return answer
@@ -492,17 +515,26 @@ extension CalculationRecord {
 /// otherwise.
 public enum UnitDisplay {
     /// A rate of something counted shows it with the unit it's per, such as `33,660 items/h`, and a count shows it
-    /// alone, such as `72,000 items`.
+    /// alone, such as `72,000 items`. Money is shown as money, such as `$30.00/h` or `30.00 US dollars per hour`.
     static func format(_ value: Double, _ reading: UnitConversion.Reading, style: Formatter.UnitStyle) -> String {
         guard let counted = reading.counted else { return format(value, reading.unit, style: style) }
-        let formatter = style == .long ? longFormatter : mediumFormatter
-        let number =
-            formatter.numberFormatter.string(from: NSNumber(value: value))
-            ?? Calculator.format(value, significantDigits: UnitConversion.significantDigits)
-        guard let per = reading.per else { return "\(number) \(counted)" }
+        let amount: String
+        if let currency = CurrencyConversion.currency(named: counted) {
+            amount =
+                style == .long
+                ? value.formatted(.currency(code: currency).presentation(.fullName))
+                : value.formatted(.currency(code: currency))
+        } else {
+            let formatter = style == .long ? longFormatter : mediumFormatter
+            let number =
+                formatter.numberFormatter.string(from: NSNumber(value: value))
+                ?? Calculator.format(value, significantDigits: UnitConversion.significantDigits)
+            amount = "\(number) \(counted)"
+        }
+        guard let per = reading.per else { return amount }
         return style == .long
-            ? "\(number) \(counted) per \(name(of: per, style: .long))"
-            : "\(number) \(counted)/\(name(of: per, style: .short))"
+            ? "\(amount) per \(name(of: per, style: .long))"
+            : "\(amount)/\(name(of: per, style: .short))"
     }
 
     /// One of a unit as shown without the number, such as `hour`, or `h` when short.
