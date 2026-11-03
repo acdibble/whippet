@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-11-03
+
 ### Changed
 
 - The calculator reads a currency symbol before a number as its unit, so `$30/hour`, `€5 * 3`, `US$30` and
@@ -378,7 +380,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/acdibble/whippet/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/acdibble/whippet/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/acdibble/whippet/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/acdibble/whippet/compare/v1.3.0...v1.3.1
