@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-03
+
 ### Added
 
 - Translation, as a beta feature, on this Mac with Apple's translation. Type text followed by the language to
@@ -421,7 +423,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/acdibble/whippet/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/acdibble/whippet/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/acdibble/whippet/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/acdibble/whippet/compare/v1.4.0...v1.4.1
