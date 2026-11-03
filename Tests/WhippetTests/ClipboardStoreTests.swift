@@ -89,6 +89,24 @@ final class ClipboardStoreTests {
         #expect(try items("receipt").map(\.id) == [item.id])
     }
 
+    @Test func onlyImagesWithTextOrNotYetRecognizedMayHaveText() throws {
+        try store.recordImage(png: Data([1]), width: 4, height: 2, sourceBundleID: nil)
+        try store.recordImage(png: Data([2]), width: 4, height: 2, sourceBundleID: nil)
+        try store.recordImage(png: Data([3]), width: 4, height: 2, sourceBundleID: nil)
+        try store.recordText("plain text", sourceBundleID: nil)
+        try store.recordText("https://example.com", sourceBundleID: nil)
+        let images = try items(kind: .image)
+        try store.setRecognizedText("receipt total", hash: images[0].contentHash)
+        try store.setRecognizedText("", hash: images[1].contentHash)
+
+        let mayHaveText = Dictionary(uniqueKeysWithValues: try items().map { ($0.contentHash, $0.mayHaveText) })
+        #expect(mayHaveText[images[0].contentHash] == true)
+        #expect(mayHaveText[images[1].contentHash] == false)
+        #expect(mayHaveText[images[2].contentHash] == true)
+        #expect(try items(kind: .text).allSatisfy { !$0.mayHaveText })
+        #expect(try items(kind: .link).allSatisfy { !$0.mayHaveText })
+    }
+
     @Test func imagesShowTheirFileNameOrFormat() throws {
         try store.recordImage(png: Data([1]), width: 4, height: 2, type: "public.jpeg", sourceBundleID: nil)
         try store.recordImage(

@@ -5,6 +5,20 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Capture Text copies the text in an area of the screen: drag around it, or press Escape to cancel. A QR code or
+  barcode copies what it encodes, such as its link. It can have its own hotkey in Settings › Shortcuts, and needs
+  the Screen Recording permission, which Settings › General asks for.
+- Paste Text and Copy Text, in ⌘K on an image in the clipboard history, paste or copy the text in it.
+- Keep Line Breaks in Settings › General: turned off, text copied from the screen or an image is joined into
+  paragraphs.
+
+### Changed
+
+- QR codes and barcodes in copied images are read, so an image of a QR code is found by searching for its link.
+  Text recognized in an image keeps its paragraphs, and words broken across lines are joined up again.
+
 ## [1.4.2] - 2026-11-03
 
 ### Fixed

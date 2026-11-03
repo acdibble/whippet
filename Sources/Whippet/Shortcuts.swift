@@ -10,6 +10,7 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
     case calculator
     case floatingCalculator
     case clipboardHistory
+    case captureText
     case settings
     case caffeinate
     case startTimer
@@ -28,6 +29,7 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
         case .calculator: String(localized: "Calculator")
         case .floatingCalculator: String(localized: "Floating Calculator")
         case .clipboardHistory: String(localized: "Clipboard History")
+        case .captureText: String(localized: "Capture Text")
         case .settings: String(localized: "Settings")
         case .caffeinate: String(localized: "Caffeinate")
         case .startTimer: String(localized: "Start Timer…")
@@ -42,6 +44,7 @@ enum CommandShortcut: String, CaseIterable, Identifiable {
         case .calculator: "plus.forwardslash.minus"
         case .floatingCalculator: "macwindow.on.rectangle"
         case .clipboardHistory: "list.clipboard"
+        case .captureText: "text.viewfinder"
         case .settings: "gearshape"
         case .caffeinate: "cup.and.heat.waves.fill"
         case .startTimer: "timer"

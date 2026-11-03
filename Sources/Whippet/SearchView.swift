@@ -302,6 +302,7 @@ struct ResultRow: View {
         case .extensionCommand, .searchWithExtension, .extensionItem: Image(systemName: "puzzlepiece.extension")
         case .app(let app): Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
         case .clipboardHistory: Image(systemName: "list.clipboard")
+        case .captureText: Image(systemName: "text.viewfinder")
         case .calculator: Image(systemName: "plus.forwardslash.minus")
         case .floatingCalculator: Image(systemName: "macwindow.on.rectangle")
         case .settings: Image(systemName: "gearshape")

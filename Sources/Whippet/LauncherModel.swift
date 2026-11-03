@@ -18,6 +18,8 @@ enum LauncherResult: Identifiable, Hashable {
     case shareWhippet
     case quit
     case clipboardHistory
+    /// Copies the text in an area of the screen.
+    case captureText
     case caffeinate
     case caffeinateFor
     case decaffeinate(until: String)
@@ -67,6 +69,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .shareWhippet: "command:share-whippet"
         case .quit: "command:quit"
         case .clipboardHistory: "command:clipboard-history"
+        case .captureText: "command:capture-text"
         case .caffeinate: "command:caffeinate"
         case .caffeinateFor: "command:caffeinate-for"
         case .decaffeinate: "command:decaffeinate"
@@ -115,6 +118,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .searchClipboard: String(localized: "Search Clipboard History")
         case .quit: String(localized: "Quit Whippet")
         case .clipboardHistory: String(localized: "Clipboard History")
+        case .captureText: String(localized: "Capture Text")
         case .caffeinate: String(localized: "Caffeinate")
         case .caffeinateFor: String(localized: "Caffeinate for…")
         case .decaffeinate: String(localized: "Decaffeinate")
@@ -144,8 +148,8 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
-        case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback, .changelog,
-            .shareWhippet, .quit:
+        case .calculator, .floatingCalculator, .clipboardHistory, .captureText, .settings, .sendFeedback, .readFeedback,
+            .changelog, .shareWhippet, .quit:
             String(localized: "Command")
         case .whatsNew(let release): String(localized: "Changes since \(release.since ?? "")")
         case .release(let release):
@@ -249,7 +253,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation, .pastCalculation: String(localized: "Copy Answer")
         case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback:
             String(localized: "Open Command")
-        case .caffeinate, .decaffeinate, .caffeinateMenuBar: String(localized: "Run Command")
+        case .captureText, .caffeinate, .decaffeinate, .caffeinateMenuBar: String(localized: "Run Command")
         case .caffeinateFor: String(localized: "Choose Duration")
         case .changelog: String(localized: "Open Command")
         case .whatsNew: String(localized: "Show Changes")
@@ -354,6 +358,8 @@ enum ResultAction: CaseIterable {
     case togglePin
     case dismiss
     case refreshPreview
+    case pasteText
+    case copyText
     case pasteAsJPEG
     case copyAsJPEG
     case saveImage
@@ -374,6 +380,7 @@ enum ResultAction: CaseIterable {
         case (.secondary, _): result.pastes
         case (.togglePin, .clipboard), (.delete, .clipboard), (.copyPath, .app): true
         case (.refreshPreview, .clipboard(let item)): item.kind == .link
+        case (.pasteText, .clipboard(let item)), (.copyText, .clipboard(let item)): item.mayHaveText
         case (.pasteAsJPEG, .clipboard(let item)), (.copyAsJPEG, .clipboard(let item)),
             (.saveImage, .clipboard(let item)):
             item.kind == .image
@@ -405,6 +412,8 @@ enum ResultAction: CaseIterable {
         case .togglePin: result.isPinned ? String(localized: "Unpin") : String(localized: "Pin")
         case .dismiss: String(localized: "Dismiss")
         case .refreshPreview: String(localized: "Refresh Preview")
+        case .pasteText: String(localized: "Paste Text")
+        case .copyText: String(localized: "Copy Text")
         case .pasteAsJPEG: String(localized: "Paste as JPEG")
         case .copyAsJPEG: String(localized: "Copy as JPEG")
         case .saveImage: String(localized: "Save Image…")
@@ -441,6 +450,8 @@ enum ResultAction: CaseIterable {
         case .togglePin: "pin"
         case .dismiss: "xmark"
         case .refreshPreview: "arrow.clockwise"
+        case .pasteText: "text.viewfinder"
+        case .copyText: "doc.on.doc"
         case .pasteAsJPEG: "photo"
         case .copyAsJPEG: "photo.on.rectangle"
         case .saveImage: "square.and.arrow.down"
@@ -460,7 +471,7 @@ enum ResultAction: CaseIterable {
         case .addMinute: ("=", [.command])
         case .lap: ("l", [.command])
         case .restart: ("r", [.command])
-        case .addFiveMinutes, .rename, .snooze, .refreshPreview, .pasteAsJPEG, .copyAsJPEG: nil
+        case .addFiveMinutes, .rename, .snooze, .refreshPreview, .pasteText, .copyText, .pasteAsJPEG, .copyAsJPEG: nil
         case .togglePin: ("p", [.command, .shift])
         case .saveImage: ("s", [.command])
         case .copyPath: ("c", [.command, .shift])
@@ -522,6 +533,7 @@ final class LauncherModel {
     @ObservationIgnored var onPopOutCalculator: (String?) -> Void = { _ in }
     @ObservationIgnored var onCreateQuicklink: () -> Void = {}
     @ObservationIgnored var onSaveImage: (ClipboardItem) -> Void = { _ in }
+    @ObservationIgnored var onCaptureText: () -> Void = {}
     /// Opens Settings › Extensions, for preferences an extension needs before it runs.
     @ObservationIgnored var onOpenExtensionSettings: () -> Void = {}
 
@@ -764,8 +776,8 @@ final class LauncherModel {
             }
             // Built up in steps, because one long `+` chain takes the type checker too long.
             var commands: [LauncherResult] = [
-                .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .changelog,
-                .shareWhippet, .quit,
+                .calculator, .floatingCalculator, .clipboardHistory, .captureText, .settings, .sendFeedback,
+                .changelog, .shareWhippet, .quit,
             ]
             if isFeedbackAdmin {
                 commands.append(.readFeedback)
@@ -956,6 +968,16 @@ final class LauncherModel {
             clampSelection()
         case (.refreshPreview, .clipboard(let item)):
             clipboard.refreshPreview(item)
+        case (.pasteText, .clipboard(let item)), (.copyText, .clipboard(let item)):
+            Task {
+                guard let text = await clipboard.text(in: item) else {
+                    NSSound.beep()
+                    Toast.shared.show(String(localized: "No Text Found"), symbol: "text.viewfinder")
+                    return
+                }
+                clipboard.copy(text: TextRecognition.forCopying(text))
+                dismissAndPaste(copyOnly: action == .copyText)
+            }
         case (.pasteAsJPEG, .clipboard(let item)), (.copyAsJPEG, .clipboard(let item)):
             guard clipboard.copyAsJPEG(item) else {
                 NSSound.beep()
@@ -1272,6 +1294,8 @@ final class LauncherModel {
             NSApp.terminate(nil)
         case .clipboardHistory:
             open(.clipboard)
+        case .captureText:
+            onCaptureText()
         case .app(let app):
             appIndex.open(app)
             onDismiss()

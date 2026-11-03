@@ -68,8 +68,9 @@ public struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, T
     public let imageWidth: Int?
     public let imageHeight: Int?
     public let imageBytes: Int?
-    /// Nil until text recognition has run; empty when the image contains no text.
-    let ocrText: String?
+    /// Nil until text recognition has run; empty when the image contains no text. For an image that's mostly a QR
+    /// code or barcode, what the code encodes.
+    public let ocrText: String?
     public let copiedAt: Date
     public let sourceBundleID: String?
     public let timesCopied: Int
@@ -118,6 +119,11 @@ public struct ClipboardItem: Identifiable, Hashable, Codable, FetchableRecord, T
         guard kind == .link, let text else { return nil }
         let host = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines))?.host()
         return host.map { $0.hasPrefix("www.") ? String($0.dropFirst(4)) : $0 }
+    }
+
+    /// An image whose text can be copied: one with text recognized in it, or that recognition hasn't reached yet.
+    public var mayHaveText: Bool {
+        kind == .image && ocrText != ""
     }
 
     /// True once a link has a page title to show.

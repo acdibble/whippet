@@ -188,6 +188,8 @@ private struct GeneralPane: View {
     let featureFlags: FeatureFlags
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
     @State private var canPaste = Paster.isTrusted
+    @State private var canCaptureScreen = ScreenCapture.isAllowed
+    @AppStorage(TextRecognition.keepsLineBreaksKey) private var keepsLineBreaks = true
     @State private var language = AppLanguage.current
     @State private var appearance = AppAppearance.current
     @State private var needsRelaunch = false
@@ -244,6 +246,23 @@ private struct GeneralPane: View {
                         "Needs Accessibility permission to send ⌘V and move other apps' windows; without it, Return only copies"
                     )
                 }
+                LabeledContent {
+                    if canCaptureScreen {
+                        Text("Allowed")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Button("Allow…") {
+                            ScreenCapture.requestAccess()
+                        }
+                    }
+                } label: {
+                    Text("Capture Text")
+                    Text("Needs Screen Recording permission to read text on the screen")
+                }
+                Toggle(isOn: $keepsLineBreaks) {
+                    Text("Keep Line Breaks")
+                    Text("In text copied from the screen or an image")
+                }
             }
 
             Section("Updates") {
@@ -274,8 +293,12 @@ private struct GeneralPane: View {
         .toggleStyle(.switch)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             canPaste = Paster.isTrusted
+            canCaptureScreen = ScreenCapture.isAllowed
         }
-        .onAppear { canPaste = Paster.isTrusted }
+        .onAppear {
+            canPaste = Paster.isTrusted
+            canCaptureScreen = ScreenCapture.isAllowed
+        }
     }
 
     private func setLaunchAtLogin(_ isEnabled: Bool) {

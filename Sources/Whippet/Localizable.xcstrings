@@ -291,6 +291,16 @@
         }
       }
     },
+    "Allow Screen Recording to Capture Text" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای گرفتن متن، اجازهٔ ضبط صفحه را بدهید"
+          }
+        }
+      }
+    },
     "Allow “%@” to:" : {
       "localizations" : {
         "fa" : {
@@ -571,6 +581,16 @@
         }
       }
     },
+    "Capture Text" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "گرفتن متن"
+          }
+        }
+      }
+    },
     "Center" : {
       "localizations" : {
         "fa" : {
@@ -831,12 +851,32 @@
         }
       }
     },
+    "Copied Link" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوند کپی شد"
+          }
+        }
+      }
+    },
     "Copied Path" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "مسیر کپی شد"
+          }
+        }
+      }
+    },
+    "Copied Text" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن کپی شد"
           }
         }
       }
@@ -937,6 +977,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "کپی کلید خصوصی"
+          }
+        }
+      }
+    },
+    "Copy Text" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی متن"
           }
         }
       }
@@ -1621,6 +1671,16 @@
         }
       }
     },
+    "In text copied from the screen or an image" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در متنی که از صفحه یا تصویر کپی می‌شود"
+          }
+        }
+      }
+    },
     "Include Images" : {
       "localizations" : {
         "fa" : {
@@ -1717,6 +1777,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نگه‌داشتن موارد"
+          }
+        }
+      }
+    },
+    "Keep Line Breaks" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حفظ شکست خط‌ها"
           }
         }
       }
@@ -1971,6 +2041,16 @@
         }
       }
     },
+    "Needs Screen Recording permission to read text on the screen" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای خواندن متن روی صفحه به اجازهٔ ضبط صفحه نیاز است"
+          }
+        }
+      }
+    },
     "New Timer" : {
       "localizations" : {
         "fa" : {
@@ -2027,6 +2107,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نتیجه‌ای نیست"
+          }
+        }
+      }
+    },
+    "No Text Found" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متنی پیدا نشد"
           }
         }
       }
@@ -2337,6 +2427,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اختیاری، مثلاً gh"
+          }
+        }
+      }
+    },
+    "Paste Text" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جای‌گذاری متن"
           }
         }
       }

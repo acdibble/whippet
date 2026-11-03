@@ -3,7 +3,6 @@ import LinkPresentation
 import Network
 import Observation
 import UniformTypeIdentifiers
-import Vision
 import WhippetCore
 
 extension ClipboardStore {
@@ -442,7 +441,9 @@ final class ClipboardHistory {
         isRecognizing = true
         Task {
             while let pending = try? store.nextImageAwaitingRecognition() {
-                let text = await Task.detached(priority: .utility) { Self.recognizeText(in: pending.file) }.value
+                let text = await Task.detached(priority: .utility) {
+                    TextRecognition.recognize(in: pending.file).content
+                }.value
                 if pending.isLinkPreview {
                     guard (try? store.setLinkPreviewRecognizedText(text, hash: pending.hash)) != nil else { break }
                 } else {
@@ -459,6 +460,21 @@ final class ClipboardHistory {
             }
             isRecognizing = false
         }
+    }
+
+    /// The text in an image, for Copy Text and Paste Text, or nil when it has none. An image recognition hasn't reached
+    /// yet, such as one copied a moment ago, is read now and saved, so the queue skips it.
+    func text(in item: ClipboardItem) async -> String? {
+        if let text = item.ocrText {
+            return text.isEmpty ? nil : text
+        }
+        guard item.kind == .image, let store, let file = imageURL(for: item) else { return nil }
+        let text = await Task.detached(priority: .userInitiated) { TextRecognition.recognize(in: file).content }.value
+        if let syncItem = try? store.setRecognizedText(text, hash: item.contentHash) {
+            onLocalChange(syncItem)
+        }
+        revision += 1
+        return text.isEmpty ? nil : text
     }
 
     /// Works through links without a preview one at a time, newest first, including links copied before previews
@@ -561,16 +577,5 @@ final class ClipboardHistory {
             let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options)
         else { return nil }
         return NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
-    }
-
-    nonisolated private static func recognizeText(in file: URL) -> String {
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .accurate
-        request.automaticallyDetectsLanguage = true
-        request.usesLanguageCorrection = true
-        try? VNImageRequestHandler(url: file).perform([request])
-        return (request.results ?? [])
-            .compactMap { $0.topCandidates(1).first?.string }
-            .joined(separator: "\n")
     }
 }

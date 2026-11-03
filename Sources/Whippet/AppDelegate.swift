@@ -87,6 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
 
         model.onSaveImage = { [weak self] item in self?.saveImage(item) }
+        model.onCaptureText = { [weak self] in self?.captureText() }
         model.onOpenExtensionSettings = { [weak self] in self?.showSettings(pane: .extensions) }
         extensions.onEvent = { [weak self] extensionID, event in
             self?.model.handleExtensionEvent(event, from: extensionID)
@@ -293,6 +294,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         openFeedbackWindow()
     }
 
+    /// Closes the launcher first, and leaves it out of the screen's picture in case it hasn't gone yet.
+    private func captureText() {
+        let launcher = panel.windowNumber
+        if panel.isVisible {
+            dismissPanel()
+        }
+        Task { await ScreenCapture.captureText(excludingWindows: [launcher]) }
+    }
+
     /// Asks where to save a clipboard image, as PNG or, given a `.jpg` name, JPEG. The panel closes first, since the
     /// save panel is a window of its own and would otherwise close the panel by taking focus anyway.
     private func saveImage(_ item: ClipboardItem) {
@@ -390,6 +400,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case .clipboardHistory:
             showPanel()
             model.openDirectly { model.show(.clipboard) }
+        case .captureText:
+            captureText()
         case .settings:
             showSettings()
         case .caffeinate:
