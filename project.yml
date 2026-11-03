@@ -110,6 +110,7 @@ targets:
       - Sources/Whippet/Thumbnail.swift
       - Sources/Whippet/TimerDuration.swift
       - Sources/Whippet/TimerItem.swift
+      - Sources/Whippet/TranslationLanguages.swift
       - Sources/Whippet/WindowLayout.swift
     dependencies:
       - package: GRDB

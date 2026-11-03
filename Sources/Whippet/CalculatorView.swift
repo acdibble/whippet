@@ -21,32 +21,39 @@ struct CalculatorResults: View {
             return false
         }
 
-        SelectableList(ids: results.map(\.id), selection: model.selection) {
-            SectionHeader(title: String(localized: "Calculator"))
-            if let current, case .calculation(let calculation) = current.result {
-                CalculationCard(calculation: calculation, isSelected: current.index == model.selection)
-                    .id(current.result.id)
-                    .onTapGesture {
-                        model.selection = current.index
-                        model.activate()
+        VStack(spacing: 0) {
+            // The card stays at the top while the columns under it scroll.
+            VStack(alignment: .leading, spacing: 2) {
+                SectionHeader(title: String(localized: "Calculator"))
+                if let current, case .calculation(let calculation) = current.result {
+                    CalculationCard(calculation: calculation, isSelected: current.index == model.selection)
+                        .id(current.result.id)
+                        .onTapGesture {
+                            model.selection = current.index
+                            model.activate()
+                        }
+                    if !calculation.otherBases.isEmpty {
+                        OtherBases(calculation: calculation) { base in
+                            model.selection = current.index
+                            model.perform(.copy(as: base))
+                        }
                     }
-                if !calculation.otherBases.isEmpty {
-                    OtherBases(calculation: calculation) { base in
-                        model.selection = current.index
-                        model.perform(.copy(as: base))
-                    }
+                } else {
+                    Text("Type a calculation")
+                        .foregroundStyle(Color.launcherSecondary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 130)
+                        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
                 }
-            } else {
-                Text("Type a calculation")
-                    .foregroundStyle(Color.launcherSecondary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 130)
-                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
             }
+            .padding(.horizontal, 8)
+            .padding(.top, 6)
 
-            HStack(alignment: .top, spacing: 8) {
-                column(title: "History", rows: history, emptyText: "Answers you copy appear here")
-                column(title: "Numbers", rows: numbers, emptyText: "Numbers you copy appear here")
+            SelectableList(ids: results.map(\.id), selection: model.selection) {
+                HStack(alignment: .top, spacing: 8) {
+                    column(title: "History", rows: history, emptyText: "Answers you copy appear here")
+                    column(title: "Numbers", rows: numbers, emptyText: "Numbers you copy appear here")
+                }
             }
         }
     }
@@ -116,38 +123,22 @@ struct CalculationCard: View {
     let isSelected: Bool
 
     var body: some View {
-        HStack(spacing: 0) {
-            side(
-                Text(calculation.conversion.map { AttributedString($0.input.leftToRightIsolated) } ?? expression),
-                label: calculation.operationName)
-            VStack(spacing: 8) {
-                Rectangle().fill(Color.primary.opacity(0.1)).frame(width: 1)
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 14, weight: .semibold))
-                Rectangle().fill(Color.primary.opacity(0.1)).frame(width: 1)
-            }
-            side(Text(calculation.displayAnswer.leftToRightIsolated), label: calculation.spelledAnswer)
+        ResultCard(isSelected: isSelected) {
+            value(Text(calculation.conversion.map { AttributedString($0.input.leftToRightIsolated) } ?? expression))
+        } inputLabel: {
+            CardLabel(calculation.operationName)
+        } output: {
+            value(Text(calculation.displayAnswer.leftToRightIsolated))
+        } outputLabel: {
+            CardLabel(calculation.spelledAnswer)
         }
-        .frame(height: 130)
-        .background(Color.primary.opacity(isSelected ? 0.1 : 0.05), in: RoundedRectangle(cornerRadius: 10))
-        .contentShape(Rectangle())
     }
 
-    private func side(_ value: Text, label: String) -> some View {
-        VStack(spacing: 14) {
-            value
-                .font(.system(size: 30, weight: .semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.4)
-            Text(label)
-                .font(.system(size: 12, weight: .medium))
-                .lineLimit(1)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(Color.primary.opacity(0.1), in: RoundedRectangle(cornerRadius: 5))
-        }
-        .padding(.horizontal, 16)
-        .frame(maxWidth: .infinity)
+    private func value(_ text: Text) -> some View {
+        text
+            .font(.system(size: 30, weight: .semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.4)
     }
 
     /// The input re-spaced with typographic operators, which are dimmed so the numbers stand out, kept left to right in right-to-left languages.

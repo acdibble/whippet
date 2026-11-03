@@ -5,12 +5,14 @@ import Observation
 /// Features, so it can be released before it's finished without changing Whippet for everyone.
 enum FeatureFlag: String, CaseIterable, Identifiable {
     case extensions
+    case translation
 
     var id: Self { self }
 
     var title: String {
         switch self {
         case .extensions: String(localized: "Extensions")
+        case .translation: String(localized: "Translation")
         }
     }
 
@@ -18,6 +20,9 @@ enum FeatureFlag: String, CaseIterable, Identifiable {
         switch self {
         case .extensions:
             String(localized: "Commands written in JavaScript with React, installed in Settings › Extensions.")
+        case .translation:
+            String(
+                localized: "Translate text on this Mac by typing the language after it, or with the Translate command.")
         }
     }
 

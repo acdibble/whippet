@@ -118,7 +118,7 @@ struct SearchView: View {
 
             if model.isExpanded {
                 switch model.mode {
-                case .root, .calculator: RootResults(model: model)
+                case .root, .calculator, .translate: RootResults(model: model)
                 case .clipboard: ClipboardHistoryView(model: model)
                 case .stopwatch: StopwatchView(model: model)
                 case .timers: TimersView(model: model)
@@ -164,6 +164,7 @@ struct SearchView: View {
         case .calculator: String(localized: "Type a calculation…")
         case .clipboard: String(localized: "Type to filter entries…")
         case .changelog: String(localized: "Type to filter changes…")
+        case .translate: String(localized: "Text to translate")
         case .extensionView: model.extensionPlaceholder
         case .stopwatch, .timers: ""
         }
@@ -181,20 +182,21 @@ struct RootResults: View {
                 if model.showsCalculatorLayout {
                     CalculatorResults(model: model, results: results)
                 } else {
-                    // One flat list of headers and rows, each with its own identity. Rows nested in a ForEach per
-                    // section left stale selection highlights on the wrong rows as the selection moved.
-                    SelectableList(ids: results.map(\.id), selection: model.selection) {
-                        ForEach(listItems(of: results)) { item in
-                            switch item {
-                            case .header(let title):
-                                SectionHeader(title: title)
-                            case .row(let index, let result):
-                                ResultRow(result: result, isSelected: index == model.selection)
-                                    .onTapGesture {
-                                        model.selection = index
-                                        model.activate()
-                                    }
+                    VStack(spacing: 0) {
+                        // A translation and what its text can be used with stay at the top while the rows under them
+                        // scroll.
+                        let pinned = model.pinnedResultCount
+                        if pinned > 0 {
+                            VStack(alignment: .leading, spacing: 2) {
+                                rows(listItems(of: results, in: 0..<pinned))
                             }
+                            .padding(.horizontal, 8)
+                            .padding(.top, 6)
+                        }
+                        // One flat list of headers and rows, each with its own identity. Rows nested in a ForEach per
+                        // section left stale selection highlights on the wrong rows as the selection moved.
+                        SelectableList(ids: results.map(\.id), selection: model.selection) {
+                            rows(listItems(of: results, in: pinned..<results.count))
                         }
                     }
                 }
@@ -229,17 +231,38 @@ struct RootResults: View {
         }
     }
 
-    /// The results with a header wherever the section changes.
-    private func listItems(of results: [LauncherResult]) -> [ListItem] {
+    private func rows(_ items: [ListItem]) -> some View {
+        ForEach(items) { item in
+            switch item {
+            case .header(let title):
+                SectionHeader(title: title)
+            case .row(let index, .translation):
+                TranslationCard(model: model, isSelected: index == model.selection)
+                    .onTapGesture {
+                        model.selection = index
+                        model.activate()
+                    }
+            case .row(let index, let result):
+                ResultRow(result: result, isSelected: index == model.selection)
+                    .onTapGesture {
+                        model.selection = index
+                        model.activate()
+                    }
+            }
+        }
+    }
+
+    /// The results in `range`, with a header wherever the section changes.
+    private func listItems(of results: [LauncherResult], in range: Range<Int>) -> [ListItem] {
         var items: [ListItem] = []
         var currentTitle: String?
-        for (index, result) in results.enumerated() {
+        for index in range {
             let title = model.sectionTitle(at: index)
             if title != currentTitle {
                 items.append(.header(title))
                 currentTitle = title
             }
-            items.append(.row(index: index, result: result))
+            items.append(.row(index: index, result: results[index]))
         }
         return items
     }
@@ -303,6 +326,7 @@ struct ResultRow: View {
         case .app(let app): Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
         case .clipboardHistory: Image(systemName: "list.clipboard")
         case .captureText: Image(systemName: "text.viewfinder")
+        case .translate, .translateText, .translation: Image(systemName: "translate")
         case .calculator: Image(systemName: "plus.forwardslash.minus")
         case .floatingCalculator: Image(systemName: "macwindow.on.rectangle")
         case .settings: Image(systemName: "gearshape")

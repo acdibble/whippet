@@ -421,6 +421,16 @@
         }
       }
     },
+    "Automatic" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خودکار"
+          }
+        }
+      }
+    },
     "Awake until %@" : {
       "localizations" : {
         "fa" : {
@@ -961,6 +971,16 @@
         }
       }
     },
+    "Copy Original" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی متن اصلی"
+          }
+        }
+      }
+    },
     "Copy Path" : {
       "localizations" : {
         "fa" : {
@@ -1221,6 +1241,16 @@
         }
       }
     },
+    "Detect Language" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تشخیص زبان"
+          }
+        }
+      }
+    },
     "Developer" : {
       "localizations" : {
         "fa" : {
@@ -1277,6 +1307,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "پیوند دانلود کپی شد"
+          }
+        }
+      }
+    },
+    "Download these languages to translate on this Mac" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای ترجمه در این مک، این زبان‌ها را بارگیری کنید"
+          }
+        }
+      }
+    },
+    "Downloaded Languages" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زبان‌های بارگیری‌شده"
+          }
+        }
+      }
+    },
+    "Download…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بارگیری…"
           }
         }
       }
@@ -1961,6 +2021,26 @@
         }
       }
     },
+    "Manage Languages…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مدیریت زبان‌ها…"
+          }
+        }
+      }
+    },
+    "Managed in System Settings › General › Language & Region › Translation Languages" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در تنظیمات سیستم › عمومی › زبان و منطقه › زبان‌های ترجمه مدیریت می‌شوند"
+          }
+        }
+      }
+    },
     "Mark as Handled" : {
       "localizations" : {
         "fa" : {
@@ -2447,6 +2527,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جای‌گذاری متن"
+          }
+        }
+      }
+    },
+    "Paste Translation" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جای‌گذاری ترجمه"
           }
         }
       }
@@ -3411,6 +3501,16 @@
         }
       }
     },
+    "Swap Languages" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جابه‌جایی زبان‌ها"
+          }
+        }
+      }
+    },
     "Sync Now" : {
       "localizations" : {
         "fa" : {
@@ -3447,6 +3547,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "کپی‌های متنی بزرگ‌تر از %@ ذخیره نمی‌شوند."
+          }
+        }
+      }
+    },
+    "Text to translate" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن برای ترجمه"
           }
         }
       }
@@ -3491,12 +3601,42 @@
         }
       }
     },
+    "The text couldn't be translated" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن ترجمه نشد"
+          }
+        }
+      }
+    },
+    "The text is already in this language" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن از قبل به همین زبان است"
+          }
+        }
+      }
+    },
     "This feedback is encrypted, and this Mac doesn't have the feedback key." : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "این بازخورد رمزگذاری شده و این Mac کلید بازخورد را ندارد."
+          }
+        }
+      }
+    },
+    "This language can't be translated on this Mac yet" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این زبان هنوز در این مک قابل ترجمه نیست"
           }
         }
       }
@@ -3611,6 +3751,46 @@
         }
       }
     },
+    "Translate" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ترجمه"
+          }
+        }
+      }
+    },
+    "Translate To" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ترجمه به"
+          }
+        }
+      }
+    },
+    "Translate text on this Mac by typing the language after it, or with the Translate command." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن را در این مک ترجمه کنید، با نوشتن زبان پس از آن یا با فرمان ترجمه."
+          }
+        }
+      }
+    },
+    "Translation" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ترجمه"
+          }
+        }
+      }
+    },
     "Turn On" : {
       "localizations" : {
         "fa" : {
@@ -3667,6 +3847,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تایپ کنید و Return را بزنید"
+          }
+        }
+      }
+    },
+    "Type or paste text to translate" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متنی را برای ترجمه بنویسید یا جای‌گذاری کنید"
           }
         }
       }

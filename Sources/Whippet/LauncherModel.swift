@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import Translation
 import WhippetCore
 
 enum LauncherResult: Identifiable, Hashable {
@@ -20,6 +21,12 @@ enum LauncherResult: Identifiable, Hashable {
     case clipboardHistory
     /// Copies the text in an area of the screen.
     case captureText
+    /// Opens the Translate view.
+    case translate
+    /// The Translate view, offered for the whole search text and opened with it.
+    case translateText
+    /// The translation in the Translate view.
+    case translation
     case caffeinate
     case caffeinateFor
     case decaffeinate(until: String)
@@ -70,6 +77,9 @@ enum LauncherResult: Identifiable, Hashable {
         case .quit: "command:quit"
         case .clipboardHistory: "command:clipboard-history"
         case .captureText: "command:capture-text"
+        case .translate: "command:translate"
+        case .translateText: "with:translate"
+        case .translation: "translation"
         case .caffeinate: "command:caffeinate"
         case .caffeinateFor: "command:caffeinate-for"
         case .decaffeinate: "command:decaffeinate"
@@ -119,6 +129,8 @@ enum LauncherResult: Identifiable, Hashable {
         case .quit: String(localized: "Quit Whippet")
         case .clipboardHistory: String(localized: "Clipboard History")
         case .captureText: String(localized: "Capture Text")
+        case .translate, .translateText: String(localized: "Translate")
+        case .translation: String(localized: "Translation")
         case .caffeinate: String(localized: "Caffeinate")
         case .caffeinateFor: String(localized: "Caffeinate for…")
         case .decaffeinate: String(localized: "Decaffeinate")
@@ -148,9 +160,10 @@ enum LauncherResult: Identifiable, Hashable {
         switch self {
         case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
-        case .calculator, .floatingCalculator, .clipboardHistory, .captureText, .settings, .sendFeedback, .readFeedback,
-            .changelog, .shareWhippet, .quit:
+        case .calculator, .floatingCalculator, .clipboardHistory, .captureText, .translate, .translateText, .settings,
+            .sendFeedback, .readFeedback, .changelog, .shareWhippet, .quit:
             String(localized: "Command")
+        case .translation: ""
         case .whatsNew(let release): String(localized: "Changes since \(release.since ?? "")")
         case .release(let release):
             release.since.map { String(localized: "Changes since \($0)") } ?? release.date?.formatted(
@@ -187,6 +200,14 @@ enum LauncherResult: Identifiable, Hashable {
         return item.pinnedAt != nil
     }
 
+    /// A row offered for the whole search text, under “Use … with”.
+    var isTextFallback: Bool {
+        switch self {
+        case .searchWithQuicklink, .searchWithExtension, .searchClipboard, .translateText: true
+        default: false
+        }
+    }
+
     var isCalculation: Bool {
         guard case .calculation = self else { return false }
         return true
@@ -195,7 +216,7 @@ enum LauncherResult: Identifiable, Hashable {
     /// Results whose action puts text or an image on the clipboard, which Return then pastes into the target app.
     var pastes: Bool {
         switch self {
-        case .calculation, .pastCalculation, .clipboard: true
+        case .calculation, .pastCalculation, .clipboard, .translation: true
         default: false
         }
     }
@@ -229,10 +250,11 @@ enum LauncherResult: Identifiable, Hashable {
         case .searchWithQuicklink(let quicklink): LauncherResult.quicklink(quicklink).id
         case .searchWithExtension(let info): LauncherResult.extensionCommand(info).id
         case .searchClipboard: LauncherResult.clipboardHistory.id
+        case .translateText: LauncherResult.translate.id
         // Counted as using the timer it starts, which then ranks among Recent Timers.
         case .startTimer(let seconds, let name): TimerPreset(name: name, seconds: seconds).launchKey
         case .calculation, .pastCalculation, .clipboard, .quit, .timer, .ringingTimer, .whatsNew, .release,
-            .extensionItem:
+            .extensionItem, .translation:
             nil
         default: id
         }
@@ -243,7 +265,7 @@ enum LauncherResult: Identifiable, Hashable {
     /// there while text is typed, so they aren't offered as favorites.
     var favoriteKey: String? {
         switch self {
-        case .searchWithQuicklink, .searchWithExtension, .searchClipboard, .startTimer: nil
+        case .searchWithQuicklink, .searchWithExtension, .searchClipboard, .translateText, .startTimer: nil
         default: launchKey
         }
     }
@@ -251,8 +273,10 @@ enum LauncherResult: Identifiable, Hashable {
     var actionTitle: String {
         switch self {
         case .calculation, .pastCalculation: String(localized: "Copy Answer")
-        case .calculator, .floatingCalculator, .clipboardHistory, .settings, .sendFeedback, .readFeedback:
+        case .calculator, .floatingCalculator, .clipboardHistory, .translate, .settings, .sendFeedback, .readFeedback:
             String(localized: "Open Command")
+        case .translateText: String(localized: "Translate")
+        case .translation: String(localized: "Paste Translation")
         case .captureText, .caffeinate, .decaffeinate, .caffeinateMenuBar: String(localized: "Run Command")
         case .caffeinateFor: String(localized: "Choose Duration")
         case .changelog: String(localized: "Open Command")
@@ -362,6 +386,8 @@ enum ResultAction: CaseIterable {
     case copyAsHexadecimal
     case copyAsOctal
     case copyAsBinary
+    case copyOriginal
+    case swapLanguages
     case pasteText
     case copyText
     case pasteAsJPEG
@@ -387,6 +413,7 @@ enum ResultAction: CaseIterable {
         case (.copyAsDecimal, .calculation(let calculation)), (.copyAsHexadecimal, .calculation(let calculation)),
             (.copyAsOctal, .calculation(let calculation)), (.copyAsBinary, .calculation(let calculation)):
             base.map(calculation.otherBases.contains) ?? false
+        case (.copyOriginal, .translation), (.swapLanguages, .translation): true
         case (.pasteText, .clipboard(let item)), (.copyText, .clipboard(let item)): item.mayHaveText
         case (.pasteAsJPEG, .clipboard(let item)), (.copyAsJPEG, .clipboard(let item)),
             (.saveImage, .clipboard(let item)):
@@ -421,6 +448,8 @@ enum ResultAction: CaseIterable {
         case .refreshPreview: String(localized: "Refresh Preview")
         case .copyAsDecimal, .copyAsHexadecimal, .copyAsOctal, .copyAsBinary:
             String(localized: "Copy as \(base?.name ?? "")")
+        case .copyOriginal: String(localized: "Copy Original")
+        case .swapLanguages: String(localized: "Swap Languages")
         case .pasteText: String(localized: "Paste Text")
         case .copyText: String(localized: "Copy Text")
         case .pasteAsJPEG: String(localized: "Paste as JPEG")
@@ -460,6 +489,8 @@ enum ResultAction: CaseIterable {
         case .dismiss: "xmark"
         case .refreshPreview: "arrow.clockwise"
         case .copyAsDecimal, .copyAsHexadecimal, .copyAsOctal, .copyAsBinary: "number"
+        case .copyOriginal: "doc.on.doc"
+        case .swapLanguages: "arrow.left.arrow.right"
         case .pasteText: "text.viewfinder"
         case .copyText: "doc.on.doc"
         case .pasteAsJPEG: "photo"
@@ -502,8 +533,9 @@ enum ResultAction: CaseIterable {
         case .lap: ("l", [.command])
         case .restart: ("r", [.command])
         case .addFiveMinutes, .rename, .snooze, .refreshPreview, .copyAsDecimal, .copyAsHexadecimal, .copyAsOctal,
-            .copyAsBinary, .pasteText, .copyText, .pasteAsJPEG, .copyAsJPEG:
+            .copyAsBinary, .copyOriginal, .pasteText, .copyText, .pasteAsJPEG, .copyAsJPEG:
             nil
+        case .swapLanguages: ("s", [.command, .shift])
         case .togglePin: ("p", [.command, .shift])
         case .saveImage: ("s", [.command])
         case .copyPath: ("c", [.command, .shift])
@@ -525,6 +557,7 @@ final class LauncherModel {
         case stopwatch
         case timers
         case changelog
+        case translate
         /// A view command from an extension, in `extensionSession`.
         case extensionView
     }
@@ -537,6 +570,7 @@ final class LauncherModel {
             if mode == .extensionView {
                 extensionSession?.searchTextChanged(query)
             }
+            updateTranslation()
         }
     }
     /// The last complete answer in the search bar, kept while the next part of the calculation is typed.
@@ -566,6 +600,7 @@ final class LauncherModel {
     @ObservationIgnored var onCreateQuicklink: () -> Void = {}
     @ObservationIgnored var onSaveImage: (ClipboardItem) -> Void = { _ in }
     @ObservationIgnored var onCaptureText: () -> Void = {}
+    @ObservationIgnored var onDownloadTranslation: (TranslationSession.Configuration) -> Void = { _ in }
     /// Opens Settings › Extensions, for preferences an extension needs before it runs.
     @ObservationIgnored var onOpenExtensionSettings: () -> Void = {}
 
@@ -616,6 +651,8 @@ final class LauncherModel {
         let exchangeRates: ExchangeRates?
         let extensionCommands: [ExtensionCommandInfo]
         let extensionRevision: Int
+        let translates: Bool
+        let translatedText: String
         /// Compared cheaply, since an unchanged array shares its storage.
         let apps: [AppEntry]
     }
@@ -641,6 +678,7 @@ final class LauncherModel {
     private let timers: Timers
     private let exchangeRates: ExchangeRateStore
     let extensions: ExtensionManager
+    let translator = Translator()
 
     /// True while the Hours, Minutes and Seconds fields of "Caffeinate for…" are shown beside the search field.
     private(set) var isEnteringDuration = false
@@ -786,6 +824,8 @@ final class LauncherModel {
             exchangeRates: exchangeRates.rates,
             extensionCommands: extensions.commands,
             extensionRevision: extensionSession?.revision ?? -1,
+            translates: translator.isEnabled,
+            translatedText: translator.text,
             apps: appIndex.apps
         )
         if let cachedResults, cachedResults.key == key {
@@ -811,6 +851,9 @@ final class LauncherModel {
                 .calculator, .floatingCalculator, .clipboardHistory, .captureText, .settings, .sendFeedback,
                 .changelog, .shareWhippet, .quit,
             ]
+            if translator.isEnabled {
+                commands.append(.translate)
+            }
             if isFeedbackAdmin {
                 commands.append(.readFeedback)
             }
@@ -843,7 +886,14 @@ final class LauncherModel {
                 }
                 let ranked = Ranking.rank(
                     timerRows + candidates, query: query, title: \.searchText, frecency: frecency(of:))
-                return (typedTimer.map { [$0] } ?? []) + ranked + textFallbacks
+                let translation = translator.text.isEmpty ? [] : [LauncherResult.translation]
+                let typed = (typedTimer.map { [$0] } ?? []) + ranked
+                guard translation.isEmpty else {
+                    // What the text can be used with comes straight under its translation, as in the Translate view.
+                    // The card already translates it, so the view isn't offered as well.
+                    return translation + textFallbacks.filter { $0 != .translateText } + typed
+                }
+                return typed + textFallbacks
             }
             let all = Array(candidates.dropFirst(whatsNewRows.count))
             let byFavoriteKey = Dictionary(
@@ -877,6 +927,10 @@ final class LauncherModel {
                 releases
                 .filter { release in words.allSatisfy { release.searchText.localizedStandardContains($0) } }
                 .map(LauncherResult.release)
+        case .translate:
+            // What the text can be used with too, as in the main search, except the view it's already in.
+            let fallbacks = query.isEmpty ? [] : textFallbacks.filter { $0 != .translateText }
+            return [.translation] + fallbacks
         case .extensionView:
             return extensionItems
         }
@@ -912,6 +966,13 @@ final class LauncherModel {
     func reset() {
         open(.root)
         whatsNewSince = whatsNew.pending()
+    }
+
+    /// How many results stay put above the scrolling list: a translation's card, and what its text can be used with.
+    var pinnedResultCount: Int {
+        let results = results
+        guard results.first == .translation else { return 0 }
+        return 1 + results.dropFirst().prefix(while: \.isTextFallback).count
     }
 
     var showsCalculatorLayout: Bool {
@@ -1004,6 +1065,11 @@ final class LauncherModel {
             (.copyAsOctal, .calculation(let calculation)), (.copyAsBinary, .calculation(let calculation)):
             guard let answer = action.base.flatMap(calculation.answer(in:)) else { return }
             copy(answer, of: calculation, copyOnly: true)
+        case (.copyOriginal, .translation):
+            clipboard.copy(text: query)
+            dismissAndPaste(copyOnly: true)
+        case (.swapLanguages, .translation):
+            swapLanguages()
         case (.pasteText, .clipboard(let item)), (.copyText, .clipboard(let item)):
             Task {
                 guard let text = await clipboard.text(in: item) else {
@@ -1174,6 +1240,9 @@ final class LauncherModel {
         extensionSession?.close()
         extensionSession = nil
         mode = newMode
+        if newMode == .translate {
+            translator.reset()
+        }
         query = ""
         clipboardKind = nil
         isEnteringDuration = false
@@ -1309,6 +1378,19 @@ final class LauncherModel {
             let text = query
             open(.clipboard)
             query = text
+        case .translate:
+            open(.translate)
+        case .translateText:
+            let text = query
+            open(.translate)
+            query = text
+        case .translation:
+            guard translator.state == .translated, let translation = translator.translation else {
+                NSSound.beep()
+                return
+            }
+            clipboard.copy(text: translation)
+            dismissAndPaste(copyOnly: copyOnly)
         case .window(let command):
             // The app the panel opened over, or Whippet itself over one of its own windows.
             let app = targetWindow != nil ? NSRunningApplication.current : targetApp
@@ -1456,6 +1538,46 @@ final class LauncherModel {
     }
 
     /// Without Accessibility permission the item stays copied and macOS is asked to show its permission prompt.
+    /// Translates text typed as `<text> in <language>` in the main search, or anything typed in the Translate view.
+    private func updateTranslation() {
+        guard translator.isEnabled else { return }
+        let typed = TranslationLanguages.parse(query, languages: translator.languages)
+        switch mode {
+        case .root: translator.setText(typed?.text ?? "", target: typed?.target)
+        case .translate: translator.setText(typed?.text ?? query, target: typed?.target)
+        default: break
+        }
+    }
+
+    /// Downloads the languages the text is translated between, then comes back to it.
+    func downloadTranslationLanguages() {
+        onDownloadTranslation(TranslationSession.Configuration(source: translator.source, target: translator.target))
+    }
+
+    /// Translates into `language`, rewriting the language typed after the text, if there's one, so the two agree.
+    func translate(into language: Locale.Language) {
+        if let typed = TranslationLanguages.parse(query, languages: translator.languages) {
+            query = "\(typed.text) in \(TranslationLanguages.name(of: language))"
+        } else {
+            translator.choose(language)
+        }
+    }
+
+    /// Translates the translation back: its language becomes the one translated into, and it becomes the text.
+    private func swapLanguages() {
+        guard translator.state == .translated, let translation = translator.translation, let source = translator.source
+        else {
+            NSSound.beep()
+            return
+        }
+        if TranslationLanguages.parse(query, languages: translator.languages) != nil {
+            query = "\(translation) in \(TranslationLanguages.name(of: source))"
+        } else {
+            translator.choose(source)
+            query = translation
+        }
+    }
+
     /// Copies a calculation's answer, keeping the calculation in history unless it's a number on its own, and pastes
     /// it unless `copyOnly`.
     private func copy(_ answer: String, of calculation: Calculation, copyOnly: Bool) {
@@ -1795,7 +1917,7 @@ final class LauncherModel {
             let right = frecency(of: rhs.element)
             return left != right ? left > right : lhs.offset < rhs.offset
         }
-        let all = ordered.map(\.element) + [.searchClipboard]
+        let all = ordered.map(\.element) + (translator.isEnabled ? [.translateText] : []) + [.searchClipboard]
         let favoriteOrder = Dictionary(
             history.favorites.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
         let position = { (result: LauncherResult) in result.launchKey.flatMap { favoriteOrder[$0] } }
@@ -1820,8 +1942,9 @@ final class LauncherModel {
         case .clipboard: return String(localized: "Clipboard History")
         case .extensionItem(let item):
             return item.section ?? extensionSession?.view.navigationTitle ?? extensionSession?.command.title ?? ""
-        case .searchWithQuicklink, .searchWithExtension, .searchClipboard:
+        case .searchWithQuicklink, .searchWithExtension, .searchClipboard, .translateText:
             return String(localized: "Use “\(query)” with…")
+        case .translation: return String(localized: "Translate")
         default: break
         }
         if mode == .timers {

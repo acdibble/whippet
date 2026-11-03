@@ -119,7 +119,9 @@ struct SettingsView: View {
                 switch navigation.pane ?? .general {
                 case .general:
                     GeneralPane(caffeine: caffeine, timers: timers, updater: updater, featureFlags: featureFlags)
-                case .shortcuts: ShortcutsPane(appIndex: appIndex, quicklinks: quicklinks, extensions: extensions)
+                case .shortcuts:
+                    ShortcutsPane(
+                        appIndex: appIndex, quicklinks: quicklinks, extensions: extensions, featureFlags: featureFlags)
                 case .quicklinks: QuicklinksPane(quicklinks: quicklinks, navigation: navigation)
                 case .extensions: ExtensionsPane(extensions: extensions)
                 case .notifications: NotificationsPane(timers: timers)
@@ -190,6 +192,9 @@ private struct GeneralPane: View {
     @State private var canPaste = Paster.isTrusted
     @State private var canCaptureScreen = ScreenCapture.isAllowed
     @AppStorage(TextRecognition.keepsLineBreaksKey) private var keepsLineBreaks = true
+    /// Empty for Automatic, the Mac's preferred language.
+    @AppStorage(Translator.targetKey) private var translateTarget = ""
+    @State private var translationLanguages: [Locale.Language] = []
     @State private var language = AppLanguage.current
     @State private var appearance = AppAppearance.current
     @State private var needsRelaunch = false
@@ -265,6 +270,27 @@ private struct GeneralPane: View {
                 }
             }
 
+            if featureFlags.isEnabled(.translation) {
+                Section("Translate") {
+                    Picker("Translate To", selection: $translateTarget) {
+                        Text("Automatic").tag("")
+                        ForEach(translationLanguages, id: \.minimalIdentifier) { language in
+                            Text(TranslationLanguages.name(of: language)).tag(language.minimalIdentifier)
+                        }
+                    }
+                    LabeledContent {
+                        Button("Manage Languages…") {
+                            NSWorkspace.shared.open(
+                                URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!)
+                        }
+                    } label: {
+                        Text("Downloaded Languages")
+                        Text("Managed in System Settings › General › Language & Region › Translation Languages")
+                    }
+                }
+                .task { translationLanguages = await Translator.supportedLanguages() }
+            }
+
             Section("Updates") {
                 Toggle("Check for Updates Automatically", isOn: $updater.automaticallyChecksForUpdates)
                 LabeledContent("Check for Updates") {
@@ -317,10 +343,13 @@ private struct ShortcutsPane: View {
     let appIndex: AppIndex
     let quicklinks: Quicklinks
     let extensions: ExtensionManager
+    let featureFlags: FeatureFlags
     @State private var search = ""
 
     var body: some View {
-        let commands = CommandShortcut.allCases.filter { matches($0.title) }
+        let commands = CommandShortcut.allCases.filter {
+            matches($0.title) && ($0 != .translate || featureFlags.isEnabled(.translation))
+        }
         let windowCommands = WindowCommand.allCases.filter { matches($0.title) }
         let quicklinks = quicklinks.items.filter { matches($0.name) }
         let extensionCommands = extensions.commands.filter { matches($0.title) || matches($0.extensionName) }

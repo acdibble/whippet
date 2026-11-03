@@ -7,6 +7,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Translation, as a beta feature, on this Mac with Apple's translation. Type text followed by the language to
+  translate it into, such as `hola in english` or `"bonjour" to German`, and the translation shows on a card above the
+  results, like the calculator's. The Translate command, which can have its own hotkey and is offered under “Use …
+  with” for whatever you type, translates into your Mac's language. Click the language under the translation to change
+  it. Return pastes the translation, ⌘Return copies it and ⇧⌘S translates it back. The usual language can be set in
+  Settings › General.
+
 - Whole-number answers also show in decimal, hexadecimal, octal and binary under the calculator. Click one, or
   choose Copy as Hexadecimal and the like from ⌘K, to copy it.
 

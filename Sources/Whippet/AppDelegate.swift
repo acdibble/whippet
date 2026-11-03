@@ -1,6 +1,8 @@
 import AppKit
 import Carbon.HIToolbox
 import KeyboardShortcuts
+import SwiftUI
+import Translation
 import UniformTypeIdentifiers
 import WhippetCore
 
@@ -35,6 +37,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var registeredAppHotkeys: Set<String> = []
     private var caffeineStatusItem: CaffeineStatusItem?
     private var timersStatusItem: TimersStatusItem?
+    /// Holds the session downloading translation languages while the system asks to.
+    private var downloadWindow: NSWindow?
 
     override init() {
         clipboard = ClipboardHistory()
@@ -88,6 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         model.onSaveImage = { [weak self] item in self?.saveImage(item) }
         model.onCaptureText = { [weak self] in self?.captureText() }
+        model.onDownloadTranslation = { [weak self] configuration in self?.downloadTranslation(configuration) }
         model.onOpenExtensionSettings = { [weak self] in self?.showSettings(pane: .extensions) }
         extensions.onEvent = { [weak self] extensionID, event in
             self?.model.handleExtensionEvent(event, from: extensionID)
@@ -100,9 +105,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         featureFlags.onChange = { [weak self] flag, isEnabled in
             switch flag {
             case .extensions: self?.extensions.setActive(isEnabled)
+            case .translation: self?.model.translator.setEnabled(isEnabled)
             }
         }
         extensions.setActive(featureFlags.isEnabled(.extensions))
+        model.translator.setEnabled(featureFlags.isEnabled(.translation))
 
         panel = LauncherPanel(rootView: SearchView(model: model))
         panel.delegate = self
@@ -218,6 +225,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case ("r", [.command]): model.perform(.restart)
         case ("t", [.command]): model.perform(.startTimer)
         case ("s", [.command]): model.perform(.saveImage)
+        case ("s", [.command, .shift]): model.perform(.swapLanguages)
         case ("k", [.command]): showActions()
         case ("q", [.command]): NSApp.terminate(nil)
         case (",", [.command]): showSettings()
@@ -292,6 +300,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         NSApp.setActivationPolicy(.regular)
         openFeedbackWindow()
+    }
+
+    /// Downloads translation languages, which the system confirms in a window of its own, then opens the launcher again
+    /// where it was, pasting into the same app, so the text is translated straight away.
+    private func downloadTranslation(_ configuration: TranslationSession.Configuration) {
+        let mode = model.mode
+        let query = model.query
+        let targetApp = model.targetApp
+        panel.orderOut(nil)
+        let view = TranslationDownloadView(configuration: configuration) { [weak self] in
+            guard let self else { return }
+            downloadWindow?.close()
+            downloadWindow = nil
+            showPanel()
+            model.targetApp = targetApp
+            model.targetWindow = nil
+            if mode == .translate {
+                model.openDirectly { model.show(.translate) }
+            }
+            model.query = query
+        }
+        // Only there to hold the session, so it can't be seen or clicked.
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1, height: 1), styleMask: [.borderless], backing: .buffered,
+            defer: false)
+        window.isReleasedWhenClosed = false
+        window.alphaValue = 0
+        window.ignoresMouseEvents = true
+        window.contentView = NSHostingView(rootView: view)
+        downloadWindow = window
+        NSApp.activate(ignoringOtherApps: true)
+        window.orderFrontRegardless()
     }
 
     /// Closes the launcher first, and leaves it out of the screen's picture in case it hasn't gone yet.
@@ -402,6 +442,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             model.openDirectly { model.show(.clipboard) }
         case .captureText:
             captureText()
+        case .translate:
+            guard featureFlags.isEnabled(.translation) else { return }
+            showPanel()
+            model.openDirectly { model.show(.translate) }
         case .settings:
             showSettings()
         case .caffeinate:
