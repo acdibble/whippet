@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-11-03
+
 ### Fixed
 
 - Copying a file from inside another app, such as a Mail attachment, no longer makes macOS warn that Whippet
@@ -386,7 +388,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/acdibble/whippet/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/acdibble/whippet/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/acdibble/whippet/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/acdibble/whippet/compare/v1.3.1...v1.3.2
