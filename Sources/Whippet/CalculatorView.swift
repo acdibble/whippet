@@ -30,6 +30,12 @@ struct CalculatorResults: View {
                         model.selection = current.index
                         model.activate()
                     }
+                if !calculation.otherBases.isEmpty {
+                    OtherBases(calculation: calculation) { base in
+                        model.selection = current.index
+                        model.perform(.copy(as: base))
+                    }
+                }
             } else {
                 Text("Type a calculation")
                     .foregroundStyle(Color.launcherSecondary)
@@ -68,6 +74,40 @@ struct CalculatorResults: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+}
+
+/// A whole-number answer in each other base, such as hexadecimal and binary, which a click copies. ⌘K offers the same.
+private struct OtherBases: View {
+    let calculation: Calculation
+    let copy: (NumberBase) -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(calculation.otherBases, id: \.self) { base in
+                if let answer = calculation.answer(in: base) {
+                    Button {
+                        copy(base)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(base.name)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(Color.launcherSecondary)
+                            Text(answer.leftToRightIsolated)
+                                .font(.system(size: 13, design: .monospaced))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        .padding(.horizontal, 10)
+                        .frame(maxWidth: .infinity, minHeight: 30)
+                        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(String(localized: "Copy as \(base.name)"))
+                }
+            }
+        }
     }
 }
 

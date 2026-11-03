@@ -192,6 +192,42 @@ struct CalculatorTests {
         #expect(calculation.displayAnswer == expected)
     }
 
+    @Test(arguments: [
+        ("0xFF + 1", "0x100"),
+        ("0b101 * 2", "0b1010"),
+        ("0o17 + 1", "0o20"),
+        ("0x10 - 0x20", "-0x10"),
+        ("0xFF 1 +", "0x100"),
+        ("0xFF / 2", "127.5"),
+        ("0xFF + 0b1", "256"),
+        ("255 + 1", "256"),
+        ("0xFF", "255"),
+    ])
+    func answersInTheInputsBase(_ input: String, _ expected: String) throws {
+        #expect(try #require(Calculator.calculate(input)).answer == expected)
+    }
+
+    @Test func wholeAnswersShowTheirOtherBases() throws {
+        let decimal = try #require(Calculator.calculate("200 + 56"))
+        #expect(decimal.otherBases == [.hexadecimal, .octal, .binary])
+        #expect(decimal.answer(in: .hexadecimal) == "0x100")
+        #expect(decimal.answer(in: .octal) == "0o400")
+        #expect(decimal.answer(in: .binary) == "0b100000000")
+
+        let hex = try #require(Calculator.calculate("0xFF + 1"))
+        #expect(hex.otherBases == [.decimal, .octal, .binary])
+        #expect(hex.answer(in: .decimal) == "256")
+
+        let conversion = try #require(Calculator.calculate("255 in hex"))
+        #expect(conversion.base == .hexadecimal)
+        #expect(conversion.otherBases == [.decimal, .octal, .binary])
+    }
+
+    @Test(arguments: ["7 / 2", "10 ^ 20", "5 km to mi"])
+    func otherAnswersHaveNoOtherBases(_ input: String) throws {
+        #expect(try #require(Calculator.calculate(input)).otherBases.isEmpty)
+    }
+
     @Test(arguments: ["2.5 in hex", "255 in hexes", "abc in hex", "255 in", "1e30 in hex"])
     func notAnotherBase(_ input: String) {
         #expect(BaseConversion.convert(input) == nil)

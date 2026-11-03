@@ -1001,6 +1001,16 @@
         }
       }
     },
+    "Copy as %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی به‌صورت %@"
+          }
+        }
+      }
+    },
     "Copy as JPEG" : {
       "localizations" : {
         "fa" : {

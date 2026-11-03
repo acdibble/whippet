@@ -358,6 +358,10 @@ enum ResultAction: CaseIterable {
     case togglePin
     case dismiss
     case refreshPreview
+    case copyAsDecimal
+    case copyAsHexadecimal
+    case copyAsOctal
+    case copyAsBinary
     case pasteText
     case copyText
     case pasteAsJPEG
@@ -380,6 +384,9 @@ enum ResultAction: CaseIterable {
         case (.secondary, _): result.pastes
         case (.togglePin, .clipboard), (.delete, .clipboard), (.copyPath, .app): true
         case (.refreshPreview, .clipboard(let item)): item.kind == .link
+        case (.copyAsDecimal, .calculation(let calculation)), (.copyAsHexadecimal, .calculation(let calculation)),
+            (.copyAsOctal, .calculation(let calculation)), (.copyAsBinary, .calculation(let calculation)):
+            base.map(calculation.otherBases.contains) ?? false
         case (.pasteText, .clipboard(let item)), (.copyText, .clipboard(let item)): item.mayHaveText
         case (.pasteAsJPEG, .clipboard(let item)), (.copyAsJPEG, .clipboard(let item)),
             (.saveImage, .clipboard(let item)):
@@ -412,6 +419,8 @@ enum ResultAction: CaseIterable {
         case .togglePin: result.isPinned ? String(localized: "Unpin") : String(localized: "Pin")
         case .dismiss: String(localized: "Dismiss")
         case .refreshPreview: String(localized: "Refresh Preview")
+        case .copyAsDecimal, .copyAsHexadecimal, .copyAsOctal, .copyAsBinary:
+            String(localized: "Copy as \(base?.name ?? "")")
         case .pasteText: String(localized: "Paste Text")
         case .copyText: String(localized: "Copy Text")
         case .pasteAsJPEG: String(localized: "Paste as JPEG")
@@ -450,6 +459,7 @@ enum ResultAction: CaseIterable {
         case .togglePin: "pin"
         case .dismiss: "xmark"
         case .refreshPreview: "arrow.clockwise"
+        case .copyAsDecimal, .copyAsHexadecimal, .copyAsOctal, .copyAsBinary: "number"
         case .pasteText: "text.viewfinder"
         case .copyText: "doc.on.doc"
         case .pasteAsJPEG: "photo"
@@ -463,6 +473,26 @@ enum ResultAction: CaseIterable {
         }
     }
 
+    /// The base a calculation's answer is copied in.
+    var base: NumberBase? {
+        switch self {
+        case .copyAsDecimal: .decimal
+        case .copyAsHexadecimal: .hexadecimal
+        case .copyAsOctal: .octal
+        case .copyAsBinary: .binary
+        default: nil
+        }
+    }
+
+    static func copy(as base: NumberBase) -> ResultAction {
+        switch base {
+        case .decimal: .copyAsDecimal
+        case .hexadecimal: .copyAsHexadecimal
+        case .octal: .copyAsOctal
+        case .binary: .copyAsBinary
+        }
+    }
+
     /// The key equivalent shown in the menu; the panel's key monitor handles the same keys outside the menu.
     var shortcut: (key: String, modifiers: NSEvent.ModifierFlags)? {
         switch self {
@@ -471,7 +501,9 @@ enum ResultAction: CaseIterable {
         case .addMinute: ("=", [.command])
         case .lap: ("l", [.command])
         case .restart: ("r", [.command])
-        case .addFiveMinutes, .rename, .snooze, .refreshPreview, .pasteText, .copyText, .pasteAsJPEG, .copyAsJPEG: nil
+        case .addFiveMinutes, .rename, .snooze, .refreshPreview, .copyAsDecimal, .copyAsHexadecimal, .copyAsOctal,
+            .copyAsBinary, .pasteText, .copyText, .pasteAsJPEG, .copyAsJPEG:
+            nil
         case .togglePin: ("p", [.command, .shift])
         case .saveImage: ("s", [.command])
         case .copyPath: ("c", [.command, .shift])
@@ -968,6 +1000,10 @@ final class LauncherModel {
             clampSelection()
         case (.refreshPreview, .clipboard(let item)):
             clipboard.refreshPreview(item)
+        case (.copyAsDecimal, .calculation(let calculation)), (.copyAsHexadecimal, .calculation(let calculation)),
+            (.copyAsOctal, .calculation(let calculation)), (.copyAsBinary, .calculation(let calculation)):
+            guard let answer = action.base.flatMap(calculation.answer(in:)) else { return }
+            copy(answer, of: calculation, copyOnly: true)
         case (.pasteText, .clipboard(let item)), (.copyText, .clipboard(let item)):
             Task {
                 guard let text = await clipboard.text(in: item) else {
@@ -1200,15 +1236,7 @@ final class LauncherModel {
 
         switch results[selection] {
         case .calculation(let calculation):
-            if !calculation.isPlainNumber {
-                clipboard.recordCalculation(
-                    expression: query.trimmingCharacters(in: .whitespaces),
-                    answer: calculation.answer,
-                    isRPN: calculation.isRPN
-                )
-            }
-            clipboard.copy(text: calculation.answer)
-            dismissAndPaste(copyOnly: copyOnly)
+            copy(calculation.answer, of: calculation, copyOnly: copyOnly)
         case .pastCalculation(let record):
             clipboard.copy(text: record.answer)
             dismissAndPaste(copyOnly: copyOnly)
@@ -1428,6 +1456,17 @@ final class LauncherModel {
     }
 
     /// Without Accessibility permission the item stays copied and macOS is asked to show its permission prompt.
+    /// Copies a calculation's answer, keeping the calculation in history unless it's a number on its own, and pastes
+    /// it unless `copyOnly`.
+    private func copy(_ answer: String, of calculation: Calculation, copyOnly: Bool) {
+        if !calculation.isPlainNumber {
+            clipboard.recordCalculation(
+                expression: query.trimmingCharacters(in: .whitespaces), answer: answer, isRPN: calculation.isRPN)
+        }
+        clipboard.copy(text: answer)
+        dismissAndPaste(copyOnly: copyOnly)
+    }
+
     func dismissAndPaste(copyOnly: Bool) {
         onDismiss()
         if !copyOnly, let targetWindow {

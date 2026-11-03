@@ -21,6 +21,8 @@ public struct Conversion: Hashable, Sendable {
     var duration: TimeInterval?
     /// The moment a result names, such as `time until 5pm` or `now + 90 min`, so a timer can count down to it.
     var date: Date?
+    /// The base a number was converted to, such as hexadecimal for `255 in hex`.
+    var base: NumberBase?
 }
 
 /// Converts `<amount> to|in <unit>`, such as `5 km to mi`, `72 f in c`, `2100 seconds / 3 in minutes` or

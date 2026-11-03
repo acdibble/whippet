@@ -5,6 +5,16 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Whole-number answers also show in decimal, hexadecimal, octal and binary under the calculator. Click one, or
+  choose Copy as Hexadecimal and the like from ⌘K, to copy it.
+
+### Changed
+
+- A calculation whose prefixed numbers are all in one base answers in it, so `0xFF + 1` is `0x100` and
+  `0b101 * 2` is `0b1010`.
+
 ## [1.5.0] - 2026-11-03
 
 ### Added

@@ -9,8 +9,36 @@ public struct Calculation: Hashable, Sendable {
 
     /// The number copied or pasted.
     public var answer: String {
-        guard let conversion else { return Calculator.format(value) }
+        guard let conversion else { return base.literal(value) ?? Calculator.format(value) }
         return conversion.answer ?? Calculator.format(value, significantDigits: UnitConversion.significantDigits)
+    }
+
+    /// The base the answer is in. A calculation whose prefixed numbers are all in one base answers in it, as
+    /// `0xFF + 1` does with `0x100`, when the answer is a whole number. A number on its own answers in decimal, since
+    /// its value is what's wanted, and a base conversion in the base it names.
+    public var base: NumberBase {
+        if let conversion { return conversion.base ?? .decimal }
+        guard !isPlainNumber else { return .decimal }
+        let bases = Set(
+            tokens.compactMap { token -> NumberBase? in
+                guard case .number(_, let literal) = token else { return nil }
+                return NumberBase(literal: literal)
+            }
+        ).subtracting([.decimal])
+        guard bases.count == 1, let base = bases.first, base.literal(value) != nil else { return .decimal }
+        return base
+    }
+
+    /// The answer in `base`, such as `0b100000000` for `256`, or nil when it isn't a whole number that fits in 64
+    /// bits, or is a unit conversion.
+    public func answer(in base: NumberBase) -> String? {
+        guard conversion == nil || conversion?.base != nil else { return nil }
+        return base.literal(value)
+    }
+
+    /// The other bases the answer can be written in, shown alongside it so each can be copied.
+    public var otherBases: [NumberBase] {
+        NumberBase.allCases.filter { $0 != base && answer(in: $0) != nil }
     }
 
     /// The answer as shown, with its unit for a conversion.
@@ -253,19 +281,63 @@ public enum Calculator {
     }
 }
 
+/// A base whole numbers are written in, marked by a prefix that the calculator reads back, such as `0x` for
+/// hexadecimal.
+public enum NumberBase: CaseIterable, Sendable {
+    case decimal
+    case hexadecimal
+    case octal
+    case binary
+
+    var radix: Int {
+        switch self {
+        case .decimal: 10
+        case .hexadecimal: 16
+        case .octal: 8
+        case .binary: 2
+        }
+    }
+
+    var prefix: String {
+        switch self {
+        case .decimal: ""
+        case .hexadecimal: "0x"
+        case .octal: "0o"
+        case .binary: "0b"
+        }
+    }
+
+    public var name: String {
+        switch self {
+        case .decimal: String(localized: "Decimal", bundle: .module)
+        case .hexadecimal: String(localized: "Hexadecimal", bundle: .module)
+        case .octal: String(localized: "Octal", bundle: .module)
+        case .binary: String(localized: "Binary", bundle: .module)
+        }
+    }
+
+    /// The base a number as typed is in, such as hexadecimal for `0xFF` or `-0x10`.
+    init(literal: String) {
+        let digits = literal.drop { !$0.isASCIIDigit }.prefix(2).lowercased()
+        self = Self.allCases.first { $0 != .decimal && digits == $0.prefix } ?? .decimal
+    }
+
+    /// `value` as a literal that can be typed back in, such as `0xFF` or `-0b101`, or nil when it isn't a whole
+    /// number that fits in 64 bits.
+    public func literal(_ value: Double) -> String? {
+        guard value == value.rounded(), abs(value) < 0x1p63 else { return nil }
+        let integer = Int64(value)
+        return (integer < 0 ? "-" : "") + prefix + String(integer.magnitude, radix: radix, uppercase: true)
+    }
+}
+
 /// Shows a number or calculation in another base: `255 in hex`, `0xFF to binary`, `0b1010 as decimal` or
 /// `(12 + 4) in octal`, as a literal that can be typed back in, such as `0xFF`.
 public enum BaseConversion {
-    private static let bases: [String: (radix: Int, prefix: String, kind: String)] = {
-        let hex = (16, "0x", String(localized: "Hexadecimal", bundle: .module))
-        let binary = (2, "0b", String(localized: "Binary", bundle: .module))
-        let octal = (8, "0o", String(localized: "Octal", bundle: .module))
-        let decimal = (10, "", String(localized: "Decimal", bundle: .module))
-        return [
-            "hex": hex, "hexadecimal": hex, "binary": binary, "bin": binary, "octal": octal, "oct": octal,
-            "decimal": decimal, "dec": decimal,
-        ]
-    }()
+    private static let bases: [String: NumberBase] = [
+        "hex": .hexadecimal, "hexadecimal": .hexadecimal, "binary": .binary, "bin": .binary, "octal": .octal,
+        "oct": .octal, "decimal": .decimal, "dec": .decimal,
+    ]
 
     static func convert(_ input: String) -> Calculation? {
         let text = input.trimmingCharacters(in: .whitespaces)
@@ -273,13 +345,10 @@ public enum BaseConversion {
             guard
                 let base = bases[targetText.lowercased()],
                 let value = Calculator.number(amountText),
-                value == value.rounded(), abs(value) < 0x1p63
+                let output = base.literal(value)
             else { continue }
-            let integer = Int64(value)
-            let digits = String(integer.magnitude, radix: base.radix, uppercase: true)
-            let output = (integer < 0 ? "-" : "") + base.prefix + digits
             let conversion = Conversion(
-                input: amountText, output: output, outputLong: output, kind: base.kind, answer: output)
+                input: amountText, output: output, outputLong: output, kind: base.name, answer: output, base: base)
             return Calculation(tokens: [], value: value, isRPN: false, conversion: conversion)
         }
         return nil
