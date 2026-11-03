@@ -5,6 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Copying a file from inside another app, such as a Mail attachment, no longer makes macOS warn that Whippet
+  tried to access data from other apps. An image copied this way is saved from the copy of it the app also puts on
+  the clipboard.
+
 ## [1.4.1] - 2026-11-03
 
 ### Changed

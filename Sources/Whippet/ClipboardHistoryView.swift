@@ -241,9 +241,10 @@ private struct FilesPreview: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// A file that has since moved or been deleted gets the icon for its type.
+    /// A file that has since moved or been deleted gets the icon for its type, as does one in another app's container,
+    /// which can't be looked at.
     private static func icon(for file: URL) -> NSImage {
-        if FileManager.default.fileExists(atPath: file.path) {
+        if !file.isInAppContainer, FileManager.default.fileExists(atPath: file.path) {
             return NSWorkspace.shared.icon(forFile: file.path)
         }
         return NSWorkspace.shared.icon(for: UTType(filenameExtension: file.pathExtension) ?? .data)

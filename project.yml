@@ -96,6 +96,7 @@ targets:
     platform: macOS
     sources:
       - Tests/WhippetTests
+      - Sources/Whippet/AppContainer.swift
       - Sources/Whippet/CaffeineDuration.swift
       - Sources/Whippet/Changelog.swift
       - Sources/Whippet/FeatureFlags.swift

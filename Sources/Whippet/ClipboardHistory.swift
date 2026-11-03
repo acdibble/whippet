@@ -187,10 +187,13 @@ final class ClipboardHistory {
     /// Puts the item on the pasteboard, or leaves the pasteboard alone and returns false when an image's file is
     /// missing or unreadable, or none of the copied files still exist. Images go on as the stored PNG, with TIFF for
     /// apps that only read that, and the file they were copied from when it's still there, for pasting into Finder.
+    /// Files in other apps' containers can't be checked, so they're assumed to still be there.
     @discardableResult
     func copy(_ item: ClipboardItem) -> Bool {
         let pasteboard = NSPasteboard.general
-        let existingFiles = item.fileURLs.filter { FileManager.default.fileExists(atPath: $0.path) }
+        let existingFiles = item.fileURLs.filter {
+            $0.isInAppContainer || FileManager.default.fileExists(atPath: $0.path)
+        }
         if item.kind == .image {
             guard let file = imageURL(for: item), let png = try? Data(contentsOf: file) else { return false }
             let pasteboardItem = NSPasteboardItem()
@@ -315,11 +318,25 @@ final class ClipboardHistory {
         if !files.isEmpty {
             // A photo's file in the Photos library has an internal name, and isn't something to paste into Finder.
             let isFromPhotos = pasteboard.types?.contains(Self.photosAssetType) == true
+            let file = files.count == 1 ? files[0] : nil
+            // An image file in another app's container can't be read, so it's taken from the data the app copied
+            // beside it, when there's any, under the file's own type.
+            let containedImage = file.flatMap { file -> (data: Data, type: String)? in
+                guard
+                    file.isInAppContainer,
+                    let type = UTType(filenameExtension: file.pathExtension), type.conforms(to: .image),
+                    let copied = Self.copiedImage(on: pasteboard)
+                else { return nil }
+                return (copied.data, type.identifier)
+            }
             record(recognizesText: true) { store in
-                if files.count == 1, let image = Self.image(at: files[0]) {
+                if let file,
+                    let image = file.isInAppContainer
+                        ? containedImage.flatMap { Self.image(data: $0.data, type: $0.type) } : Self.image(at: file)
+                {
                     return try store.recordImage(
                         png: image.png, width: image.width, height: image.height, type: image.type,
-                        path: isFromPhotos ? nil : files[0].path, sourceBundleID: source
+                        path: isFromPhotos ? nil : file.path, sourceBundleID: source
                     )
                 }
                 return try store.recordFiles(files.map(\.path), sourceBundleID: source)
@@ -331,22 +348,33 @@ final class ClipboardHistory {
             record { try $0.recordText(text, sourceBundleID: source) }
             return
         }
-        // The app's first image type is the one it copied; the others are usually conversions of it. PNG and TIFF are
-        // read when offered, as every app's own, and any other format, such as HEIC or WebP on its own, otherwise.
-        let imageTypes = (pasteboard.types ?? []).filter { UTType($0.rawValue)?.conforms(to: .image) == true }
-        guard
-            let copiedType = imageTypes.first,
-            let data = pasteboard.data(forType: [.png, .tiff].first(where: imageTypes.contains) ?? copiedType)
-        else { return }
+        guard let copied = Self.copiedImage(on: pasteboard) else { return }
         record(recognizesText: true) { store in
-            guard
-                let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
-                let image = Self.image(from: imageSource, type: copiedType.rawValue)
-            else { return nil }
+            guard let image = Self.image(data: copied.data, type: copied.type) else { return nil }
             return try store.recordImage(
                 png: image.png, width: image.width, height: image.height, type: image.type, sourceBundleID: source
             )
         }
+    }
+
+    /// The image an app copied as data, and its type. The app's first image type is the one it copied; the others are
+    /// usually conversions of it. PNG and TIFF are read when offered, as every app's own, and any other format, such
+    /// as HEIC or WebP on its own, otherwise.
+    private static func copiedImage(on pasteboard: NSPasteboard) -> (data: Data, type: String)? {
+        let imageTypes = (pasteboard.types ?? []).filter { UTType($0.rawValue)?.conforms(to: .image) == true }
+        guard
+            let copiedType = imageTypes.first,
+            let data = pasteboard.data(forType: [.png, .tiff].first(where: imageTypes.contains) ?? copiedType)
+        else { return nil }
+        return (data, copiedType.rawValue)
+    }
+
+    /// Image data at full size as PNG, or nil when it isn't an image that can be read.
+    nonisolated private static func image(data: Data, type: String) -> (
+        png: Data, width: Int, height: Int, type: String
+    )? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return image(from: source, type: type)
     }
 
     /// An image file at full size as PNG, or nil when it isn't an image that can be read, or is too large.

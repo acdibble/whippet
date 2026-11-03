@@ -40,13 +40,13 @@ enum FeedbackImage {
 
     /// The image data on the pasteboard: image files copied in Finder, or an image copied from an app, such as a
     /// screenshot. Nil when it holds neither, or holds text too, as apps such as Word add a picture of copied text, so
-    /// text pastes as usual.
+    /// text pastes as usual. Files in other apps' containers can't be read, so the data copied beside them is used.
     static func images(on pasteboard: NSPasteboard) -> [Data]? {
         let fileURLs =
-            pasteboard.readObjects(
+            (pasteboard.readObjects(
                 forClasses: [NSURL.self],
                 options: [.urlReadingFileURLsOnly: true, .urlReadingContentsConformToTypes: [UTType.image.identifier]]
-            ) as? [URL] ?? []
+            ) as? [URL] ?? []).filter { !$0.isInAppContainer }
         if !fileURLs.isEmpty {
             return fileURLs.compactMap { try? Data(contentsOf: $0) }
         }
