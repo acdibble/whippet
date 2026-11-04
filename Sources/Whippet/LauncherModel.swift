@@ -17,6 +17,7 @@ enum LauncherResult: Identifiable, Hashable {
     /// A version in the changelog view, or every version since an update gathered into one.
     case release(Release)
     case shareWhippet
+    case checkForUpdates
     case quit
     case clipboardHistory
     /// Copies the text in an area of the screen.
@@ -74,6 +75,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .whatsNew(let release): "whats-new:\(release.id)"
         case .release(let release): "release:\(release.id)"
         case .shareWhippet: "command:share-whippet"
+        case .checkForUpdates: "command:check-for-updates"
         case .quit: "command:quit"
         case .clipboardHistory: "command:clipboard-history"
         case .captureText: "command:capture-text"
@@ -119,6 +121,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .whatsNew(let release): String(localized: "What's New in \(release.version)")
         case .release(let release): release.since == nil ? release.version : String(localized: "What's New")
         case .shareWhippet: String(localized: "Share Whippet with a Friend")
+        case .checkForUpdates: String(localized: "Check for Updates")
         case .system(let command): command.title
         case .window(let command): command.title
         case .quicklink(let quicklink): quicklink.name
@@ -161,7 +164,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .calculation: String(localized: "Calculator")
         case .pastCalculation(let record): record.calculatedAt.formatted(.relative(presentation: .named))
         case .calculator, .floatingCalculator, .clipboardHistory, .captureText, .translate, .translateText, .settings,
-            .sendFeedback, .readFeedback, .changelog, .shareWhippet, .quit:
+            .sendFeedback, .readFeedback, .changelog, .shareWhippet, .checkForUpdates, .quit:
             String(localized: "Command")
         case .translation: ""
         case .whatsNew(let release): String(localized: "Changes since \(release.since ?? "")")
@@ -283,6 +286,7 @@ enum LauncherResult: Identifiable, Hashable {
         case .whatsNew: String(localized: "Show Changes")
         case .release: String(localized: "Open in Browser")
         case .shareWhippet: String(localized: "Copy Link")
+        case .checkForUpdates: String(localized: "Run Command")
         case .system: String(localized: "Run Command")
         case .window: String(localized: "Move Window")
         case .quicklink(let quicklink):
@@ -591,6 +595,7 @@ final class LauncherModel {
     weak var targetWindow: NSWindow?
     @ObservationIgnored var onOpenSettings: () -> Void = {}
     @ObservationIgnored var onSendFeedback: () -> Void = {}
+    @ObservationIgnored var onCheckForUpdates: () -> Void = {}
     @ObservationIgnored var onReadFeedback: () -> Void = {}
     /// Set at launch when this iCloud account has the CloudKit Admin role, which shows the Read Feedback command.
     var isFeedbackAdmin = false
@@ -653,13 +658,15 @@ final class LauncherModel {
         let extensionRevision: Int
         let translates: Bool
         let translatedText: String
+        /// Changes with every switch in Settings › Commands.
+        let moduleRevision: Int
         /// Compared cheaply, since an unchanged array shares its storage.
         let apps: [AppEntry]
     }
 
     @ObservationIgnored private var cachedResults: (key: ResultsKey, results: [LauncherResult])?
     /// The calculator's history and number columns, which don't depend on the query, keyed by the clipboard revision.
-    @ObservationIgnored private var cachedCalculatorColumns: (revision: Int, results: [LauncherResult])?
+    @ObservationIgnored private var cachedCalculatorColumns: (revision: Int, modules: Int, results: [LauncherResult])?
 
     private let appIndex: AppIndex
     private let history: LaunchHistory
@@ -677,6 +684,8 @@ final class LauncherModel {
     private let caffeine: Caffeine
     private let timers: Timers
     private let exchangeRates: ExchangeRateStore
+    /// What's turned on in Settings › Commands.
+    let modules: ModuleSettings
     let extensions: ExtensionManager
     let translator = Translator()
 
@@ -693,9 +702,11 @@ final class LauncherModel {
         history: LaunchHistory,
         quicklinks: Quicklinks,
         exchangeRates: ExchangeRateStore,
-        extensions: ExtensionManager
+        extensions: ExtensionManager,
+        modules: ModuleSettings
     ) {
         self.extensions = extensions
+        self.modules = modules
         self.caffeine = caffeine
         self.timers = timers
         self.appIndex = appIndex
@@ -748,10 +759,12 @@ final class LauncherModel {
     /// A calculation, conversion or time calculation still being typed. Text that's also a named timer, such as
     /// `10 min to feed`, stays a timer unless what follows `to` starts a unit that fits, such as `10 min to s`.
     private func looksLikeCalculation(_ query: String) -> Bool {
-        Calculator.looksLikeCalculation(query)
-            || UnitConversion.looksLikeConversion(query, requiresTarget: TimerDuration.parse(query) != nil)
+        guard modules.isEnabled(.inlineCalculation) else { return false }
+        let typedTimer = modules.isEnabled(.typedTimers) && TimerDuration.parse(query) != nil
+        return Calculator.looksLikeCalculation(query)
+            || UnitConversion.looksLikeConversion(query, requiresTarget: typedTimer)
             || BaseConversion.looksLikeConversion(query)
-            || CurrencyConversion.looksLikeConversion(query)
+            || (exchangeRates.isEnabled && CurrencyConversion.looksLikeConversion(query))
             || TimeCalculation.looksLikeTimeCalculation(query)
     }
 
@@ -821,11 +834,12 @@ final class LauncherModel {
             shownWhatsNew: shownWhatsNew,
             launchRevision: history.revision,
             quicklinks: quicklinks.items,
-            exchangeRates: exchangeRates.rates,
+            exchangeRates: exchangeRates.availableRates,
             extensionCommands: extensions.commands,
             extensionRevision: extensionSession?.revision ?? -1,
             translates: translator.isEnabled,
             translatedText: translator.text,
+            moduleRevision: modules.revision,
             apps: appIndex.apps
         )
         if let cachedResults, cachedResults.key == key {
@@ -839,7 +853,9 @@ final class LauncherModel {
     private func computeResults() -> [LauncherResult] {
         switch mode {
         case .root:
-            if let calculation = Calculator.calculate(query, rates: exchangeRates.rates) {
+            if modules.isEnabled(.inlineCalculation),
+                let calculation = Calculator.calculate(query, rates: exchangeRates.availableRates)
+            {
                 return calculatorResults(calculation)
             }
             // A calculation still being typed, such as "2+", gets the calculator's history rather than search results.
@@ -849,7 +865,7 @@ final class LauncherModel {
             // Built up in steps, because one long `+` chain takes the type checker too long.
             var commands: [LauncherResult] = [
                 .calculator, .floatingCalculator, .clipboardHistory, .captureText, .settings, .sendFeedback,
-                .changelog, .shareWhippet, .quit,
+                .changelog, .shareWhippet, .checkForUpdates, .quit,
             ]
             if translator.isEnabled {
                 commands.append(.translate)
@@ -865,17 +881,18 @@ final class LauncherModel {
             commands += SystemCommand.allCases.map(LauncherResult.system)
             commands += [.createQuicklink, .newTimer, .timersView, .newStopwatch, .stopwatch]
             commands += WindowCommand.allCases.map(LauncherResult.window)
-            let timerRows = timers.ringing.map(LauncherResult.ringingTimer) + timers.items.map(LauncherResult.timer)
+            commands = commands.filter(modules.isListed)
+            let timerRows = (timers.ringing.map(LauncherResult.ringingTimer) + timers.items.map(LauncherResult.timer))
+                .filter(modules.isListed)
             let whatsNewRows =
                 whatsNewSince
                 .flatMap { Changelog.changes(after: $0, upTo: Self.currentVersion, in: Changelog.shipped) }
-                .map { [LauncherResult.whatsNew($0)] } ?? []
-            let candidates =
-                whatsNewRows + commands
-                + quicklinks.items.map(LauncherResult.quicklink)
-                + extensions.commands.map(LauncherResult.extensionCommand)
-                + timers.presets.map(LauncherResult.timerPreset)
-                + appIndex.apps.map(LauncherResult.app)
+                .map { [LauncherResult.whatsNew($0)] }?.filter(modules.isListed) ?? []
+            var listed = quicklinks.items.map(LauncherResult.quicklink)
+            listed += extensions.commands.map(LauncherResult.extensionCommand)
+            listed += timers.presets.map(LauncherResult.timerPreset)
+            listed += appIndex.apps.map(LauncherResult.app)
+            let candidates = whatsNewRows + commands + listed.filter(modules.isListed)
             guard query.isEmpty else {
                 suggestionCount = 0
                 favoriteCount = 0
@@ -883,10 +900,11 @@ final class LauncherModel {
                 whatsNewRowCount = 0
                 let typedTimer = TimerDuration.parse(query).map {
                     LauncherResult.startTimer(seconds: $0.seconds, name: $0.name)
-                }
+                }.flatMap { modules.isListed($0) ? $0 : nil }
                 let ranked = Ranking.rank(
                     timerRows + candidates, query: query, title: \.searchText, frecency: frecency(of:))
-                let translation = translator.text.isEmpty ? [] : [LauncherResult.translation]
+                let translation =
+                    translator.text.isEmpty || !modules.isEnabled(.translationCard) ? [] : [LauncherResult.translation]
                 let typed = (typedTimer.map { [$0] } ?? []) + ranked
                 guard translation.isEmpty else {
                     // What the text can be used with comes straight under its translation, as in the Translate view.
@@ -911,7 +929,7 @@ final class LauncherModel {
             whatsNewRowCount = whatsNewRows.count
             return whatsNewRows + timerRows + favorites + suggestions + others.filter { !suggestedIDs.contains($0.id) }
         case .calculator:
-            return calculatorResults(Calculator.calculate(query, rates: exchangeRates.rates))
+            return calculatorResults(Calculator.calculate(query, rates: exchangeRates.availableRates))
         case .clipboard:
             return clipboard.search(query, kind: clipboardKind).map(LauncherResult.clipboard)
         case .stopwatch:
@@ -943,13 +961,18 @@ final class LauncherModel {
     }
 
     private var calculatorColumns: [LauncherResult] {
-        if let cachedCalculatorColumns, cachedCalculatorColumns.revision == clipboard.revision {
+        if let cachedCalculatorColumns, cachedCalculatorColumns.revision == clipboard.revision,
+            cachedCalculatorColumns.modules == modules.revision
+        {
             return cachedCalculatorColumns.results
         }
         let history = clipboard.recentCalculations(limit: Self.calculatorColumnLength)
-        let numbers = clipboard.search("", kind: .number).prefix(Self.calculatorColumnLength)
+        // Numbers copied elsewhere come from clipboard history, so only while it's on.
+        let numbers =
+            modules.isEnabled(.clipboardModule)
+            ? clipboard.search("", kind: .number).prefix(Self.calculatorColumnLength) : []
         let columns = history.map(LauncherResult.pastCalculation) + numbers.map(LauncherResult.clipboard)
-        cachedCalculatorColumns = (clipboard.revision, columns)
+        cachedCalculatorColumns = (clipboard.revision, modules.revision, columns)
         return columns
     }
 
@@ -1032,6 +1055,17 @@ final class LauncherModel {
         return results.indices.contains(selection) ? results[selection] : nil
     }
 
+    /// Whether `action` is offered for `result`. An action that belongs to another module is offered while that module
+    /// is on: Start Timer needs Timers, and Pop Out needs the floating calculator.
+    func isAvailable(_ action: ResultAction, for result: LauncherResult) -> Bool {
+        guard action.isAvailable(for: result) else { return false }
+        switch action {
+        case .startTimer: return modules.isEnabled(.timersModule)
+        case .popOut: return modules.isEnabled(.floatingCalculator)
+        default: return true
+        }
+    }
+
     func perform(_ action: ResultAction) {
         // ⌘Return runs an extension's second action, or submits a form, whose first action is usually the submit.
         if mode == .extensionView, action == .secondary {
@@ -1042,7 +1076,7 @@ final class LauncherModel {
             }
             return
         }
-        guard let result = selectedResult, action.isAvailable(for: result) else { return }
+        guard let result = selectedResult, isAvailable(action, for: result) else { return }
         switch (action, result) {
         case (.primary, _):
             activate()
@@ -1319,6 +1353,9 @@ final class LauncherModel {
             onSendFeedback()
         case .readFeedback:
             onReadFeedback()
+        case .checkForUpdates:
+            onDismiss()
+            onCheckForUpdates()
         case .shareWhippet:
             onDismiss()
             ShareLink.copy(using: clipboard)
@@ -1338,17 +1375,10 @@ final class LauncherModel {
             caffeine.start(seconds: nil)
             onDismiss()
         case .caffeinateFor:
-            durationFields = ["", "", ""]
-            isEnteringDuration = true
-        case .caffeinateMenuBar(let isShown):
-            caffeine.showsInMenuBar = !isShown
+            beginTimedCaffeinate()
+        case .caffeinateMenuBar:
             onDismiss()
-            Toast.shared.show(
-                isShown
-                    ? String(localized: "Caffeinate hidden from menu bar")
-                    : String(localized: "Caffeinate shown in menu bar"),
-                symbol: "menubar.rectangle"
-            )
+            toggleCaffeineInMenuBar()
         case .decaffeinate:
             caffeine.stop()
             onDismiss()
@@ -1543,7 +1573,9 @@ final class LauncherModel {
         guard translator.isEnabled else { return }
         let typed = TranslationLanguages.parse(query, languages: translator.languages)
         switch mode {
-        case .root: translator.setText(typed?.text ?? "", target: typed?.target)
+        case .root where modules.isEnabled(.translationCard):
+            translator.setText(typed?.text ?? "", target: typed?.target)
+        case .root: translator.setText("", target: nil)
         case .translate: translator.setText(typed?.text ?? query, target: typed?.target)
         default: break
         }
@@ -1613,6 +1645,22 @@ final class LauncherModel {
     }
 
     /// Starts "Caffeinate for…" with the typed duration; blank fields count as zero, and a zero or invalid duration beeps.
+    /// Shows the Hours, Minutes and Seconds fields of “Caffeinate for…”.
+    func beginTimedCaffeinate() {
+        durationFields = ["", "", ""]
+        isEnteringDuration = true
+    }
+
+    func toggleCaffeineInMenuBar() {
+        caffeine.showsInMenuBar.toggle()
+        Toast.shared.show(
+            caffeine.showsInMenuBar
+                ? String(localized: "Caffeinate shown in menu bar")
+                : String(localized: "Caffeinate hidden from menu bar"),
+            symbol: "menubar.rectangle"
+        )
+    }
+
     func startTimedCaffeinate() {
         guard
             let seconds = CaffeineDuration.seconds(
@@ -1886,7 +1934,7 @@ final class LauncherModel {
 
     /// Asks first for commands that can't be undone. Whippet is hidden once the panel closes, so it comes forward to
     /// show the alert.
-    private static func run(_ command: SystemCommand) {
+    static func run(_ command: SystemCommand) {
         if let confirmation = command.confirmation {
             NSApp.activate(ignoringOtherApps: true)
             let alert = NSAlert()
@@ -1917,7 +1965,8 @@ final class LauncherModel {
             let right = frecency(of: rhs.element)
             return left != right ? left > right : lhs.offset < rhs.offset
         }
-        let all = ordered.map(\.element) + (translator.isEnabled ? [.translateText] : []) + [.searchClipboard]
+        let all = (ordered.map(\.element) + (translator.isEnabled ? [.translateText] : []) + [.searchClipboard])
+            .filter(modules.isListed)
         let favoriteOrder = Dictionary(
             history.favorites.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
         let position = { (result: LauncherResult) in result.launchKey.flatMap { favoriteOrder[$0] } }

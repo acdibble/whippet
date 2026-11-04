@@ -27,12 +27,30 @@ public final class CloudSync {
     public var isEnabled = UserDefaults.standard.bool(forKey: "cloudSyncEnabled") {
         didSet {
             UserDefaults.standard.set(isEnabled, forKey: "cloudSyncEnabled")
-            if isEnabled {
+            if isRunning {
                 start()
                 return
             }
             stop()
         }
+    }
+
+    /// False while Cloud Sync is turned off in Settings › Commands, which stops syncing without changing `isEnabled`,
+    /// so sync comes back as it was when it's turned on again.
+    public var isAllowed = true {
+        didSet {
+            guard isAllowed != oldValue, isEnabled else { return }
+            if isAllowed {
+                start()
+            } else {
+                stop()
+            }
+        }
+    }
+
+    /// Syncing needs both: turned on in its pane, and allowed in Settings › Commands.
+    private var isRunning: Bool {
+        isEnabled && isAllowed
     }
 
     public var includesImages = UserDefaults.standard.object(forKey: "cloudSyncIncludesImages") as? Bool ?? true {
@@ -65,10 +83,11 @@ public final class CloudSync {
     private static let keyType = "SyncKey"
     private static let keyRecordID = CKRecord.ID(recordName: "sync-key", zoneID: zoneID)
 
-    public init(store: ClipboardStore?, directory: URL) {
+    public init(store: ClipboardStore?, directory: URL, isAllowed: Bool = true) {
         self.store = store
         self.directory = directory
-        if isEnabled {
+        self.isAllowed = isAllowed
+        if isRunning {
             start()
         }
     }
@@ -234,7 +253,7 @@ public final class CloudSync {
         deleteSavedState()
         lastSyncedAt = nil
         stop()
-        if isEnabled {
+        if isRunning {
             start()
         }
     }

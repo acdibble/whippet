@@ -141,6 +141,16 @@
         }
       }
     },
+    "A timer or stopwatch is running" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک تایمر یا کرنومتر در حال اجراست"
+          }
+        }
+      }
+    },
     "About" : {
       "localizations" : {
         "fa" : {
@@ -251,6 +261,16 @@
         }
       }
     },
+    "Adds what you copy, in any app, to clipboard history." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آنچه در هر برنامه‌ای کپی می‌کنید را به تاریخچهٔ کلیپ‌بورد می‌افزاید."
+          }
+        }
+      }
+    },
     "Admin" : {
       "localizations" : {
         "fa" : {
@@ -331,6 +351,16 @@
         }
       }
     },
+    "Always on, so Settings can be reached from the search" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "همیشه روشن است تا تنظیمات از جست‌وجو در دسترس باشد"
+          }
+        }
+      }
+    },
     "An extension is a folder with a manifest.json and a built index.js. Extensions in the Extensions folder reload as they change." : {
       "localizations" : {
         "fa" : {
@@ -357,6 +387,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "پیوند سریع دیگری از این کلیدواژه استفاده می‌کند."
+          }
+        }
+      }
+    },
+    "Answers calculations and conversions as you type them in the search." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محاسبه‌ها و تبدیل‌ها را همان‌طور که در جست‌وجو تایپ می‌کنید پاسخ می‌دهد."
+          }
+        }
+      }
+    },
+    "Answers in the Search Bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پاسخ در نوار جست‌وجو"
           }
         }
       }
@@ -561,6 +611,16 @@
         }
       }
     },
+    "Calculations, conversions and time zones, with a history of answers." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محاسبه، تبدیل واحد و منطقهٔ زمانی، با تاریخچهٔ پاسخ‌ها."
+          }
+        }
+      }
+    },
     "Calculator" : {
       "localizations" : {
         "fa" : {
@@ -697,6 +757,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بررسی به‌روزرسانی‌ها…"
+          }
+        }
+      }
+    },
+    "Checks for and installs new versions of Whippet." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخه‌های تازهٔ Whippet را بررسی و نصب می‌کند."
           }
         }
       }
@@ -921,6 +991,16 @@
         }
       }
     },
+    "Copies the text in an area of the screen." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن بخشی از صفحه را کپی می‌کند."
+          }
+        }
+      }
+    },
     "Copy" : {
       "localizations" : {
         "fa" : {
@@ -1097,6 +1177,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ساختن پیوند سریع"
+          }
+        }
+      }
+    },
+    "Currency Conversion" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تبدیل ارز"
           }
         }
       }
@@ -1331,6 +1421,16 @@
         }
       }
     },
+    "Downloading translation languages" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در حال دانلود زبان‌های ترجمه"
+          }
+        }
+      }
+    },
     "Download…" : {
       "localizations" : {
         "fa" : {
@@ -1401,6 +1501,16 @@
         }
       }
     },
+    "End-to-end encrypted, set up under Settings › Cloud Sync." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رمزگذاری سرتاسری، در تنظیمات › همگام‌سازی ابری راه‌اندازی می‌شود."
+          }
+        }
+      }
+    },
     "Enter Duration" : {
       "localizations" : {
         "fa" : {
@@ -1461,6 +1571,16 @@
         }
       }
     },
+    "Features" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ویژگی‌ها"
+          }
+        }
+      }
+    },
     "Features still being tried out. They may change or go away." : {
       "localizations" : {
         "fa" : {
@@ -1517,6 +1637,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "دریافت پیش‌نمایش پیوندها"
+          }
+        }
+      }
+    },
+    "Fetches the European Central Bank's daily exchange rates every 6 hours." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نرخ‌های روزانهٔ ارز بانک مرکزی اروپا را هر ۶ ساعت دریافت می‌کند."
+          }
+        }
+      }
+    },
+    "Fetches the title and preview image of links you copy." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عنوان و تصویر پیش‌نمایش پیوندهایی که کپی می‌کنید را دریافت می‌کند."
           }
         }
       }
@@ -1871,6 +2011,26 @@
         }
       }
     },
+    "Keeps this Mac awake, for a while or until you stop it." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این Mac را برای مدتی یا تا وقتی متوقفش کنید بیدار نگه می‌دارد."
+          }
+        }
+      }
+    },
+    "Keeps what you copy, to search and paste again." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آنچه کپی می‌کنید را نگه می‌دارد تا دوباره جست‌وجو و جای‌گذاری کنید."
+          }
+        }
+      }
+    },
     "Keyword" : {
       "localizations" : {
         "fa" : {
@@ -2001,6 +2161,26 @@
         }
       }
     },
+    "Link Previews" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیش‌نمایش پیوندها"
+          }
+        }
+      }
+    },
+    "Lists what changed at the top of the search for a week after an update." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تا یک هفته پس از به‌روزرسانی، تغییرات را بالای جست‌وجو فهرست می‌کند."
+          }
+        }
+      }
+    },
     "Load More" : {
       "localizations" : {
         "fa" : {
@@ -2017,6 +2197,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "قفل صفحه"
+          }
+        }
+      }
+    },
+    "Locks, sleeps, restarts or shuts down this Mac, and more." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این Mac را قفل، خواب، راه‌اندازی مجدد یا خاموش می‌کند و کارهای دیگر."
+          }
+        }
+      }
+    },
+    "Looks for a new version once a day." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "روزی یک بار به دنبال نسخهٔ تازه می‌گردد."
           }
         }
       }
@@ -2097,6 +2297,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جابه‌جایی پنجره"
+          }
+        }
+      }
+    },
+    "Moves and resizes the front window." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پنجرهٔ جلویی را جابه‌جا و تغییر اندازه می‌دهد."
           }
         }
       }
@@ -2341,6 +2551,26 @@
         }
       }
     },
+    "Offered for anything you type, under “Use … with”." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای هر چه تایپ کنید، زیر «استفاده از … با» پیشنهاد می‌شود."
+          }
+        }
+      }
+    },
+    "On" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "روشن"
+          }
+        }
+      }
+    },
     "On this Mac" : {
       "localizations" : {
         "fa" : {
@@ -2441,6 +2671,16 @@
         }
       }
     },
+    "Open Settings › Extensions" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن تنظیمات › افزونه‌ها"
+          }
+        }
+      }
+    },
     "Open Stopwatch" : {
       "localizations" : {
         "fa" : {
@@ -2497,6 +2737,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "باز کردن در مرورگر"
+          }
+        }
+      }
+    },
+    "Open in Whippet" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در Whippet باز است"
+          }
+        }
+      }
+    },
+    "Opens apps from the search, and with their own hotkeys." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برنامه‌ها را از جست‌وجو و با کلیدهای میان‌بر خودشان باز می‌کند."
+          }
+        }
+      }
+    },
+    "Opens links and searches you save, with text you type." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوندها و جست‌وجوهای ذخیره‌شده را با متنی که تایپ می‌کنید باز می‌کند."
           }
         }
       }
@@ -2631,6 +2901,16 @@
         }
       }
     },
+    "Permissions…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مجوزها…"
+          }
+        }
+      }
+    },
     "Pin" : {
       "localizations" : {
         "fa" : {
@@ -2667,6 +2947,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "باز کردن ماشین‌حساب شناور"
+          }
+        }
+      }
+    },
+    "Preferences, its log and uninstalling are in Settings › Extensions." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنظیمات، گزارش و حذف آن در تنظیمات › افزونه‌ها است."
           }
         }
       }
@@ -2737,6 +3027,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "پیوندهای سریع"
+          }
+        }
+      }
+    },
+    "Quicklinks that take text are offered for anything you type." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیوندهای سریعی که متن می‌گیرند برای هر چه تایپ کنید پیشنهاد می‌شوند."
           }
         }
       }
@@ -3041,6 +3341,16 @@
         }
       }
     },
+    "Save What You Copy" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ذخیرهٔ آنچه کپی می‌کنید"
+          }
+        }
+      }
+    },
     "Saved Image" : {
       "localizations" : {
         "fa" : {
@@ -3081,6 +3391,16 @@
         }
       }
     },
+    "Search Clipboard History from the Search Bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جست‌وجوی تاریخچهٔ کلیپ‌بورد از نوار جست‌وجو"
+          }
+        }
+      }
+    },
     "Search GitHub" : {
       "localizations" : {
         "fa" : {
@@ -3101,6 +3421,16 @@
         }
       }
     },
+    "Search commands" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جست‌وجوی فرمان‌ها"
+          }
+        }
+      }
+    },
     "Search for a quicklink in Whippet and press Tab to type the text that replaces {query} in its link." : {
       "localizations" : {
         "fa" : {
@@ -3117,6 +3447,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جست‌وجوی میان‌برها"
+          }
+        }
+      }
+    },
+    "Search with Quicklinks from the Search Bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جست‌وجو با پیوندهای سریع از نوار جست‌وجو"
           }
         }
       }
@@ -3171,6 +3511,16 @@
         }
       }
     },
+    "Sends a bug report or idea to the developer." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "گزارش اشکال یا ایده‌ای برای سازنده می‌فرستد."
+          }
+        }
+      }
+    },
     "Sent" : {
       "localizations" : {
         "fa" : {
@@ -3211,6 +3561,16 @@
         }
       }
     },
+    "Settings, what's new, and quitting." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنظیمات، تازه‌ها و خروج."
+          }
+        }
+      }
+    },
     "Settings…" : {
       "localizations" : {
         "fa" : {
@@ -3247,6 +3607,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "میان‌برها"
+          }
+        }
+      }
+    },
+    "Show %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمایش %@"
           }
         }
       }
@@ -3297,6 +3667,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نمایش در Finder"
+          }
+        }
+      }
+    },
+    "Show or Hide Caffeinate in Menu Bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمایش یا پنهان کردن بیدار نگه داشتن در نوار منو"
           }
         }
       }
@@ -3531,6 +3911,16 @@
         }
       }
     },
+    "Syncs clipboard history, calculations and quicklinks across your Macs." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخچهٔ کلیپ‌بورد، محاسبه‌ها و پیوندهای سریع را بین Macهای شما همگام می‌کند."
+          }
+        }
+      }
+    },
     "System" : {
       "localizations" : {
         "fa" : {
@@ -3581,6 +3971,16 @@
         }
       }
     },
+    "The floating calculator is open" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ماشین‌حساب شناور باز است"
+          }
+        }
+      }
+    },
     "The keyword can't contain spaces." : {
       "localizations" : {
         "fa" : {
@@ -3617,6 +4017,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "متن از قبل به همین زبان است"
+          }
+        }
+      }
+    },
+    "This Mac is being kept awake" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این Mac بیدار نگه داشته می‌شود"
           }
         }
       }
@@ -3701,6 +4111,26 @@
         }
       }
     },
+    "Timers and stopwatches, in the search and the menu bar." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایمرها و کرنومترها، در جست‌وجو و نوار منو."
+          }
+        }
+      }
+    },
+    "Timers from the Search Bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایمر از نوار جست‌وجو"
+          }
+        }
+      }
+    },
     "Times copied" : {
       "localizations" : {
         "fa" : {
@@ -3771,12 +4201,32 @@
         }
       }
     },
+    "Translate from the Search Bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ترجمه از نوار جست‌وجو"
+          }
+        }
+      }
+    },
     "Translate text on this Mac by typing the language after it, or with the Translate command." : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "متن را در این مک ترجمه کنید، با نوشتن زبان پس از آن یا با فرمان ترجمه."
+          }
+        }
+      }
+    },
+    "Translates text on this Mac." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن را روی همین Mac ترجمه می‌کند."
           }
         }
       }
@@ -3791,12 +4241,32 @@
         }
       }
     },
+    "Translations in the Search Bar" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ترجمه در نوار جست‌وجو"
+          }
+        }
+      }
+    },
     "Turn On" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "روشن کردن"
+          }
+        }
+      }
+    },
+    "Turn off what you don't want. What's off does no work. Hotkeys are set in Settings › Shortcuts." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آنچه نمی‌خواهید را خاموش کنید. آنچه خاموش است کاری نمی‌کند. کلیدهای میان‌بر در تنظیمات › میان‌برها تنظیم می‌شوند."
           }
         }
       }
@@ -3877,6 +4347,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "برای فیلتر کردن موارد بنویسید…"
+          }
+        }
+      }
+    },
+    "Typing a duration, such as 25m tea, offers to start a timer." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایپ یک مدت، مثل 25m tea، شروع یک تایمر را پیشنهاد می‌کند."
+          }
+        }
+      }
+    },
+    "Typing text and a language, such as “hello in french”, translates it." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تایپ متن و یک زبان، مثل «hello in french»، آن را ترجمه می‌کند."
           }
         }
       }
@@ -3981,6 +4471,36 @@
         }
       }
     },
+    "Used by %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مورد استفادهٔ %@"
+          }
+        }
+      }
+    },
+    "Uses" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استفاده از"
+          }
+        }
+      }
+    },
+    "Uses %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استفاده از %@"
+          }
+        }
+      }
+    },
     "Version" : {
       "localizations" : {
         "fa" : {
@@ -4011,12 +4531,32 @@
         }
       }
     },
+    "What each command and feature uses, by permission" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آنچه هر فرمان و ویژگی استفاده می‌کند، بر اساس مجوز"
+          }
+        }
+      }
+    },
     "What's New" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تازه‌ها"
+          }
+        }
+      }
+    },
+    "What's New After Updates" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تازه‌ها پس از به‌روزرسانی"
           }
         }
       }
@@ -4057,6 +4597,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "وقتی تایمر یا کرنومتری در حال اجراست"
+          }
+        }
+      }
+    },
+    "Whippet" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whippet"
           }
         }
       }
@@ -4107,6 +4657,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "پنجره"
+          }
+        }
+      }
+    },
+    "Window Management" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مدیریت پنجره"
           }
         }
       }

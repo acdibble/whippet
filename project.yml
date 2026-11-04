@@ -102,6 +102,7 @@ targets:
       - Sources/Whippet/FeatureFlags.swift
       - Sources/Whippet/FeedbackImage.swift
       - Sources/Whippet/FeedbackKey.swift
+      - Sources/Whippet/Modules
       - Sources/Whippet/ImageConversion.swift
       - Sources/Whippet/PageImage.swift
       - Sources/Whippet/Ranking.swift

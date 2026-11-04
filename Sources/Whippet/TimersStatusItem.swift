@@ -19,8 +19,12 @@ final class TimersStatusItem: NSObject, NSMenuDelegate {
     private var visibility: NSKeyValueObservation?
     private var ticker: Timer?
 
-    init(timers: Timers) {
+    /// Whether Timers is turned on in Settings › Commands, read as the item updates so it hides when it's turned off.
+    private let isEnabled: () -> Bool
+
+    init(timers: Timers, isEnabled: @escaping () -> Bool = { true }) {
         self.timers = timers
+        self.isEnabled = isEnabled
         super.init()
         observe()
     }
@@ -28,7 +32,7 @@ final class TimersStatusItem: NSObject, NSMenuDelegate {
     /// Re-runs whenever the setting or the timers change, adding, removing or updating the item.
     private func observe() {
         withObservationTracking {
-            update(isShown: timers.showsInMenuBar && timers.hasAny)
+            update(isShown: timers.showsInMenuBar && timers.hasAny && isEnabled())
         } onChange: { [weak self] in
             Task { @MainActor in self?.observe() }
         }

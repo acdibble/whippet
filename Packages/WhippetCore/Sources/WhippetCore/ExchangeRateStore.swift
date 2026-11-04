@@ -32,7 +32,17 @@ public final class ExchangeRateStore {
         }
     }
 
+    /// False after `stop()`, while currency conversion is turned off: nothing is fetched, and there are no rates to
+    /// convert with.
+    public private(set) var isEnabled = true
+
+    /// The rates to convert with, or nil while currency conversion is off.
+    public var availableRates: ExchangeRates? {
+        isEnabled ? rates : nil
+    }
+
     public func start() {
+        isEnabled = true
         guard refreshTask == nil else { return }
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -40,6 +50,13 @@ public final class ExchangeRateStore {
                 try? await Task.sleep(for: Self.checkInterval)
             }
         }
+    }
+
+    /// Stops fetching. The saved rates are kept for when it starts again.
+    public func stop() {
+        isEnabled = false
+        refreshTask?.cancel()
+        refreshTask = nil
     }
 
     private func refreshIfDue() async {

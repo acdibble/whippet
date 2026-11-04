@@ -26,6 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let quicklinks: Quicklinks
     let exchangeRates = ExchangeRateStore()
     let featureFlags = FeatureFlags()
+    /// What's turned on in Settings › Commands.
+    let moduleSettings: ModuleSettings
     let extensions = ExtensionManager()
     private var registeredQuicklinkHotkeys: Set<String> = []
     private var registeredExtensionHotkeys: Set<String> = []
@@ -41,8 +43,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var downloadWindow: NSWindow?
 
     override init() {
+        let moduleSettings = ModuleSettings()
+        self.moduleSettings = moduleSettings
         clipboard = ClipboardHistory()
-        cloudSync = CloudSync(store: clipboard.store, directory: ClipboardStore.defaultDirectory)
+        cloudSync = CloudSync(
+            store: clipboard.store, directory: ClipboardStore.defaultDirectory,
+            isAllowed: moduleSettings.isEnabled(.cloudSyncModule))
         appIndex = AppIndex(history: launchHistory)
         quicklinks = Quicklinks(store: clipboard.store)
         super.init()
@@ -52,7 +58,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         AppAppearance.current.apply()
         appIndex.refresh()
         clipboard.start()
-        exchangeRates.start()
 
         clipboard.onLocalChange = { [weak self] in self?.cloudSync.recordChanged($0) }
         clipboard.onLocalDelete = { [weak self] in self?.cloudSync.recordDeleted($0) }
@@ -72,11 +77,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             history: launchHistory,
             quicklinks: quicklinks,
             exchangeRates: exchangeRates,
-            extensions: extensions
+            extensions: extensions,
+            modules: moduleSettings
         )
         model.onDismiss = { [weak self] in self?.dismissPanel() }
         model.onOpenSettings = { [weak self] in self?.showSettings() }
         model.onSendFeedback = { [weak self] in self?.showFeedback() }
+        model.onCheckForUpdates = { [weak self] in self?.updater.checkForUpdates() }
         model.onReadFeedback = { [weak self] in self?.showSettings(pane: .feedback) }
         Task { model.isFeedbackAdmin = await feedbackStore.isAdmin }
         model.onShowActions = { [weak self] in self?.showActions() }
@@ -103,13 +110,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         extensions.onReload = { [weak self] ids in self?.model.extensionsReloaded(ids) }
         extensions.onCommandsChange = { [weak self] in self?.registerExtensionHotkeys() }
         featureFlags.onChange = { [weak self] flag, isEnabled in
+            guard let self else { return }
             switch flag {
-            case .extensions: self?.extensions.setActive(isEnabled)
-            case .translation: self?.model.translator.setEnabled(isEnabled)
+            case .extensions: extensions.setActive(isEnabled)
+            case .translation: applyModules()
             }
         }
         extensions.setActive(featureFlags.isEnabled(.extensions))
-        model.translator.setEnabled(featureFlags.isEnabled(.translation))
+        moduleSettings.locks = { [weak self] in self?.activityLocks ?? [] }
+        moduleSettings.onChange = { [weak self] in self?.applyModules() }
 
         panel = LauncherPanel(rootView: SearchView(model: model))
         panel.delegate = self
@@ -117,29 +126,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         KeyboardShortcuts.onKeyDown(for: .togglePanel) { [weak self] in
             self?.togglePanel()
         }
-        for command in CommandShortcut.allCases {
-            KeyboardShortcuts.onKeyDown(for: command.name) { [weak self] in
-                self?.run(command)
-            }
-        }
-        // Straight on the front window, without the panel.
-        for command in WindowCommand.allCases {
-            KeyboardShortcuts.onKeyDown(for: command.shortcutName) {
-                WindowManager.perform(command, in: NSWorkspace.shared.frontmostApplication)
+        for manifest in ModuleRegistry.builtIn {
+            for command in manifest.commands {
+                let ref = manifest.ref(command.id)
+                KeyboardShortcuts.onKeyDown(for: KeyboardShortcuts.Name(for: ref)) { [weak self] in
+                    self?.runCommand(ref)
+                }
             }
         }
         registerAppHotkeys()
         registerQuicklinkHotkeys()
         registerExtensionHotkeys()
         appIndex.onChange = { [weak self] in self?.registerAppHotkeys() }
-        appIndex.startWatching()
-        caffeineStatusItem = CaffeineStatusItem(caffeine: caffeine)
+        applyModules()
+        caffeineStatusItem = CaffeineStatusItem(caffeine: caffeine) { [weak self] in
+            self?.moduleSettings.isEnabled(.caffeinateModule) ?? true
+        }
         Notifications.shared.configure()
         timers.start()
-        timersStatusItem = TimersStatusItem(timers: timers)
-        timersStatusItem?.onStartTimer = { [weak self] in self?.run(.startTimer) }
-        timersStatusItem?.onStartStopwatch = { [weak self] in self?.run(.startStopwatch) }
-        timersStatusItem?.onOpenTimers = { [weak self] in self?.run(.timers) }
+        timersStatusItem = TimersStatusItem(timers: timers) { [weak self] in
+            self?.moduleSettings.isEnabled(.timersModule) ?? true
+        }
+        timersStatusItem?.onStartTimer = { [weak self] in self?.runCommand(.startTimer) }
+        timersStatusItem?.onStartStopwatch = { [weak self] in self?.runCommand(.startStopwatch) }
+        timersStatusItem?.onOpenTimers = { [weak self] in self?.runCommand(.timers) }
         timersStatusItem?.onCopyTime = { [weak self] item in self?.model.copyTime(of: item) }
         timersStatusItem?.onOpenStopwatch = { [weak self] id in
             guard let self else { return }
@@ -216,7 +226,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case ("p", [.command, .shift]): model.perform(.togglePin)
         case ("c", [.command, .shift]): model.perform(.copyPath)
         case ("x", [.control]):
-            let dismisses = model.selectedResult.map(ResultAction.dismiss.isAvailable(for:)) ?? false
+            let dismisses = model.selectedResult.map { model.isAvailable(.dismiss, for: $0) } ?? false
             model.perform(dismisses ? .dismiss : .delete)
         case ("o", [.command, .shift]): model.perform(.popOut)
         case ("f", [.command, .shift]): model.perform(.toggleFavorite)
@@ -367,11 +377,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Registers a handler once per app; the handler looks the app up when pressed, so it follows the app if it moves.
     private func registerAppHotkeys() {
+        defer { syncHotkeys() }
         for app in appIndex.apps where !registeredAppHotkeys.contains(app.stableID) {
             registeredAppHotkeys.insert(app.stableID)
             let name = app.shortcutName
             KeyboardShortcuts.onKeyDown(for: name) { [weak self] in
-                guard let self, let app = appIndex.apps.first(where: { $0.shortcutName == name }) else { return }
+                guard let self, let app = appIndex.apps.first(where: { $0.shortcutName == name }),
+                    moduleSettings.isEnabled(.app(app.stableID))
+                else { return }
                 appIndex.open(app)
             }
         }
@@ -379,11 +392,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Like app hotkeys, looked up when pressed, so they follow a command through its extension reloading.
     private func registerExtensionHotkeys() {
+        defer { syncHotkeys() }
         for info in extensions.commands where !registeredExtensionHotkeys.contains(info.key) {
             registeredExtensionHotkeys.insert(info.key)
             let key = info.key
             KeyboardShortcuts.onKeyDown(for: info.shortcutName) { [weak self] in
-                guard let self, let info = extensions.commands.first(where: { $0.key == key }) else { return }
+                guard let self, let info = extensions.commands.first(where: { $0.key == key }),
+                    moduleSettings.isEnabled(info.moduleRef)
+                else { return }
                 runExtensionCommand(info)
             }
         }
@@ -413,11 +429,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Like app hotkeys, looked up when pressed. A quicklink that takes text opens the panel ready for it.
     private func registerQuicklinkHotkeys() {
+        defer { syncHotkeys() }
         for quicklink in quicklinks.items where !registeredQuicklinkHotkeys.contains(quicklink.uuid) {
             registeredQuicklinkHotkeys.insert(quicklink.uuid)
             let uuid = quicklink.uuid
             KeyboardShortcuts.onKeyDown(for: quicklink.shortcutName) { [weak self] in
-                guard let self, let quicklink = quicklinks.items.first(where: { $0.uuid == uuid }) else { return }
+                guard let self, let quicklink = quicklinks.items.first(where: { $0.uuid == uuid }),
+                    moduleSettings.isEnabled(.quicklink(uuid))
+                else { return }
                 guard quicklink.takesArgument else {
                     launchHistory.record("quicklink:\(uuid)")
                     Quicklinks.open(quicklink)
@@ -430,8 +449,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    private func run(_ command: CommandShortcut) {
-        switch command {
+    /// Runs a built-in command from its hotkey or the timers menu. Window and system commands act straight away, on the
+    /// front window or the Mac, and commands that ask for something open the panel at that step.
+    private func runCommand(_ ref: ModuleRef) {
+        guard moduleSettings.isEnabled(ref) else { return }
+        if ref.module == ModuleRef.windowModule.module, let command = ref.row.flatMap(WindowCommand.init(rawValue:)) {
+            WindowManager.perform(command, in: NSWorkspace.shared.frontmostApplication)
+            return
+        }
+        if ref.module == ModuleRef.systemModule.module, let command = ref.row.flatMap(SystemCommand.init(rawValue:)) {
+            LauncherModel.run(command)
+            return
+        }
+        switch ref {
         case .calculator:
             showPanel()
             model.openDirectly { model.show(.calculator) }
@@ -448,8 +478,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             model.openDirectly { model.show(.translate) }
         case .settings:
             showSettings()
+        case .changelog:
+            showPanel()
+            model.openDirectly { model.show(.changelog) }
+        case .shareWhippet:
+            ShareLink.copy(using: clipboard)
+        case .quit:
+            NSApp.terminate(nil)
         case .caffeinate:
             caffeine.toggle()
+        case .caffeinateFor:
+            showPanel()
+            model.openDirectly { model.beginTimedCaffeinate() }
+        case .decaffeinate:
+            guard caffeine.isActive else { return }
+            caffeine.stop()
+        case .caffeinateMenuBar:
+            model.toggleCaffeineInMenuBar()
         case .startTimer:
             showPanel()
             model.openDirectly { model.beginArgument(.timerDuration) }
@@ -462,7 +507,93 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case .timers:
             showPanel()
             model.openDirectly { model.showTimers() }
+        case .createQuicklink:
+            settingsNavigation.isCreatingQuicklink = true
+            showSettings(pane: .quicklinks)
+        case .sendFeedback:
+            showFeedback()
+        case .readFeedback:
+            guard model.isFeedbackAdmin else { return }
+            showSettings(pane: .feedback)
+        case .checkForUpdates:
+            updater.checkForUpdates()
+        default:
+            break
         }
+    }
+
+    /// Starts and stops what Settings › Commands turns on and off, so a module that's off does no work.
+    private func applyModules() {
+        let modules = moduleSettings
+        if modules.isEnabled(.applications) {
+            appIndex.startWatching()
+        } else {
+            appIndex.stopWatching()
+        }
+        clipboard.isRecording = modules.isEnabled(.clipboardRecording)
+        clipboard.allowsLinkPreviews = modules.isEnabled(.clipboardModule)
+        if modules.isEnabled(.currencyConversion) {
+            exchangeRates.start()
+        } else {
+            exchangeRates.stop()
+        }
+        model.translator.setEnabled(featureFlags.isEnabled(.translation) && modules.isEnabled(.translationModule))
+        cloudSync.isAllowed = modules.isEnabled(.cloudSyncModule)
+        updater.isAllowed = modules.isEnabled(.updatesModule)
+        syncHotkeys()
+    }
+
+    /// Turns each hotkey on or off with its command. The keys set for a command that's off are kept for when it's
+    /// turned back on.
+    private func syncHotkeys() {
+        var names: [(KeyboardShortcuts.Name, Bool)] = []
+        for manifest in ModuleRegistry.builtIn {
+            for command in manifest.commands {
+                let ref = manifest.ref(command.id)
+                names.append((KeyboardShortcuts.Name(for: ref), moduleSettings.isEnabled(ref)))
+            }
+        }
+        names += appIndex.apps.map { ($0.shortcutName, moduleSettings.isEnabled(.app($0.stableID))) }
+        names += quicklinks.items.map { ($0.shortcutName, moduleSettings.isEnabled(.quicklink($0.uuid))) }
+        names += extensions.commands.map { ($0.shortcutName, moduleSettings.isEnabled($0.moduleRef)) }
+        KeyboardShortcuts.enable(names.filter(\.1).map(\.0))
+        KeyboardShortcuts.disable(names.filter { !$0.1 }.map(\.0))
+    }
+
+    /// What's running that keeps part of a module on, since turning it off would leave no way to stop it.
+    private var activityLocks: [ActivityLock] {
+        var locks: [ActivityLock] = []
+        if timers.hasAny {
+            locks.append(
+                ActivityLock(
+                    module: ModuleRef.timersModule.module, rows: ["timers", "stopwatch"],
+                    reason: String(localized: "A timer or stopwatch is running")))
+        }
+        if caffeine.isActive {
+            locks.append(
+                ActivityLock(
+                    module: ModuleRef.caffeinateModule.module, rows: ["decaffeinate"],
+                    reason: String(localized: "This Mac is being kept awake")))
+        }
+        if floatingCalculator.isVisible {
+            locks.append(
+                ActivityLock(
+                    module: ModuleRef.calculatorModule.module, rows: ["floating-calculator"],
+                    reason: String(localized: "The floating calculator is open")))
+        }
+        if model.mode == .extensionView, let info = model.extensionSession?.command {
+            locks.append(
+                ActivityLock(
+                    module: info.moduleRef.module, rows: [info.command.name],
+                    reason: String(localized: "Open in Whippet")))
+        }
+        if downloadWindow != nil {
+            locks.append(
+                ActivityLock(
+                    module: ModuleRef.translationModule.module, rows: ["translate", "card"],
+                    reason: String(localized: "Downloading translation languages")))
+        }
+        return locks
     }
 
     /// A native menu of the selected result's actions, which brings arrow keys, Return, Escape and type-to-select with it.
@@ -491,7 +622,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func addActions(for result: LauncherResult, to menu: NSMenu) {
-        for action in ResultAction.allCases where action.isAvailable(for: result) {
+        for action in ResultAction.allCases where model.isAvailable(action, for: result) {
             let item = ActionMenuItem(title: action.title(for: result, model: model)) { [weak self] in
                 self?.model.perform(action)
             }

@@ -13,6 +13,10 @@ final class Updater: NSObject {
         didSet { controller.updater.automaticallyChecksForUpdates = automaticallyChecksForUpdates }
     }
 
+    /// False while Updates is turned off in Settings › Commands, which stops every check, scheduled or not, without
+    /// changing `automaticallyChecksForUpdates`, so checks resume as they were when it's turned back on.
+    @ObservationIgnored var isAllowed = true
+
     @ObservationIgnored private var controller: SPUStandardUpdaterController!
     @ObservationIgnored private var observation: NSKeyValueObservation?
 
@@ -25,7 +29,7 @@ final class Updater: NSObject {
         automaticallyChecksForUpdates = false
         super.init()
         controller = SPUStandardUpdaterController(
-            startingUpdater: starts, updaterDelegate: nil, userDriverDelegate: self)
+            startingUpdater: starts, updaterDelegate: self, userDriverDelegate: self)
         automaticallyChecksForUpdates = controller.updater.automaticallyChecksForUpdates
         observation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) {
             [weak self] updater, _ in
@@ -35,6 +39,14 @@ final class Updater: NSObject {
 
     func checkForUpdates() {
         controller.checkForUpdates(nil)
+    }
+}
+
+extension Updater: SPUUpdaterDelegate {
+    nonisolated func updater(_ updater: SPUUpdater, mayPerform updateCheck: SPUUpdateCheck) throws {
+        guard MainActor.assumeIsolated({ isAllowed }) else {
+            throw CocoaError(.userCancelled)
+        }
     }
 }
 

@@ -9,8 +9,13 @@ final class CaffeineStatusItem: NSObject, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private var visibility: NSKeyValueObservation?
 
-    init(caffeine: Caffeine) {
+    /// Whether Caffeinate is turned on in Settings › Commands, read as the item updates so it hides when it's turned
+    /// off.
+    private let isEnabled: () -> Bool
+
+    init(caffeine: Caffeine, isEnabled: @escaping () -> Bool = { true }) {
         self.caffeine = caffeine
+        self.isEnabled = isEnabled
         super.init()
         observe()
     }
@@ -18,7 +23,7 @@ final class CaffeineStatusItem: NSObject, NSMenuDelegate {
     /// Re-runs whenever `showsInMenuBar` or `isActive` changes, adding, removing or updating the item.
     private func observe() {
         withObservationTracking {
-            update(isShown: caffeine.showsInMenuBar, isActive: caffeine.isActive)
+            update(isShown: caffeine.showsInMenuBar && isEnabled(), isActive: caffeine.isActive)
         } onChange: { [weak self] in
             Task { @MainActor in self?.observe() }
         }

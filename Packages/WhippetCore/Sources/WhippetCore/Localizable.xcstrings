@@ -21,6 +21,26 @@
         }
       }
     },
+    "%lld sites" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld سایت"
+          }
+        }
+      }
+    },
+    "Accessibility" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دسترس‌پذیری"
+          }
+        }
+      }
+    },
     "Angle" : {
       "localizations" : {
         "fa" : {
@@ -31,12 +51,42 @@
         }
       }
     },
+    "Any website" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هر وب‌سایتی"
+          }
+        }
+      }
+    },
     "Area" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "مساحت"
+          }
+        }
+      }
+    },
+    "Asks %@ to carry out commands" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "از %@ می‌خواهد فرمان‌ها را اجرا کند"
+          }
+        }
+      }
+    },
+    "Automation" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خودکارسازی"
           }
         }
       }
@@ -61,6 +111,16 @@
         }
       }
     },
+    "Clipboard" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلیپ‌بورد"
+          }
+        }
+      }
+    },
     "Connect to %@" : {
       "localizations" : {
         "fa" : {
@@ -77,6 +137,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اتصال به هر وب‌سایتی"
+          }
+        }
+      }
+    },
+    "Connects to %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به %@ وصل می‌شود"
+          }
+        }
+      }
+    },
+    "Connects to any website" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به هر وب‌سایتی وصل می‌شود"
           }
         }
       }
@@ -167,6 +247,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تفاضل"
+          }
+        }
+      }
+    },
+    "Downloads from Apple" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دانلود از Apple"
           }
         }
       }
@@ -321,6 +411,36 @@
         }
       }
     },
+    "Moves and resizes other apps' windows" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پنجره‌های برنامه‌های دیگر را جابه‌جا و تغییر اندازه می‌دهد"
+          }
+        }
+      }
+    },
+    "Network" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شبکه"
+          }
+        }
+      }
+    },
+    "Notifications" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعلان‌ها"
+          }
+        }
+      }
+    },
     "Number" : {
       "localizations" : {
         "fa" : {
@@ -397,6 +517,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "یک سال"
+          }
+        }
+      }
+    },
+    "Pastes into the app Whippet opened over, by sending ⌘V" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "با فرستادن ⌘V در برنامه‌ای که Whippet روی آن باز شده جای‌گذاری می‌کند"
           }
         }
       }
@@ -481,12 +611,62 @@
         }
       }
     },
+    "Reads text in an area of the screen you choose" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متن بخشی از صفحه که انتخاب می‌کنید را می‌خواند"
+          }
+        }
+      }
+    },
+    "Reads what you copy, in any app" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آنچه در هر برنامه‌ای کپی می‌کنید را می‌خواند"
+          }
+        }
+      }
+    },
     "Remainder" : {
       "localizations" : {
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "باقی‌مانده"
+          }
+        }
+      }
+    },
+    "Screen Recording" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ضبط صفحه"
+          }
+        }
+      }
+    },
+    "Sends what you write to the developer through iCloud" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آنچه می‌نویسید را از طریق iCloud برای سازنده می‌فرستد"
+          }
+        }
+      }
+    },
+    "Shows notifications" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعلان نشان می‌دهد"
           }
         }
       }
@@ -507,6 +687,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "سرعت"
+          }
+        }
+      }
+    },
+    "Stores end-to-end encrypted data in your iCloud account" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "داده‌های رمزگذاری‌شدهٔ سرتاسری را در حساب iCloud شما ذخیره می‌کند"
           }
         }
       }
@@ -781,6 +971,16 @@
         }
       }
     },
+    "iCloud" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud"
+          }
+        }
+      }
+    },
     "iCloud is restricted on this Mac." : {
       "localizations" : {
         "fa" : {
@@ -807,6 +1007,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "index.js را نمی‌توان به‌عنوان JavaScript خواند."
+          }
+        }
+      }
+    },
+    "macOS downloads translation languages from Apple" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS زبان‌های ترجمه را از Apple دانلود می‌کند"
           }
         }
       }

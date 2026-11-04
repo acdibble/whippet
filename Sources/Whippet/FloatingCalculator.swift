@@ -78,7 +78,7 @@ private struct FloatingCalculatorView: View {
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
-        let calculation = Calculator.calculate(state.expression, rates: exchangeRates.rates)
+        let calculation = Calculator.calculate(state.expression, rates: exchangeRates.availableRates)
 
         VStack(spacing: 0) {
             VStack(alignment: .trailing, spacing: 4) {

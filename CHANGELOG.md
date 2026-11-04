@@ -5,6 +5,18 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Settings › Commands: everything Whippet does, by module, where any module, command or feature can be turned
+  off. Each module's page shows what it uses, such as Currency Conversion fetching rates from
+  `www.ecb.europa.eu` or Capture Text needing Screen Recording, and Permissions… lists them by permission. What's
+  turned off does no work: Clipboard History stops saving what you copy, Applications stops watching for new apps, and
+  Updates stops checking. Something in use, such as a running timer, can't be turned off until it ends. Settings and
+  Quit are always on.
+- Settings › Shortcuts lists every command by module, including the system and Caffeinate commands, so any of them
+  can have a hotkey.
+- A Check for Updates command.
+
 ## [1.5.1] - 2026-11-03
 
 ### Added

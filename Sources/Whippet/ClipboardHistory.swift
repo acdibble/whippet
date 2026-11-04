@@ -41,6 +41,22 @@ final class ClipboardHistory {
             fetchPendingLinkPreviews()
         }
     }
+    /// Off while Clipboard History or Save What You Copy is turned off in Settings › Commands. What's copied meanwhile
+    /// isn't saved, even once it's turned back on.
+    var isRecording = true {
+        didSet {
+            guard isRecording != oldValue else { return }
+            lastChangeCount = NSPasteboard.general.changeCount
+        }
+    }
+    /// Off while Clipboard History is turned off in Settings › Commands, which stops link previews whatever
+    /// `fetchesLinkPreviews` says.
+    var allowsLinkPreviews = true {
+        didSet {
+            guard allowsLinkPreviews != oldValue else { return }
+            fetchPendingLinkPreviews()
+        }
+    }
     /// Bundle identifiers of apps whose copies are never saved.
     var ignoredApps = UserDefaults.standard.stringArray(forKey: "clipboardIgnoredApps") ?? [] {
         didSet { UserDefaults.standard.set(ignoredApps, forKey: "clipboardIgnoredApps") }
@@ -302,6 +318,7 @@ final class ClipboardHistory {
     }
 
     private func poll() {
+        guard isRecording else { return }
         let pasteboard = NSPasteboard.general
         guard pasteboard.changeCount != lastChangeCount else { return }
         lastChangeCount = pasteboard.changeCount
@@ -480,10 +497,10 @@ final class ClipboardHistory {
     /// Works through links without a preview one at a time, newest first, including links copied before previews
     /// existed. A link that can't be fetched is saved with no title, so it isn't tried again until Refresh Preview.
     private func fetchPendingLinkPreviews() {
-        guard fetchesLinkPreviews, isOnline, !isFetchingPreviews, let store else { return }
+        guard fetchesLinkPreviews, allowsLinkPreviews, isOnline, !isFetchingPreviews, let store else { return }
         isFetchingPreviews = true
         Task {
-            while fetchesLinkPreviews, isOnline,
+            while fetchesLinkPreviews, allowsLinkPreviews, isOnline,
                 let pending = try? store.nextLinkAwaitingPreview(skippingHosts: activePauses)
             {
                 let fetched = await Self.fetchPreview(of: pending.url)

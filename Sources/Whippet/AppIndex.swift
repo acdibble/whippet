@@ -67,6 +67,7 @@ final class AppIndex {
     /// Rescans a second after an application folder changes, so installs and removals appear without a relaunch.
     /// The delay lets a burst of changes, such as an app being copied in, settle into one rescan.
     func startWatching() {
+        guard watchers.isEmpty else { return }
         for directory in Self.searchDirectories {
             let descriptor = Darwin.open(directory, O_EVTONLY)
             guard descriptor >= 0 else { continue }
@@ -82,6 +83,15 @@ final class AppIndex {
             watcher.resume()
             watchers.append(watcher)
         }
+    }
+
+    /// Stops watching while Applications is turned off in Settings › Commands.
+    func stopWatching() {
+        for watcher in watchers {
+            watcher.cancel()
+        }
+        watchers = []
+        pendingRefresh?.cancel()
     }
 
     private func scheduleRefresh() {

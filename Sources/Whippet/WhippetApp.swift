@@ -26,7 +26,8 @@ struct WhippetApp: App {
                 updater: appDelegate.updater,
                 quicklinks: appDelegate.quicklinks,
                 extensions: appDelegate.extensions,
-                featureFlags: appDelegate.featureFlags
+                featureFlags: appDelegate.featureFlags,
+                moduleSettings: appDelegate.moduleSettings
             )
         }
         .windowToolbarStyle(.unified)
@@ -35,8 +36,10 @@ struct WhippetApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Whippet") { NSApp.showAboutPanel() }
-                Button("Check for Updates…") { appDelegate.updater.checkForUpdates() }
-                    .disabled(!appDelegate.updater.canCheckForUpdates)
+                if appDelegate.moduleSettings.isEnabled(.checkForUpdates) {
+                    Button("Check for Updates…") { appDelegate.updater.checkForUpdates() }
+                        .disabled(!appDelegate.updater.canCheckForUpdates)
+                }
             }
             CommandGroup(replacing: .appSettings) {
                 Button("Settings…") { appDelegate.showSettings() }
@@ -87,11 +90,15 @@ private struct MenuBarMenu: View {
             .globalKeyboardShortcut(.togglePanel)
         Divider()
         Button("About Whippet", systemImage: "info.circle") { NSApp.showAboutPanel() }
-        Button("Check for Updates…", systemImage: "arrow.down.circle") { appDelegate.updater.checkForUpdates() }
-            .disabled(!appDelegate.updater.canCheckForUpdates)
+        if appDelegate.moduleSettings.isEnabled(.checkForUpdates) {
+            Button("Check for Updates…", systemImage: "arrow.down.circle") { appDelegate.updater.checkForUpdates() }
+                .disabled(!appDelegate.updater.canCheckForUpdates)
+        }
         Button("Settings…", systemImage: "gearshape") { appDelegate.showSettings() }
             .keyboardShortcut(",")
-        Button("Send Feedback…", systemImage: "bubble.left") { appDelegate.showFeedback() }
+        if appDelegate.moduleSettings.isEnabled(.sendFeedback) {
+            Button("Send Feedback…", systemImage: "bubble.left") { appDelegate.showFeedback() }
+        }
         Divider()
         Button("Show Data Folder", systemImage: "folder") {
             NSWorkspace.shared.activateFileViewerSelecting([ClipboardStore.defaultDirectory])

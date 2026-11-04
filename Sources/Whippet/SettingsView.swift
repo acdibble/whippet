@@ -16,6 +16,7 @@ final class SettingsNavigation {
 
 enum SettingsPane: String, CaseIterable, Identifiable {
     case general
+    case commands
     case shortcuts
     case clipboard
     case quicklinks
@@ -32,6 +33,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var title: LocalizedStringKey {
         switch self {
         case .general: "General"
+        case .commands: "Commands"
         case .shortcuts: "Shortcuts"
         case .clipboard: "Clipboard History"
         case .quicklinks: "Quicklinks"
@@ -48,6 +50,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .general: "gearshape.fill"
+        case .commands: "switch.2"
         case .shortcuts: "command"
         case .clipboard: "list.clipboard.fill"
         case .quicklinks: "link"
@@ -64,6 +67,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var tint: Color {
         switch self {
         case .general: .gray
+        case .commands: .purple
         case .shortcuts: .purple
         case .clipboard: .teal
         case .quicklinks: .indigo
@@ -92,6 +96,7 @@ struct SettingsView: View {
     let quicklinks: Quicklinks
     let extensions: ExtensionManager
     let featureFlags: FeatureFlags
+    let moduleSettings: ModuleSettings
     /// The Developer pane is for accounts with the CloudKit Admin role, and always shows in development builds; the
     /// Feedback pane also needs the feedback key on this Mac.
     @State private var hasAdminRole = false
@@ -118,10 +123,18 @@ struct SettingsView: View {
             Group {
                 switch navigation.pane ?? .general {
                 case .general:
-                    GeneralPane(caffeine: caffeine, timers: timers, updater: updater, featureFlags: featureFlags)
+                    GeneralPane(
+                        caffeine: caffeine, timers: timers, updater: updater, featureFlags: featureFlags,
+                        modules: moduleSettings)
+                case .commands:
+                    CommandsPane(
+                        modules: moduleSettings, featureFlags: featureFlags, appIndex: appIndex,
+                        quicklinks: quicklinks, extensions: extensions, clipboard: clipboard, cloudSync: cloudSync,
+                        updater: updater, navigation: navigation, showsAdminCommands: hasAdminRole)
                 case .shortcuts:
                     ShortcutsPane(
-                        appIndex: appIndex, quicklinks: quicklinks, extensions: extensions, featureFlags: featureFlags)
+                        appIndex: appIndex, quicklinks: quicklinks, extensions: extensions, featureFlags: featureFlags,
+                        modules: moduleSettings)
                 case .quicklinks: QuicklinksPane(quicklinks: quicklinks, navigation: navigation)
                 case .extensions: ExtensionsPane(extensions: extensions)
                 case .notifications: NotificationsPane(timers: timers)
@@ -137,12 +150,9 @@ struct SettingsView: View {
             .navigationTitle(Text((navigation.pane ?? .general).title))
         }
         .frame(minWidth: 680, minHeight: 440)
-        // Turning off a beta feature hides its pane, so the window doesn't stay on it.
-        .onChange(of: featureFlags.enabled) {
-            if let pane = navigation.pane, !isShown(pane) {
-                navigation.pane = .general
-            }
-        }
+        // Turning off a beta feature or a module hides its pane, so the window doesn't stay on it.
+        .onChange(of: featureFlags.enabled) { leaveHiddenPane() }
+        .onChange(of: moduleSettings.revision) { leaveHiddenPane() }
         .onAppear { DockIcon.update() }
         .onDisappear { DockIcon.update() }
         .task {
@@ -151,12 +161,26 @@ struct SettingsView: View {
         }
     }
 
+    private func leaveHiddenPane() {
+        if let pane = navigation.pane, !isShown(pane) {
+            navigation.pane = .general
+        }
+    }
+
     private func isShown(_ pane: SettingsPane) -> Bool {
         switch pane {
         case .feedback:
-            return canReadFeedback
+            return canReadFeedback && moduleSettings.isEnabled(.readFeedback)
         case .extensions:
             return featureFlags.isEnabled(.extensions)
+        case .clipboard:
+            return moduleSettings.isEnabled(.clipboardModule)
+        case .quicklinks:
+            return moduleSettings.isEnabled(.quicklinksModule)
+        case .notifications:
+            return moduleSettings.isEnabled(.timersModule)
+        case .cloudSync:
+            return moduleSettings.isEnabled(.cloudSyncModule)
         case .developer:
             #if DEBUG
                 return true
@@ -170,16 +194,17 @@ struct SettingsView: View {
 }
 
 /// A white symbol on a coloured rounded square, as System Settings draws its sidebar icons.
-private struct PaneIcon: View {
+struct PaneIcon: View {
     let symbol: String
     let tint: Color
+    var size: CGFloat = 22
 
     var body: some View {
         Image(systemName: symbol)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: size * 0.55, weight: .semibold))
             .foregroundStyle(.white)
-            .frame(width: 22, height: 22)
-            .background(tint.gradient, in: RoundedRectangle(cornerRadius: 6))
+            .frame(width: size, height: size)
+            .background(tint.gradient, in: RoundedRectangle(cornerRadius: size * 0.27))
     }
 }
 
@@ -188,6 +213,7 @@ private struct GeneralPane: View {
     let timers: Timers
     @Bindable var updater: Updater
     let featureFlags: FeatureFlags
+    let modules: ModuleSettings
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
     @State private var canPaste = Paster.isTrusted
     @State private var canCaptureScreen = ScreenCapture.isAllowed
@@ -204,10 +230,14 @@ private struct GeneralPane: View {
             Section {
                 Toggle("Open at Login", isOn: Binding(get: { launchesAtLogin }, set: { setLaunchAtLogin($0) }))
                 KeyboardShortcuts.Recorder("Whippet Hotkey", name: .togglePanel)
-                Toggle("Show Caffeinate in Menu Bar", isOn: Bindable(caffeine).showsInMenuBar)
-                Toggle(isOn: Bindable(timers).showsInMenuBar) {
-                    Text("Show Timers in Menu Bar")
-                    Text("While a timer or stopwatch is running")
+                if modules.isEnabled(.caffeinateModule) {
+                    Toggle("Show Caffeinate in Menu Bar", isOn: Bindable(caffeine).showsInMenuBar)
+                }
+                if modules.isEnabled(.timersModule) {
+                    Toggle(isOn: Bindable(timers).showsInMenuBar) {
+                        Text("Show Timers in Menu Bar")
+                        Text("While a timer or stopwatch is running")
+                    }
                 }
             }
 
@@ -270,7 +300,7 @@ private struct GeneralPane: View {
                 }
             }
 
-            if featureFlags.isEnabled(.translation) {
+            if featureFlags.isEnabled(.translation), modules.isEnabled(.translationModule) {
                 Section("Translate") {
                     Picker("Translate To", selection: $translateTarget) {
                         Text("Automatic").tag("")
@@ -291,11 +321,13 @@ private struct GeneralPane: View {
                 .task { translationLanguages = await Translator.supportedLanguages() }
             }
 
-            Section("Updates") {
-                Toggle("Check for Updates Automatically", isOn: $updater.automaticallyChecksForUpdates)
-                LabeledContent("Check for Updates") {
-                    Button("Check Now") { updater.checkForUpdates() }
-                        .disabled(!updater.canCheckForUpdates)
+            if modules.isEnabled(.updatesModule) {
+                Section("Updates") {
+                    Toggle("Check for Updates Automatically", isOn: $updater.automaticallyChecksForUpdates)
+                    LabeledContent("Check for Updates") {
+                        Button("Check Now") { updater.checkForUpdates() }
+                            .disabled(!updater.canCheckForUpdates)
+                    }
                 }
             }
 
@@ -337,43 +369,42 @@ private struct GeneralPane: View {
     }
 }
 
-/// A hotkey recorder for each command, window command, quicklink and installed application; recorded hotkeys are live
+/// A hotkey recorder for each command, by module, and each quicklink and installed application; recorded hotkeys are live
 /// immediately. The search filters every list, and a list with nothing matching is left out.
 private struct ShortcutsPane: View {
     let appIndex: AppIndex
     let quicklinks: Quicklinks
     let extensions: ExtensionManager
     let featureFlags: FeatureFlags
+    let modules: ModuleSettings
     @State private var search = ""
 
     var body: some View {
-        let commands = CommandShortcut.allCases.filter {
-            matches($0.title) && ($0 != .translate || featureFlags.isEnabled(.translation))
+        // Every command can have a hotkey, listed under its module. What's turned off in Settings › Commands isn't
+        // listed.
+        let manifests = ModuleRegistry.builtIn.filter { manifest in
+            manifest.requiredFlag.map(featureFlags.isEnabled) ?? true
         }
-        let windowCommands = WindowCommand.allCases.filter { matches($0.title) }
-        let quicklinks = quicklinks.items.filter { matches($0.name) }
-        let extensionCommands = extensions.commands.filter { matches($0.title) || matches($0.extensionName) }
-        let apps = appIndex.apps.filter { matches($0.name) }
+        let sections = manifests.map { manifest in
+            (
+                manifest,
+                manifest.commands.filter { command in
+                    !command.isAdminOnly && modules.isEnabled(manifest.ref(command.id)) && matches(command.title)
+                }
+            )
+        }.filter { !$0.1.isEmpty }
+        let quicklinks = quicklinks.items.filter { matches($0.name) && modules.isEnabled(.quicklink($0.uuid)) }
+        let extensionCommands = extensions.commands.filter {
+            (matches($0.title) || matches($0.extensionName)) && modules.isEnabled($0.moduleRef)
+        }
+        let apps = appIndex.apps.filter { matches($0.name) && modules.isEnabled(.app($0.stableID)) }
 
         Form {
-            if !commands.isEmpty {
-                Section("Commands") {
+            ForEach(sections, id: \.0.id) { manifest, commands in
+                Section(manifest.title) {
                     ForEach(commands) { command in
-                        KeyboardShortcuts.Recorder(for: command.name) {
-                            Label(command.title, systemImage: command.symbol)
-                        }
-                    }
-                }
-            }
-            if !windowCommands.isEmpty {
-                Section("Window") {
-                    ForEach(windowCommands) { command in
-                        KeyboardShortcuts.Recorder(for: command.shortcutName) {
-                            Label {
-                                Text(command.title)
-                            } icon: {
-                                command.image
-                            }
+                        KeyboardShortcuts.Recorder(for: KeyboardShortcuts.Name(for: manifest.ref(command.id))) {
+                            Label(command.title, systemImage: command.icon)
                         }
                     }
                 }
@@ -418,7 +449,9 @@ private struct ShortcutsPane: View {
             }
         }
         .overlay {
-            if commands.isEmpty, windowCommands.isEmpty, quicklinks.isEmpty, extensionCommands.isEmpty, apps.isEmpty {
+            if sections.isEmpty, quicklinks.isEmpty,
+                extensionCommands.isEmpty, apps.isEmpty
+            {
                 ContentUnavailableView.search(text: search)
             }
         }

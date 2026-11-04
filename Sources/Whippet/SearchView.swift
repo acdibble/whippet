@@ -336,6 +336,7 @@ struct ResultRow: View {
         case .whatsNew: Image(systemName: "sparkles")
         case .release(let release): Image(systemName: release.since == nil ? "tag" : "sparkles")
         case .shareWhippet: Image(systemName: "square.and.arrow.up")
+        case .checkForUpdates: Image(systemName: "arrow.down.circle")
         case .system(let command): Image(systemName: command.symbol)
         case .window(let command): command.image
         case .quicklink(let quicklink):
