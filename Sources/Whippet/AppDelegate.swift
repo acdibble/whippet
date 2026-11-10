@@ -52,8 +52,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         super.init()
     }
 
-    /// Every built-in module, in the order their rows are listed in the empty search: the commands first, then
-    /// windows, quicklinks, extensions, recent timers and apps.
+    /// A module for every manifest in `ModuleRegistry.all`, in the order their rows are listed in the empty search:
+    /// the commands first, then windows, quicklinks, extensions, recent timers and apps.
     private func makeModules() -> [any LauncherModule] {
         return [
             CalculatorModule(
@@ -112,11 +112,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         KeyboardShortcuts.onKeyDown(for: .togglePanel) { [weak self] in
             self?.togglePanel()
         }
-        for manifest in ModuleRegistry.builtIn {
+        for manifest in ModuleRegistry.all {
             for command in manifest.commands {
                 let ref = manifest.ref(command.id)
                 KeyboardShortcuts.onKeyDown(for: KeyboardShortcuts.Name(for: ref)) { [weak self] in
-                    self?.runCommand(ref)
+                    self?.model.runCommand(ref)
                 }
             }
         }
@@ -314,12 +314,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    /// Runs a built-in command from its hotkey or a menu, through the module it's in.
-    func runCommand(_ ref: ModuleRef) {
-        guard moduleSettings.isEnabled(ref), let row = ref.row else { return }
-        model.launcherModule(ref.module)?.run(command: row)
-    }
-
     /// Starts and stops what Settings › Commands turns on and off, so a module that's off does no work.
     private func applyModules() {
         for module in model.launcherModules {
@@ -332,7 +326,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// turned back on.
     private func syncHotkeys() {
         var names: [(name: KeyboardShortcuts.Name, isOn: Bool)] = []
-        for manifest in ModuleRegistry.builtIn {
+        for manifest in ModuleRegistry.all {
             for command in manifest.commands {
                 let ref = manifest.ref(command.id)
                 names.append((KeyboardShortcuts.Name(for: ref), moduleSettings.isEnabled(ref)))

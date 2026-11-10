@@ -34,6 +34,9 @@ struct LauncherItem: Identifiable, Hashable {
     var selectionKey: String?
     /// Shown under the empty search bar while the list is hidden, when it leads the results, as What's New is.
     var isBanner = false
+    /// The command in its module's manifest that it's the row of, such as `.startTimer`, which the module tells its
+    /// commands apart by.
+    var command: ModuleRef?
     var payload: AnyHashable?
 
     var searchableText: String {

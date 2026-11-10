@@ -63,8 +63,12 @@ final class LauncherModel: ModuleHost {
         self.history = history
     }
 
-    /// Installs the modules, which can then reach the launcher.
+    /// Installs the modules, which can then reach the launcher. There has to be one for each manifest in the
+    /// registry, which is what Settings, hotkeys and permissions are read from.
     func install(_ modules: [any LauncherModule]) {
+        precondition(
+            modules.map(\.id).sorted() == ModuleRegistry.all.map(\.id).sorted(),
+            "The modules in AppDelegate.makeModules() don't match the manifests in ModuleRegistry.all")
         launcherModules = modules
         for module in modules {
             module.attach(to: self)
@@ -178,6 +182,22 @@ final class LauncherModel: ModuleHost {
 
     func launcherModule(_ id: String) -> (any LauncherModule)? {
         launcherModules.first { $0.id == id }
+    }
+
+    /// Runs a command without it being chosen in the search, as from its hotkey: what its module does for the
+    /// hotkey, or else the first action of its row, opening the panel on a screen or input the action asks for. The
+    /// panel is left as it is otherwise, so an outcome of `.dismiss` does nothing.
+    func runCommand(_ ref: ModuleRef) {
+        guard let module = launcherModule(ref.module), let item = root.commandItem(ref) else { return }
+        if module.runHotkey(for: ref) { return }
+        let offered = module.actions(for: item).first { $0.owner.map(modules.isEnabled) ?? true }
+        guard let action = offered else { return }
+        switch action.perform() {
+        case .push(let screen): openDirectly { push(screen) }
+        case .input(let request): openDirectly { beginInput(request) }
+        case .fail(let message): handle(.fail(message), for: item)
+        case .dismiss, .stay, .keepSelection, .removed: break
+        }
     }
 
     /// The panel shows more than the search bar: a screen, every result, or results for what's typed.

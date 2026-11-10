@@ -49,14 +49,8 @@ final class TranslationModule: LauncherModule {
     }
 
     func contributions(for query: String) -> [Contribution] {
-        guard translator.isEnabled else { return [] }
-        var contributions: [Contribution] = [
-            .listed(
-                .command(
-                    .translate, id: "command:translate", title: String(localized: "Translate"),
-                    icon: .symbol("translate")))
-        ]
-        guard !query.isEmpty else { return contributions }
+        guard translator.isEnabled, !query.isEmpty else { return [] }
+        var contributions: [Contribution] = []
         if !translator.text.isEmpty {
             // The card translates the text already, so the Translate screen isn't offered for it as well.
             contributions.append(.pinned(cardItem(ref: .translationCard)))
@@ -186,13 +180,6 @@ final class TranslationModule: LauncherModule {
         }
     }
 
-    func run(command: String) {
-        guard translator.isEnabled else { return }
-        host?.openDirectly { [weak self] in
-            guard let self else { return }
-            host?.push(screen())
-        }
-    }
 }
 
 extension ModuleHost {

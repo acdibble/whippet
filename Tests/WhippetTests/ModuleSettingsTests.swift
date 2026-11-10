@@ -20,7 +20,7 @@ final class ModuleSettingsTests {
 
     @Test func everythingStartsOn() {
         let settings = settings()
-        for manifest in ModuleRegistry.builtIn {
+        for manifest in ModuleRegistry.all {
             #expect(settings.isEnabled(manifest.ref))
             for row in manifest.commands.map(\.id) + manifest.features.map(\.id) {
                 #expect(settings.isEnabled(manifest.ref(row)))
@@ -113,17 +113,34 @@ final class ModuleSettingsTests {
 
 struct ModuleManifestTests {
     @Test func idsAreUnique() {
-        let modules = ModuleRegistry.builtIn.map(\.id)
+        let modules = ModuleRegistry.all.map(\.id)
         #expect(Set(modules).count == modules.count)
-        for manifest in ModuleRegistry.builtIn {
+        for manifest in ModuleRegistry.all {
             let rows = manifest.commands.map(\.id) + manifest.features.map(\.id)
             #expect(Set(rows).count == rows.count, "\(manifest.id)")
         }
     }
 
+    /// Launches and favorites from before modules are kept under the same rows.
+    @Test func rowsKeepTheirIDs() {
+        func id(_ ref: ModuleRef) -> String? {
+            ModuleRegistry.command(ref).flatMap { command in
+                ModuleRegistry.manifest(ref.module).map { LauncherItem.command(command, of: $0).id }
+            }
+        }
+        #expect(id(.calculator) == "command:calculator")
+        #expect(id(.caffeinateMenuBar) == "command:caffeinate-menu-bar")
+        #expect(id(SystemCommand.sleep.moduleRef) == "command:system.sleep")
+        #expect(id(WindowCommand.leftHalf.moduleRef) == "command:window.leftHalf")
+        let ids = ModuleRegistry.all.flatMap { manifest in
+            manifest.commands.map { LauncherItem.command($0, of: manifest).id }
+        }
+        #expect(Set(ids).count == ids.count)
+    }
+
     /// Hotkeys set before modules keep working.
     @Test func hotkeysKeepTheirNames() {
-        let names = Set(ModuleRegistry.builtIn.flatMap(\.commands).compactMap(\.legacyHotkey))
+        let names = Set(ModuleRegistry.all.flatMap(\.commands).compactMap(\.legacyHotkey))
         let before = [
             "calculator", "floatingCalculator", "clipboardHistory", "captureText", "translate", "settings",
             "caffeinate", "startTimer", "timers", "startStopwatch", "stopwatch",

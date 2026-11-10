@@ -34,28 +34,17 @@ final class WhippetModule: LauncherModule {
 
     var revision: AnyHashable { whatsNewSince }
 
-    func contributions(for query: String) -> [Contribution] {
-        var contributions: [Contribution] = [
-            .listed(
-                .command(
-                    .settings, id: "command:settings", title: String(localized: "Settings"),
-                    icon: .symbol("gearshape"))),
-            .listed(
-                .command(
-                    .changelog, id: "command:changelog", title: String(localized: "Changelog"),
-                    icon: .symbol("list.bullet.rectangle"))),
-            .listed(
-                .command(
-                    .shareWhippet, id: "command:share-whippet",
-                    title: String(localized: "Share Whippet with a Friend"), icon: .symbol("square.and.arrow.up"))),
-        ]
+    func row(for command: ModuleRef, _ item: LauncherItem) -> LauncherItem? {
+        guard command == .quit else { return item }
         // Quitting isn't counted, so it never becomes a suggestion or a favorite.
-        var quit = LauncherItem.command(
-            .quit, id: "command:quit", title: String(localized: "Quit Whippet"),
-            icon: .symbol("power"))
+        var quit = item
         quit.launchKey = nil
         quit.favoriteKey = nil
-        contributions.append(.listed(quit))
+        return quit
+    }
+
+    func contributions(for query: String) -> [Contribution] {
+        var contributions: [Contribution] = []
         if let release = whatsNewSince.flatMap({
             Changelog.changes(after: $0, upTo: Self.currentVersion, in: Changelog.shipped)
         }) {
@@ -88,15 +77,15 @@ final class WhippetModule: LauncherModule {
                 },
             ]
         }
-        switch item.id {
-        case "command:settings":
+        switch item.command {
+        case .settings?:
             return [
                 .open(owner: .settings) { [weak host] in
                     host?.openSettings(nil)
                     return .stay
                 }
             ]
-        case "command:changelog":
+        case .changelog?:
             return [
                 .open(owner: .changelog) { .push(ChangelogScreen()) },
                 ItemAction(
@@ -107,20 +96,22 @@ final class WhippetModule: LauncherModule {
                     return .dismiss
                 },
             ]
-        case "command:share-whippet":
+        case .shareWhippet?:
             return [
                 .command(String(localized: "Copy Link"), owner: .shareWhippet) { [clipboard] in
                     ShareLink.copy(using: clipboard)
                     return .dismiss
                 }
             ]
-        default:
+        case .quit?:
             return [
                 ItemAction(id: "whippet.quit", title: String(localized: "Quit"), icon: "power", owner: .quit) {
                     NSApp.terminate(nil)
                     return .stay
                 }
             ]
+        default:
+            return []
         }
     }
 
@@ -129,15 +120,6 @@ final class WhippetModule: LauncherModule {
         whatsNewSince = nil
     }
 
-    func run(command: String) {
-        switch command {
-        case "settings": host?.openSettings(nil)
-        case "changelog": host?.openDirectly { host?.push(ChangelogScreen()) }
-        case "share-whippet": ShareLink.copy(using: clipboard)
-        case "quit": NSApp.terminate(nil)
-        default: break
-        }
-    }
 }
 
 /// Every version, newest first, beside the selected version's changes. Opened from What's New, the versions since the

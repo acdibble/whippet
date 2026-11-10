@@ -10,19 +10,19 @@ final class WindowManagementModule: LauncherModule {
         self.host = host
     }
 
-    func contributions(for query: String) -> [Contribution] {
-        WindowCommand.allCases.map { command in
-            .listed(
-                .command(
-                    command.moduleRef, id: "command:window.\(command.rawValue)", title: command.title,
-                    // Center Third's symbol is Whippet's own, in the asset catalog.
-                    icon: command == .centerThird ? .assetSymbol(command.symbol) : .symbol(command.symbol),
-                    subtitle: String(localized: "Window"), section: String(localized: "Window"), payload: command))
+    func row(for command: ModuleRef, _ item: LauncherItem) -> LauncherItem? {
+        var item = item
+        item.subtitle = String(localized: "Window")
+        item.section = String(localized: "Window")
+        // Center Third's symbol is Whippet's own, in the asset catalog.
+        if WindowCommand(command) == .centerThird {
+            item.icon = .assetSymbol(WindowCommand.centerThird.symbol)
         }
+        return item
     }
 
     func actions(for item: LauncherItem) -> [ItemAction] {
-        guard let command = item.payload(as: WindowCommand.self), let host else { return [] }
+        guard let command = WindowCommand(item.command), let host else { return [] }
         return [
             .command(String(localized: "Move Window"), owner: command.moduleRef) {
                 // The app the panel opened over, or Whippet itself over one of its own windows.
@@ -33,8 +33,10 @@ final class WindowManagementModule: LauncherModule {
         ]
     }
 
-    func run(command: String) {
-        guard let command = WindowCommand(rawValue: command) else { return }
+    /// A hotkey moves the window of the app in front, with no panel to have opened over one.
+    func runHotkey(for command: ModuleRef) -> Bool {
+        guard let command = WindowCommand(command) else { return false }
         WindowManager.perform(command, in: NSWorkspace.shared.frontmostApplication)
+        return true
     }
 }

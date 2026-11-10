@@ -49,6 +49,8 @@ extension ModuleRef {
   `module.calculator.currency.enabled`) and a new command's hotkey (`command.calculator.<id>`).
 - **`legacyHotkey`** keeps the name a hotkey had before modules, so hotkeys people set still work. New commands leave
   it out.
+- **`legacyItemID`** keeps the id a command's row had before modules where that isn't `command:<id>`, so its launches
+  and its place in Favorites are kept. New commands leave it out.
 - **`isRequired`** keeps a command on, as for Settings and Quit, so Settings can always be reached. A module with a
   required command can't be turned off.
 - **`isStoredElsewhere`** is for a feature whose switch already belongs to a service, such as Cloud Sync's own switch.
@@ -127,24 +129,35 @@ it asks them for rows and actions and runs them.
 final class CaffeinateModule: LauncherModule {
     let manifest = ModuleManifest.caffeinate
 
-    func contributions(for query: String) -> [Contribution] {
-        [.listed(.command(.caffeinate, id: "command:caffeinate", title: String(localized: "Caffeinate"),
-            icon: .symbol("cup.and.heat.waves.fill")))]
+    func row(for command: ModuleRef, _ item: LauncherItem) -> LauncherItem? {
+        // Decaffeinate is only listed while something is keeping the Mac awake.
+        command == .decaffeinate && !caffeine.isActive ? nil : item
     }
 
     func actions(for item: LauncherItem) -> [ItemAction] {
-        [.command(owner: .caffeinate) { [caffeine] in
-            caffeine.start(seconds: nil)
-            return .dismiss
-        }]
+        switch item.command {
+        case .caffeinate?:
+            [.command(owner: .caffeinate) { [caffeine] in
+                caffeine.start(seconds: nil)
+                return .dismiss
+            }]
+        default: []
+        }
     }
 
-    func run(command: String) {  // its hotkeys
+    func runHotkey(for command: ModuleRef) -> Bool {  // only where the hotkey differs
+        guard command == .caffeinate else { return false }
         caffeine.toggle()
+        return true
     }
 }
 ```
 
+- **Commands** are listed for the module: the host makes a row for every command in the manifest, from its title,
+  icon and id (`LauncherItem.command(_:of:)`), so the search can't disagree with Settings › Commands. The module
+  changes what differs in `row(for:_:)`, such as a subtitle, or returns nil to leave a command out for now. It tells
+  its commands apart by `item.command`, a `ModuleRef`, and offers their actions in `actions(for:)`.
+- **Other rows**, those that come and go such as each app or a typed timer, are the module's `contributions(for:)`.
 - **Rows** are `LauncherItem`s: an id (what launches and favorites are kept under, so keep it stable), title, icon,
   section, and the module's own value in `payload`, which it gets back with `item.payload(as:)`.
 - **Where they go** in the main search is the `Contribution`: `.listed` (ranked, and under Favorites, Suggestions or
@@ -172,8 +185,11 @@ final class CaffeinateModule: LauncherModule {
 - **Text in the bar** is an `InputRequest`: a label and one or more fields, submitted with Return. Its submit returns
   an outcome too, so `.input` asks for more, as Start Timer… asks for a name after the duration.
 - **Settings** lists a module's `settingsPane` while it's on.
-- **Hotkeys**: every command in the manifest has one, which runs `run(command:)`. Rows that come and go, such as each
-  app, register their own and report them with `hotkeys(_:)`.
+- **Hotkeys**: every command in the manifest has one, which runs the first action of the command's row, opening the
+  panel on a screen or input the action asks for (`LauncherModel.runCommand`, or `ModuleHost.runCommand` from a
+  module's own menu). A module takes the hotkey itself in `runHotkey(for:)` only where it differs from choosing the
+  command, as Caffeinate's also stops it. Rows that come and go, such as each app, register their own and report
+  them with `hotkeys(_:)`.
 
 ## Turning things off
 
@@ -212,9 +228,10 @@ module never reads the flag itself.
 ## Adding a module
 
 1. Add `Sources/Whippet/Modules/<Name>/<Name>Manifest.swift` with its manifest and `ModuleRef`s, and add it to
-   `ModuleRegistry.builtIn`, in the order Settings lists modules.
+   `ModuleRegistry.all`, in the order Settings lists modules.
 2. Add its `LauncherModule`, with its screens and views beside it, and build it in `AppDelegate.makeModules()`, where
-   its place in the list is where its rows go in the empty search.
+   its place in the list is where its rows go in the empty search. The launcher stops at launch if the modules built
+   there and the manifests in the registry aren't the same set.
 3. Declare what each command and feature uses, and use it through `PermissionGate`.
 4. Put logic that needs no app in `Modules/<Name>/Core/`, which the tests compile, and test it there; test its rows in
    the main search against `FakeHost`.

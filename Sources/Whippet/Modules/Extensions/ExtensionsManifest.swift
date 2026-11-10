@@ -10,7 +10,8 @@ extension ModuleManifest {
         tint: .purple,
         stage: .beta(
             summary: String(localized: "Commands written in JavaScript with React, installed in Settings › Extensions.")
-        )
+        ),
+        isListedByItsParts: true
     )
 }
 

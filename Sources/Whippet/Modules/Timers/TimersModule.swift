@@ -22,7 +22,6 @@ final class TimersModule: LauncherModule {
         case preset(TimerPreset)
         /// A timer typed into the search bar, such as `25m tea`.
         case typed(seconds: Int, name: String?)
-        case command(String)
     }
 
     func attach(to host: any ModuleHost) {
@@ -32,9 +31,9 @@ final class TimersModule: LauncherModule {
         let item = TimersStatusItem(timers: timers) { [weak host, manifest] in
             host?.modules.isEnabled(manifest.ref) ?? true
         }
-        item.onStartTimer = { [weak self] in self?.run(command: "start-timer") }
-        item.onStartStopwatch = { [weak self] in self?.run(command: "start-stopwatch") }
-        item.onOpenTimers = { [weak self] in self?.run(command: "timers") }
+        item.onStartTimer = { [weak host] in host?.runCommand(.startTimer) }
+        item.onStartStopwatch = { [weak host] in host?.runCommand(.startStopwatch) }
+        item.onOpenTimers = { [weak host] in host?.runCommand(.timers) }
         item.onCopyTime = { [weak self] timer in _ = self?.copyTime(of: timer) }
         item.onOpenStopwatch = { [weak self] id in
             guard let self, let host = self.host else { return }
@@ -64,13 +63,7 @@ final class TimersModule: LauncherModule {
     // MARK: - The main search
 
     func contributions(for query: String) -> [Contribution] {
-        var contributions: [Contribution] = [
-            .listed(command(.startTimer, "command:start-timer", String(localized: "Start Timer…"), "timer")),
-            .listed(command(.timers, "command:timers", String(localized: "Timers"), "list.bullet")),
-            .listed(
-                command(.startStopwatch, "command:start-stopwatch", String(localized: "Start Stopwatch"), "stopwatch")),
-            .listed(command(.stopwatch, "command:stopwatch", String(localized: "Stopwatch"), "stopwatch")),
-        ]
+        var contributions: [Contribution] = []
         let section = String(localized: "Timers")
         for item in timers.ringing {
             contributions.append(.top(row(.ringing(item)), section: section, rank: 1))
@@ -83,10 +76,6 @@ final class TimersModule: LauncherModule {
             contributions.append(.leading(row(.typed(seconds: typed.seconds, name: typed.name))))
         }
         return contributions
-    }
-
-    private func command(_ ref: ModuleRef, _ id: String, _ title: String, _ symbol: String) -> LauncherItem {
-        .command(ref, id: id, title: title, icon: .symbol(symbol), payload: Row.command(id))
     }
 
     func row(_ row: Row) -> LauncherItem {
@@ -120,8 +109,6 @@ final class TimersModule: LauncherModule {
                 subtitle: String(localized: "Timer"), icon: .symbol("timer"),
                 // Counted as using the timer it starts, which then ranks among Recent Timers.
                 launchKey: TimerPreset(name: name, seconds: seconds).launchKey, refs: [.typedTimers], payload: row)
-        case .command:
-            return LauncherItem(id: "", module: module, title: "")
         }
     }
 
@@ -131,7 +118,11 @@ final class TimersModule: LauncherModule {
     }
 
     func actions(for item: LauncherItem) -> [ItemAction] {
-        guard let row = item.payload(as: Row.self), let host else { return [] }
+        guard let host else { return [] }
+        if let command = item.command {
+            return commandActions(command, launchKey: item.id, host: host)
+        }
+        guard let row = item.payload(as: Row.self) else { return [] }
         switch row {
         case .running(let timer):
             let open =
@@ -187,14 +178,12 @@ final class TimersModule: LauncherModule {
                     })
             }
             return actions
-        case .command(let id):
-            return commandActions(id, host: host)
         }
     }
 
-    private func commandActions(_ id: String, host: any ModuleHost) -> [ItemAction] {
-        switch id {
-        case "command:start-timer":
+    private func commandActions(_ command: ModuleRef, launchKey id: String, host: any ModuleHost) -> [ItemAction] {
+        switch command {
+        case .startTimer:
             return [
                 ItemAction(
                     id: "timers.enter-duration", title: String(localized: "Enter Duration"), icon: "return",
@@ -204,7 +193,7 @@ final class TimersModule: LauncherModule {
                     return self.map { .input($0.durationRequest(inScreen: false)) } ?? .stay
                 }
             ]
-        case "command:start-stopwatch":
+        case .startStopwatch:
             return [
                 .command(String(localized: "Start Stopwatch"), owner: .startStopwatch) { [weak self] in
                     guard let self else { return .stay }
@@ -218,12 +207,14 @@ final class TimersModule: LauncherModule {
                     return self.map { .input($0.stopwatchNameRequest) } ?? .stay
                 },
             ]
-        case "command:stopwatch":
+        case .stopwatch:
             return [
                 .open(owner: .stopwatch) { [weak self] in self.map { .push(StopwatchScreen(module: $0)) } ?? .stay }
             ]
-        default:
+        case .timers:
             return [.open(owner: .timers) { [weak self] in self.map { .push(TimersScreen(module: $0)) } ?? .stay }]
+        default:
+            return []
         }
     }
 
@@ -396,20 +387,12 @@ final class TimersModule: LauncherModule {
         }
     }
 
-    func run(command: String) {
-        guard let host else { return }
-        switch command {
-        case "start-timer":
-            host.openDirectly { host.beginInput(durationRequest(inScreen: false)) }
-        case "start-stopwatch":
-            host.openDirectly { host.push(StopwatchScreen(module: self, showing: timers.startStopwatch(name: nil).id)) }
-        case "stopwatch":
-            host.openDirectly { host.push(StopwatchScreen(module: self)) }
-        case "timers":
-            host.openDirectly { host.push(TimersScreen(module: self)) }
-        default:
-            break
-        }
+    /// Start Timer…'s hotkey asks for the duration without counting as a use of the command, which choosing it in the
+    /// search does.
+    func runHotkey(for command: ModuleRef) -> Bool {
+        guard command == .startTimer, let host else { return false }
+        host.openDirectly { host.beginInput(durationRequest(inScreen: false)) }
+        return true
     }
 
     var settingsPane: ModuleSettingsPane? {

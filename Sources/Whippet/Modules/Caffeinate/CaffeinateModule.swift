@@ -7,14 +7,12 @@ final class CaffeinateModule: LauncherModule {
     let manifest = ModuleManifest.caffeinate
     let caffeine: Caffeine
     private var statusItem: CaffeineStatusItem?
-    private weak var host: (any ModuleHost)?
 
     init(caffeine: Caffeine) {
         self.caffeine = caffeine
     }
 
     func attach(to host: any ModuleHost) {
-        self.host = host
         statusItem = CaffeineStatusItem(caffeine: caffeine) { [weak host, manifest] in
             host?.modules.isEnabled(manifest.ref) ?? true
         }
@@ -32,42 +30,34 @@ final class CaffeinateModule: LauncherModule {
         [caffeine.isActive, caffeine.showsInMenuBar, caffeine.endsAt as AnyHashable]
     }
 
-    func contributions(for query: String) -> [Contribution] {
-        let awake = String(localized: "Keep this Mac awake")
-        var items: [LauncherItem] = [
-            .command(
-                .caffeinate, id: "command:caffeinate", title: String(localized: "Caffeinate"),
-                icon: .symbol("cup.and.heat.waves.fill"), subtitle: awake),
-            .command(
-                .caffeinateFor, id: "command:caffeinate-for", title: String(localized: "Caffeinate for…"),
-                icon: .symbol("cup.and.heat.waves.fill"), subtitle: awake),
-        ]
-        if caffeine.isActive {
-            items.append(
-                .command(
-                    .decaffeinate, id: "command:decaffeinate", title: String(localized: "Decaffeinate"),
-                    icon: .symbol("cup.and.heat.waves"), subtitle: caffeine.untilDescription))
+    func row(for command: ModuleRef, _ item: LauncherItem) -> LauncherItem? {
+        var item = item
+        switch command {
+        case .caffeinate, .caffeinateFor:
+            item.subtitle = String(localized: "Keep this Mac awake")
+        case .decaffeinate:
+            guard caffeine.isActive else { return nil }
+            item.subtitle = caffeine.untilDescription
+        case .caffeinateMenuBar:
+            item.title =
+                caffeine.showsInMenuBar
+                ? String(localized: "Hide Caffeinate in Menu Bar") : String(localized: "Show Caffeinate in Menu Bar")
+        default:
+            break
         }
-        items.append(
-            .command(
-                .caffeinateMenuBar, id: "command:caffeinate-menu-bar",
-                title: caffeine.showsInMenuBar
-                    ? String(localized: "Hide Caffeinate in Menu Bar")
-                    : String(localized: "Show Caffeinate in Menu Bar"),
-                icon: .symbol("menubar.rectangle")))
-        return items.map(Contribution.listed)
+        return item
     }
 
     func actions(for item: LauncherItem) -> [ItemAction] {
-        switch item.id {
-        case "command:caffeinate":
+        switch item.command {
+        case .caffeinate?:
             return [
                 .command(owner: .caffeinate) { [caffeine] in
                     caffeine.start(seconds: nil)
                     return .dismiss
                 }
             ]
-        case "command:caffeinate-for":
+        case .caffeinateFor?:
             return [
                 ItemAction(
                     id: "caffeinate.choose", title: String(localized: "Choose Duration"), icon: "return",
@@ -77,20 +67,22 @@ final class CaffeinateModule: LauncherModule {
                     return .input(durationRequest)
                 }
             ]
-        case "command:decaffeinate":
+        case .decaffeinate?:
             return [
                 .command(owner: .decaffeinate) { [caffeine] in
                     caffeine.stop()
                     return .dismiss
                 }
             ]
-        default:
+        case .caffeinateMenuBar?:
             return [
                 .command(owner: .caffeinateMenuBar) { [weak self] in
                     self?.toggleMenuBar()
                     return .dismiss
                 }
             ]
+        default:
+            return []
         }
     }
 
@@ -122,13 +114,10 @@ final class CaffeinateModule: LauncherModule {
             symbol: "menubar.rectangle")
     }
 
-    func run(command: String) {
-        switch command {
-        case "caffeinate": caffeine.toggle()
-        case "caffeinate-for": host?.openDirectly { host?.beginInput(durationRequest) }
-        case "decaffeinate" where caffeine.isActive: caffeine.stop()
-        case "menu-bar": toggleMenuBar()
-        default: break
-        }
+    /// Caffeinate's hotkey stops it too, where the command in the search only starts it, with Decaffeinate beside it.
+    func runHotkey(for command: ModuleRef) -> Bool {
+        guard command == .caffeinate else { return false }
+        caffeine.toggle()
+        return true
     }
 }

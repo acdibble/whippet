@@ -63,6 +63,8 @@ struct ModuleManifest: Identifiable {
     var stage = ModuleStage.stable
     /// Rows that come and go, such as each app or quicklink, which Settings › Commands lists after the commands.
     var dynamicRows: DynamicRows?
+    /// Listed in Settings › Commands by what it holds rather than as itself, as Extensions is by each extension.
+    var isListedByItsParts = false
 
     enum DynamicRows {
         case apps
@@ -118,6 +120,9 @@ struct ModuleCommand: Identifiable {
     var permissions: [Permission] = []
     /// The hotkey name from before modules, such as `command.calculator`, so a hotkey set then still works.
     var legacyHotkey: String?
+    /// The id of its row from before modules, where that isn't `command:<id>`, such as `command:system.sleep`, so
+    /// its launches and its place in Favorites are kept.
+    var legacyItemID: String?
     /// Settings and Quit, which stay on so Settings can always be reached from the search.
     var isRequired = false
     /// Listed only for accounts with the CloudKit Admin role, as Read Feedback is in the search.
@@ -150,18 +155,21 @@ struct ActivityLock: Hashable {
     }
 }
 
-/// Every built-in module, in the order Settings › Commands lists them. Extensions are added after them.
+/// Every module's manifest, in the order Settings › Commands lists them, and the one list of what Whippet is made of:
+/// the launcher refuses to start with modules that don't match it. Each extension is listed after them.
 enum ModuleRegistry {
-    static let builtIn: [ModuleManifest] = [
+    static let all: [ModuleManifest] = [
         .applications, .calculator, .clipboard, .captureText, .quicklinks, .timers, .caffeinate, .system,
-        .windowManagement, .translation, .cloudSync, .feedback, .updates, .whippet,
+        .windowManagement, .translation, .cloudSync, .feedback, .updates, .whippet, .extensions,
     ]
 
-    /// The built-in modules and Extensions, which is a module of modules.
-    static let all = builtIn + [.extensions]
+    /// The modules Settings › Commands lists as themselves, which is all but Extensions.
+    static var listed: [ModuleManifest] {
+        all.filter { !$0.isListedByItsParts }
+    }
 
     static func manifest(_ id: String) -> ModuleManifest? {
-        builtIn.first { $0.id == id }
+        all.first { $0.id == id }
     }
 
     static func command(_ ref: ModuleRef) -> ModuleCommand? {

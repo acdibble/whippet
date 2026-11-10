@@ -4,7 +4,8 @@ import SwiftUI
 import WhippetCore
 
 /// A built-in module: what it adds to the main search, its screens, what it runs on its own and its settings. Adding or
-/// removing one is a folder in `Modules/` and a line in `AppDelegate.makeModules()`.
+/// removing one is a folder in `Modules/`, its manifest in `ModuleRegistry.all` and a line in
+/// `AppDelegate.makeModules()`.
 @MainActor
 protocol LauncherModule: AnyObject {
     var manifest: ModuleManifest { get }
@@ -22,7 +23,12 @@ protocol LauncherModule: AnyObject {
 
     /// What the main search's items depend on, read like `LauncherScreen.revision`.
     var revision: AnyHashable { get }
-    /// Its rows in the main search for `query`, which is empty for the empty search.
+    /// How one of its manifest's commands is listed in the main search. The host makes `item` from the manifest, and
+    /// the module returns it with what differs, such as a subtitle saying what's running, or nil to leave the command
+    /// out for now, as Decaffeinate is while nothing keeps the Mac awake. A command that's left out can't be run.
+    func row(for command: ModuleRef, _ item: LauncherItem) -> LauncherItem?
+    /// Its other rows in the main search for `query`, which is empty for the empty search: those that come and go,
+    /// such as each app or a typed timer. Its commands are listed for it, before these.
     func contributions(for query: String) -> [Contribution]
     /// What can be done with its items in screens it doesn't own, such as the main search.
     func actions(for item: LauncherItem) -> [ItemAction]
@@ -33,8 +39,10 @@ protocol LauncherModule: AnyObject {
     /// Actions it offers on other modules' items, from what they hold.
     func contributedActions(for item: LauncherItem, traits: ItemTraits) -> [ItemAction]
 
-    /// Runs one of its commands from its hotkey or a menu, by the command's id in its manifest.
-    func run(command: String)
+    /// Runs one of its commands from its hotkey where that differs from choosing it in the search, such as
+    /// Caffeinate's also stopping it: true when it did. False, the default, has the host run the first action of the
+    /// command's row, opening the panel on whatever screen or input it asks for.
+    func runHotkey(for command: ModuleRef) -> Bool
     /// Hotkeys for rows that come and go, such as each app's, with whether each is on. It registers their handlers
     /// itself, and calls `ModuleHost.hotkeysChanged()` when the list changes.
     func hotkeys(_ modules: ModuleSettings) -> [(name: KeyboardShortcuts.Name, isOn: Bool)]
@@ -49,12 +57,13 @@ extension LauncherModule {
     func panelWillShow() {}
     func searchTextChanged(_ query: String) {}
     var revision: AnyHashable { 0 }
+    func row(for command: ModuleRef, _ item: LauncherItem) -> LauncherItem? { item }
     func contributions(for query: String) -> [Contribution] { [] }
     func actions(for item: LauncherItem) -> [ItemAction] { [] }
     func rowView(for item: LauncherItem, isSelected: Bool) -> AnyView? { nil }
     func traits(of item: LauncherItem) -> ItemTraits { ItemTraits() }
     func contributedActions(for item: LauncherItem, traits: ItemTraits) -> [ItemAction] { [] }
-    func run(command: String) {}
+    func runHotkey(for command: ModuleRef) -> Bool { false }
     func hotkeys(_ modules: ModuleSettings) -> [(name: KeyboardShortcuts.Name, isOn: Bool)] { [] }
     var settingsPane: ModuleSettingsPane? { nil }
 
@@ -137,6 +146,8 @@ protocol ModuleHost: AnyObject {
     func fallbacks(for query: String, excluding excluded: String) -> [LauncherItem]
     /// What an item's own module offers for it, for a screen showing another module's items, such as those fallbacks.
     func ownActions(for item: LauncherItem) -> [ItemAction]
+    /// Runs a command as its hotkey does, such as from a menu bar item's menu, if it's on.
+    func runCommand(_ ref: ModuleRef)
     /// Runs an action as the host would, handling its outcome.
     func run(_ action: ItemAction, on item: LauncherItem?)
     /// Turns modules' hotkeys on and off again, after one's list of them changed.

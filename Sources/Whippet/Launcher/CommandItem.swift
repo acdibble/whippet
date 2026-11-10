@@ -2,17 +2,16 @@ import KeyboardShortcuts
 import WhippetCore
 
 extension LauncherItem {
-    /// A command's row: listed under Commands, ranked by use, a favorite, and showing its hotkey. `id` is what its
-    /// launches and favorite were kept under before modules, such as `command:calculator`.
-    static func command(
-        _ ref: ModuleRef, id: String, title: String, icon: ItemIcon, subtitle: String = String(localized: "Command"),
-        section: String = String(localized: "Commands"), payload: AnyHashable? = nil
-    ) -> LauncherItem {
-        LauncherItem(
-            id: id, module: ref.module, title: title, subtitle: subtitle, icon: icon, section: section, launchKey: id,
-            favoriteKey: id, refs: [ref],
-            hotkey: ModuleRegistry.command(ref) != nil ? KeyboardShortcuts.Name(for: ref) : nil,
-            payload: payload)
+    /// A command's row, made from its manifest so the search and Settings › Commands always agree: listed under
+    /// Commands, ranked by use, a favorite, and showing its hotkey. The host makes one for every command, and the
+    /// module changes what differs in `row(for:_:)`.
+    static func command(_ command: ModuleCommand, of manifest: ModuleManifest) -> LauncherItem {
+        let ref = manifest.ref(command.id)
+        let id = command.legacyItemID ?? "command:\(command.id)"
+        return LauncherItem(
+            id: id, module: manifest.id, title: command.title, subtitle: String(localized: "Command"),
+            icon: .symbol(command.icon), launchKey: id, favoriteKey: id, refs: [ref],
+            hotkey: KeyboardShortcuts.Name(for: ref), isAdminOnly: command.isAdminOnly, command: ref)
     }
 }
 

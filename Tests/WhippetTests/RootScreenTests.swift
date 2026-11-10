@@ -47,19 +47,27 @@ final class FakeHost: ModuleHost {
         root.fallbacks(for: query, excluding: excluded)
     }
     func ownActions(for item: LauncherItem) -> [ItemAction] { root.ownActions(for: item) }
+    private(set) var commandsRun: [ModuleRef] = []
+    func runCommand(_ ref: ModuleRef) { commandsRun.append(ref) }
     func run(_ action: ItemAction, on item: LauncherItem?) { _ = action.perform() }
     func hotkeysChanged() {}
 }
 
-/// A module whose contributions a test sets.
+/// A module whose contributions a test sets. Its manifest's commands are left out of the search unless a test says
+/// how they're listed, so a test sees only the rows it gives.
 @MainActor
 final class FakeModule: LauncherModule {
     let manifest: ModuleManifest
     var contribute: (String) -> [Contribution]
+    var listCommand: (ModuleRef, LauncherItem) -> LauncherItem? = { _, _ in nil }
 
-    init(_ manifest: ModuleManifest, contribute: @escaping (String) -> [Contribution]) {
+    init(_ manifest: ModuleManifest, contribute: @escaping (String) -> [Contribution] = { _ in [] }) {
         self.manifest = manifest
         self.contribute = contribute
+    }
+
+    func row(for command: ModuleRef, _ item: LauncherItem) -> LauncherItem? {
+        listCommand(command, item)
     }
 
     func contributions(for query: String) -> [Contribution] {
@@ -167,6 +175,41 @@ final class RootScreenTests {
         #expect(exclusive === screen)
         #expect(items.map(\.id) == ["calculation"])
         #expect(root.resolve("clip").items.map(\.id) == ["clip"])
+    }
+
+    /// Every command in a module's manifest gets a row made from it, before the module's other rows, under the id
+    /// its launches were kept under before modules.
+    @Test func commandsAreListedFromTheManifest() {
+        let caffeinate = FakeModule(.caffeinate) { [self] _ in [.listed(item("extra", "Extra", module: .caffeinate))] }
+        caffeinate.listCommand = { command, item in
+            guard command != .decaffeinate else { return nil }
+            var item = item
+            if command == .caffeinate { item.subtitle = "Keep this Mac awake" }
+            return item
+        }
+        let system = FakeModule(.system)
+        system.listCommand = { _, item in item }
+        let root = install(caffeinate, system)
+
+        let items = root.resolve("").items
+        #expect(
+            items.map(\.id) == [
+                "command:caffeinate", "command:caffeinate-for", "command:caffeinate-menu-bar", "extra",
+            ] + SystemCommand.allCases.map { "command:system.\($0.rawValue)" })
+        let first = items[0]
+        #expect(first.title == "Caffeinate")
+        #expect(first.subtitle == "Keep this Mac awake")
+        #expect(first.command == .caffeinate)
+        #expect(first.refs == [.caffeinate])
+        #expect(first.launchKey == "command:caffeinate")
+        #expect(first.hotkey?.rawValue == "command.caffeinate")
+
+        // A command that's off, or that its module leaves out, has no row to run.
+        #expect(root.commandItem(.caffeinateFor)?.id == "command:caffeinate-for")
+        #expect(root.commandItem(.decaffeinate) == nil)
+        host.modules.setOn(.caffeinateFor, false)
+        #expect(root.commandItem(.caffeinateFor) == nil)
+        #expect(!root.resolve("").items.contains { $0.command == .caffeinateFor })
     }
 
     /// A screen can list what its text can be used with through the host, leaving its own module out.

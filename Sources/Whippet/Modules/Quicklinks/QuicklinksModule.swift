@@ -34,13 +34,7 @@ final class QuicklinksModule: LauncherModule {
     var revision: AnyHashable { quicklinks.items }
 
     func contributions(for query: String) -> [Contribution] {
-        var contributions: [Contribution] = [
-            .listed(
-                .command(
-                    .createQuicklink, id: "command:create-quicklink", title: String(localized: "Create Quicklink"),
-                    icon: .symbol("link.badge.plus")))
-        ]
-        contributions += quicklinks.items.map { .listed(item(for: $0)) }
+        var contributions = quicklinks.items.map { Contribution.listed(item(for: $0)) }
         guard !query.isEmpty else { return contributions }
         for quicklink in quicklinks.items where quicklink.takesArgument {
             var item = item(for: quicklink)
@@ -97,6 +91,7 @@ final class QuicklinksModule: LauncherModule {
                 ) { .input(Self.request(for: quicklink)) }
             ]
         }
+        guard item.command == .createQuicklink else { return [] }
         return [
             .open(owner: .createQuicklink) { [createQuicklink] in
                 createQuicklink()
@@ -113,10 +108,6 @@ final class QuicklinksModule: LauncherModule {
         ) { text in
             Quicklinks.open(quicklink, argument: text) ? .dismiss : .fail()
         }
-    }
-
-    func run(command: String) {
-        createQuicklink()
     }
 
     func hotkeys(_ modules: ModuleSettings) -> [(name: KeyboardShortcuts.Name, isOn: Bool)] {

@@ -11,7 +11,8 @@ extension ModuleManifest {
         commands: WindowCommand.allCases.map { command in
             ModuleCommand(
                 id: command.rawValue, title: command.title, icon: command.symbol,
-                permissions: [.accessibility(.windows)], legacyHotkey: "window.\(command.rawValue)")
+                permissions: [.accessibility(.windows)], legacyHotkey: "window.\(command.rawValue)",
+                legacyItemID: "command:window.\(command.rawValue)")
         }
     )
 }
@@ -19,6 +20,12 @@ extension ModuleManifest {
 extension WindowCommand {
     var moduleRef: ModuleRef {
         ModuleManifest.windowManagement.ref(rawValue)
+    }
+
+    /// The command a row or hotkey of the Window Management module is for.
+    init?(_ ref: ModuleRef?) {
+        guard let row = ref?.row, ref?.module == ModuleManifest.windowManagement.id else { return nil }
+        self.init(rawValue: row)
     }
 }
 

@@ -26,7 +26,7 @@ struct ManifestTests {
     ]
 
     private var declaredKinds: Set<Permission.Kind> {
-        Set(ModuleRegistry.builtIn.flatMap(\.permissions).map(\.kind))
+        Set(ModuleRegistry.all.flatMap(\.permissions).map(\.kind))
     }
 
     @Test(arguments: ["Whippet.entitlements", "WhippetRelease.entitlements"])
@@ -76,7 +76,7 @@ struct ManifestTests {
     /// Settings › Commands shows every module's names and summaries, and they're translated.
     @Test func everyModuleStringIsTranslated() throws {
         let missing = try Self.untranslated(
-            ModuleRegistry.builtIn.flatMap { manifest in
+            ModuleRegistry.all.flatMap { manifest in
                 [manifest.title, manifest.summary] + manifest.commands.map(\.title)
                     + manifest.features.flatMap { [$0.title, $0.summary] }
             },

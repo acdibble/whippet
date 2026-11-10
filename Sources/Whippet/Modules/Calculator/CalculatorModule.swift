@@ -55,16 +55,7 @@ final class CalculatorModule: LauncherModule {
         {
             return [.exclusive(inline)]
         }
-        return [
-            .listed(
-                .command(
-                    .calculator, id: "command:calculator", title: String(localized: "Calculator"),
-                    icon: .symbol("plus.forwardslash.minus"))),
-            .listed(
-                .command(
-                    .floatingCalculator, id: "command:floating-calculator",
-                    title: String(localized: "Floating Calculator"), icon: .symbol("macwindow.on.rectangle"))),
-        ]
+        return []
     }
 
     func calculate(_ query: String) -> Calculation? {
@@ -84,20 +75,24 @@ final class CalculatorModule: LauncherModule {
     }
 
     func actions(for item: LauncherItem) -> [ItemAction] {
-        if item.id == "command:floating-calculator" {
+        switch item.command {
+        case .floatingCalculator?:
             return [
                 .open(owner: .floatingCalculator) { [weak self] in
                     self?.popOut(nil)
                     return .stay
                 }
             ]
+        case .calculator?:
+            return [
+                .open(owner: .calculator) { [weak self] in
+                    self.map { .push(CalculatorScreen(module: $0, isInline: false)) } ?? .stay
+                },
+                popOutAction(nil),
+            ]
+        default:
+            return []
         }
-        return [
-            .open(owner: .calculator) { [weak self] in
-                self.map { .push(CalculatorScreen(module: $0, isInline: false)) } ?? .stay
-            },
-            popOutAction(nil),
-        ]
     }
 
     func popOutAction(_ expression: String?) -> ItemAction {
@@ -146,16 +141,11 @@ final class CalculatorModule: LauncherModule {
         return ItemTraits(text: { calculation.answer }, duration: { calculation.timerSeconds() })
     }
 
-    func run(command: String) {
-        switch command {
-        case "floating-calculator":
-            floatingCalculator.toggle()
-        default:
-            host?.openDirectly { [weak self] in
-                guard let self else { return }
-                host?.push(CalculatorScreen(module: self, isInline: false))
-            }
-        }
+    /// The floating calculator's hotkey closes it too, where the command in the search only opens it.
+    func runHotkey(for command: ModuleRef) -> Bool {
+        guard command == .floatingCalculator else { return false }
+        floatingCalculator.toggle()
+        return true
     }
 }
 

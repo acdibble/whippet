@@ -47,7 +47,7 @@ final class RootScreen: LauncherScreen {
                     return (screen.items(for: query), screen)
                 }
             }
-            contributions += theirs
+            contributions += commandItems(of: module).map(Contribution.listed) + theirs
         }
         var listed: [LauncherItem] = []
         var tops: [(item: LauncherItem, section: String, rank: Int)] = []
@@ -103,6 +103,21 @@ final class RootScreen: LauncherScreen {
             + suggestions.map { _ in String(localized: "Suggestions") } + rest.map(\.section)
         pinned = 0
         return (tops.map(\.item) + favorites + suggestions + rest, nil)
+    }
+
+    /// A module's commands as rows, made from its manifest and listed as the module says.
+    private func commandItems(of module: any LauncherModule) -> [LauncherItem] {
+        module.manifest.commands.compactMap { command in
+            module.row(for: module.manifest.ref(command.id), .command(command, of: module.manifest))
+        }
+    }
+
+    /// A command's row, or nil while it's off or its module leaves it out.
+    func commandItem(_ ref: ModuleRef) -> LauncherItem? {
+        guard host.modules.isEnabled(ref), let module = module(ref.module),
+            let command = ref.row.flatMap(module.manifest.command)
+        else { return nil }
+        return module.row(for: ref, .command(command, of: module.manifest))
     }
 
     /// What `query` can be used with, from every module but `excluded`, as the Translate screen lists under it.

@@ -10,7 +10,8 @@ extension ModuleManifest {
         tint: .gray,
         commands: SystemCommand.allCases.map { command in
             ModuleCommand(
-                id: command.rawValue, title: command.title, icon: command.symbol, permissions: command.permissions)
+                id: command.rawValue, title: command.title, icon: command.symbol, permissions: command.permissions,
+                legacyItemID: "command:system.\(command.rawValue)")
         }
     )
 }
@@ -28,6 +29,12 @@ extension SystemCommand {
 
     var moduleRef: ModuleRef {
         ModuleManifest.system.ref(rawValue)
+    }
+
+    /// The command a row or hotkey of the System module is for.
+    init?(_ ref: ModuleRef?) {
+        guard let row = ref?.row, ref?.module == ModuleManifest.system.id else { return nil }
+        self.init(rawValue: row)
     }
 }
 

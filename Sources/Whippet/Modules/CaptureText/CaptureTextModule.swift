@@ -19,15 +19,6 @@ final class CaptureTextModule: LauncherModule {
         ]
     }
 
-    func contributions(for query: String) -> [Contribution] {
-        [
-            .listed(
-                .command(
-                    .captureText, id: "command:capture-text", title: String(localized: "Capture Text"),
-                    icon: .symbol("text.viewfinder")))
-        ]
-    }
-
     func actions(for item: LauncherItem) -> [ItemAction] {
         [
             .command(owner: .captureText) { [capture] in
@@ -35,9 +26,5 @@ final class CaptureTextModule: LauncherModule {
                 return .stay
             }
         ]
-    }
-
-    func run(command: String) {
-        capture()
     }
 }

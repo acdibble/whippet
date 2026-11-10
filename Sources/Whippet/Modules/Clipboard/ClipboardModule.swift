@@ -27,12 +27,7 @@ final class ClipboardModule: LauncherModule {
     }
 
     func contributions(for query: String) -> [Contribution] {
-        var contributions: [Contribution] = [
-            .listed(
-                .command(
-                    .clipboardHistory, id: "command:clipboard-history",
-                    title: String(localized: "Clipboard History"), icon: .symbol("list.clipboard")))
-        ]
+        var contributions: [Contribution] = []
         if !query.isEmpty {
             // Counted as using Clipboard History itself; it's only there while text is typed, so not a favorite.
             let item = LauncherItem(
@@ -64,13 +59,6 @@ final class ClipboardModule: LauncherModule {
 
     func screen() -> ClipboardScreen {
         ClipboardScreen(clipboard: clipboard, host: host, saveImage: saveImage)
-    }
-
-    func run(command: String) {
-        host?.openDirectly { [weak self] in
-            guard let self else { return }
-            host?.push(screen())
-        }
     }
 
     var settingsPane: ModuleSettingsPane? {

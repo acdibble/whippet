@@ -285,7 +285,7 @@ struct CommandsPane: View {
     // MARK: - Rows
 
     private var allRows: [CommandRow] {
-        let builtIn = ModuleRegistry.builtIn.filter { modules.isAvailable($0.ref) }.map(moduleRow)
+        let builtIn = ModuleRegistry.listed.filter { modules.isAvailable($0.ref) }.map(moduleRow)
         let installed = modules.isAvailable(.extensionsModule) ? extensions.installed.map(extensionRow) : []
         return builtIn + installed
     }

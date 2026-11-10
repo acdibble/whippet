@@ -14,15 +14,6 @@ final class UpdatesModule: LauncherModule {
         updater.isAllowed = modules.isEnabled(manifest.ref)
     }
 
-    func contributions(for query: String) -> [Contribution] {
-        [
-            .listed(
-                .command(
-                    .checkForUpdates, id: "command:check-for-updates", title: String(localized: "Check for Updates"),
-                    icon: .symbol("arrow.down.circle")))
-        ]
-    }
-
     func actions(for item: LauncherItem) -> [ItemAction] {
         [
             .command(owner: .checkForUpdates) { [updater] in
@@ -31,9 +22,5 @@ final class UpdatesModule: LauncherModule {
                 return .dismiss
             }
         ]
-    }
-
-    func run(command: String) {
-        updater.checkForUpdates()
     }
 }

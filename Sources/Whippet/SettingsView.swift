@@ -342,7 +342,7 @@ private struct ShortcutsPane: View {
     var body: some View {
         // Every command can have a hotkey, listed under its module. What's turned off in Settings › Commands isn't
         // listed.
-        let sections = ModuleRegistry.builtIn.map { manifest in
+        let sections = ModuleRegistry.all.map { manifest in
             (
                 manifest,
                 manifest.commands.filter { command in

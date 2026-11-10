@@ -16,7 +16,7 @@ extension ModuleManifest {
             ModuleCommand(id: "decaffeinate", title: String(localized: "Decaffeinate"), icon: "cup.and.heat.waves"),
             ModuleCommand(
                 id: "menu-bar", title: String(localized: "Show or Hide Caffeinate in Menu Bar"),
-                icon: "menubar.rectangle"),
+                icon: "menubar.rectangle", legacyItemID: "command:caffeinate-menu-bar"),
         ]
     )
 }
