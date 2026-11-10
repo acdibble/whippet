@@ -248,8 +248,10 @@ module never reads the flag itself.
    its place in the list is where its rows go in the empty search. The launcher stops at launch if the modules built
    there and the manifests in the registry aren't the same set.
 3. Declare what each command and feature uses, and use it through `PermissionGate`.
-4. Put logic that needs no app in `Modules/<Name>/Core/`, which the tests compile, and test it there; test its rows in
-   the main search against `FakeHost`.
+4. Put logic that needs no app in `Modules/<Name>/Core/` and test it there. Test its rows and actions against
+   `FakeHost` by adding it to `ModuleTests`, whose first test checks every command in its manifest has a row and an
+   action. Give it stores and defaults a test can supply, and look at actions that do something to the Mac rather
+   than running them.
 5. Translate its strings into Farsi; `ManifestTests` checks its titles and summaries.
 6. Add a changelog entry saying what it does and what it uses.
 

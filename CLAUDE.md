@@ -78,7 +78,7 @@ only what the app uses as `public`. The app chooses where data lives (`Clipboard
   each command in the main search from the manifest; the module adjusts or hides those rows (`row(for:_:)`), adds
   rows that come and go (`contributions(for:)`), offers actions on them, opens its own screens (`LauncherScreen`),
   starts and stops its own work, and supplies its settings pane. A command's hotkey runs its row's first action. Logic with no app-only dependencies
-  goes in the module's `Core/` folder, which the tests compile. A beta module declares `stage: .beta` in its manifest.
+  goes in the module's `Core/` folder. A beta module declares `stage: .beta` in its manifest.
   `ModuleSettings` holds the switches in Settings › Commands, and what's off does no work. Anything sensitive
   (network, reading the clipboard, Accessibility, Screen Recording, Apple Events, notifications, iCloud, system
   downloads) goes through `PermissionGate` in
