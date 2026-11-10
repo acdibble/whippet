@@ -1,33 +1,32 @@
 import Foundation
 import Observation
 
-/// A feature that's still being tried out. It ships switched off, and is turned on under Settings › General › Beta
-/// Features, so it can be released before it's finished without changing Whippet for everyone.
-enum FeatureFlag: String, CaseIterable, Identifiable {
-    case extensions
-    case translation
+/// A module that's still being tried out, declared with `stage: .beta` in its manifest. It ships switched off, and is
+/// turned on under Settings › General › Beta Features, so it can be released before it's finished without changing
+/// Whippet for everyone. Until then it isn't listed in Settings › Commands, and does no work.
+struct FeatureFlag: Hashable, Identifiable {
+    /// The module's id, which names its switch in user defaults, such as `featureFlag.translation`.
+    let id: String
+    let title: String
+    let summary: String
 
-    var id: Self { self }
-
-    var title: String {
-        switch self {
-        case .extensions: String(localized: "Extensions")
-        case .translation: String(localized: "Translation")
-        }
+    init?(_ manifest: ModuleManifest) {
+        guard case .beta(let summary) = manifest.stage else { return nil }
+        id = manifest.id
+        title = manifest.title
+        self.summary = summary
     }
 
-    var summary: String {
-        switch self {
-        case .extensions:
-            String(localized: "Commands written in JavaScript with React, installed in Settings › Extensions.")
-        case .translation:
-            String(
-                localized: "Translate text on this Mac by typing the language after it, or with the Translate command.")
-        }
+    /// Every beta module's, in the order Settings lists modules.
+    static var allCases: [FeatureFlag] {
+        ModuleRegistry.all.compactMap(FeatureFlag.init)
     }
+
+    static let extensions = FeatureFlag(.extensions)!
+    static let translation = FeatureFlag(.translation)!
 
     var defaultsKey: String {
-        "featureFlag.\(rawValue)"
+        "featureFlag.\(id)"
     }
 }
 

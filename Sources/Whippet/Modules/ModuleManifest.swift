@@ -42,8 +42,8 @@ struct ModuleManifest: Identifiable {
     var tint = ModuleTint.gray
     var commands: [ModuleCommand] = []
     var features: [ModuleFeature] = []
-    /// A beta feature the module belongs to, which must be on for it to be listed.
-    var requiredFlag: FeatureFlag?
+    /// A beta module starts off, and is turned on under Settings › General › Beta Features.
+    var stage = ModuleStage.stable
     /// Rows that come and go, such as each app or quicklink, which Settings › Commands lists after the commands.
     var dynamicRows: DynamicRows?
 
@@ -54,6 +54,11 @@ struct ModuleManifest: Identifiable {
 
     var ref: ModuleRef {
         ModuleRef(module: id)
+    }
+
+    /// The switch a beta module is turned on with.
+    var flag: FeatureFlag? {
+        FeatureFlag(self)
     }
 
     /// Everything its commands and features need, gathered.
@@ -73,6 +78,13 @@ struct ModuleManifest: Identifiable {
     func command(_ id: String) -> ModuleCommand? {
         commands.first { $0.id == id }
     }
+}
+
+/// How finished a module is.
+enum ModuleStage: Equatable {
+    case stable
+    /// Still being tried out, with a sentence for Beta Features saying what it does.
+    case beta(summary: String)
 }
 
 /// The colour of a module's icon tile in Settings › Commands, as System Settings colours its own panes.
@@ -128,12 +140,28 @@ enum ModuleRegistry {
         .windowManagement, .translation, .cloudSync, .feedback, .updates, .whippet,
     ]
 
+    /// The built-in modules and Extensions, which is a module of modules.
+    static let all = builtIn + [.extensions]
+
     static func manifest(_ id: String) -> ModuleManifest? {
         builtIn.first { $0.id == id }
     }
 
     static func command(_ ref: ModuleRef) -> ModuleCommand? {
         ref.row.flatMap { manifest(ref.module)?.command($0) }
+    }
+
+    /// What a command or feature declares in its module's manifest, or, for the module itself, what all of them do.
+    static func permissions(of ref: ModuleRef) -> [Permission] {
+        guard let manifest = manifest(ref.module) else { return [] }
+        guard let row = ref.row else { return manifest.permissions }
+        return manifest.command(row)?.permissions ?? manifest.features.first { $0.id == row }?.permissions ?? []
+    }
+
+    /// Whether a command or feature declares `permission` in its module's manifest, so `PermissionGate` lets it be used.
+    /// For the module itself, whether any of its commands or features does.
+    static func declares(_ permission: Permission, for ref: ModuleRef) -> Bool {
+        permissions(of: ref).covers(permission)
     }
 
     /// The name a command's hotkey is kept under: its name from before modules, or one made from its module and id.

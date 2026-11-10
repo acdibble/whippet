@@ -67,14 +67,25 @@ The Mac app is in `Sources/Whippet`. What another app could share lives in the *
 `Packages/WhippetCore`: `ClipboardStore`, `CloudSync`, quicklinks (`Quicklink`), the calculator with unit, currency,
 base and time conversion, exchange rates, and `FuzzyMatch`. It uses no AppKit, builds for macOS and iOS, and exposes
 only what the app uses as `public`. The app chooses where data lives (`ClipboardStore.defaultDirectory`, set in
-`ClipboardHistory.swift`) and passes it in.
+`Modules/Clipboard/ClipboardHistory.swift`) and passes it in.
 
 - **`AppDelegate`** owns the floating search panel (`LauncherPanel`, an `NSPanel`), the global hotkey
-  (KeyboardShortcuts) and the shared services. `WhippetApp` holds the SwiftUI scenes (settings and other windows).
-- **`LauncherModel`** is the core of the launcher. It turns the query into `LauncherResult`s: apps, commands, the
-  calculator and unit conversion, clipboard history, quicklinks, timers, window commands, system commands and the
-  changelog. It also handles selection, argument entry (`ArgumentTarget`) and the ⌘K actions (`ResultAction`). New
-  launcher features usually add a `LauncherResult` case and handle it here and in `SearchView`.
+  (KeyboardShortcuts) and the shared services, and builds the modules from them (`makeModules()`). `WhippetApp` holds
+  the SwiftUI scenes (settings and other windows).
+- **Modules**: every feature is a module in `Sources/Whippet/Modules/<Name>/`: a manifest declaring its commands,
+  features and what each uses (`Permission`), and a `LauncherModule` that adds rows to the main search
+  (`contributions(for:)`), offers actions on them, opens its own screens (`LauncherScreen`), runs its commands from
+  their hotkeys, starts and stops its own work, and supplies its settings pane. Logic with no app-only dependencies
+  goes in the module's `Core/` folder, which the tests compile. A beta module declares `stage: .beta` in its manifest.
+  `ModuleSettings` holds the switches in Settings › Commands, and what's off does no work. Anything sensitive
+  (network, Accessibility, Screen Recording, Apple Events, notifications) goes through `PermissionGate` in
+  `Sources/Whippet/Permissions/`, which checks the use is declared and on; `scripts/check-permissions.sh`, run by
+  `just lint` and CI, fails on those APIs anywhere else. See `docs/modules.md`.
+- **The launcher** (`Sources/Whippet/Launcher/`): `LauncherModel` is the host. It holds the query, the selection, the
+  stack of screens with the main search (`RootScreen`) at the bottom, and text asked for in the bar (`InputRequest`).
+  Rows are `LauncherItem`s, each module's own value in `payload`. The host runs whatever `ItemAction`s the top screen
+  offers for the selection: Return runs the first, ⌘Return the second, ⌘K lists them all, and it handles their
+  `ActionOutcome`. It knows nothing of what any module does. `SearchView` draws the bar and the screen's content.
 - **Ranking**: `LaunchHistory` and `Ranking` order results by how often and how recently they were used, alongside
   `FuzzyMatch`.
 - **Calculator and unit conversion**: `Calculator.calculate` tries an expression, then a plain number, then another
@@ -87,7 +98,7 @@ only what the app uses as `public`. The app chooses where data lives (`Clipboard
 - **`CloudSync`** syncs clipboard and calculator history through `CKSyncEngine` in the private database. It's
   end-to-end encrypted: record names are keyed hashes, and all fields are in `encryptedValues`. Feedback goes to the
   public database (`Feedback.swift`). The schema and security roles are in `docs/cloudkit.md`.
-- **Extensions**, behind the `extensions` feature flag, run JavaScript with React in JavaScriptCore, one context per extension (`ExtensionRuntime` in
+- **Extensions**, a beta module, run JavaScript with React in JavaScriptCore, one context per extension (`ExtensionRuntime` in
   WhippetCore). Whippet's runtime in `Extensions/api` renders to plain objects with `react-reconciler`, and each
   commit's top view goes to Swift as JSON (`ExtensionView`). `ExtensionManager` finds, watches and enables extensions,
   and `ExtensionSession` holds an open view command. The bundled runtime,
@@ -100,9 +111,10 @@ only what the app uses as `public`. The app chooses where data lives (`Clipboard
 ### Tests
 
 The test target doesn't load the app, so tests never open the real database or start iCloud sync. It depends on
-`WhippetCore`, which tests reach with `@testable import WhippetCore`, and compiles a hand-picked list of app source
-files, listed in `project.yml` under `WhippetTests.sources`. To test a new app file, add it to that list and keep it
-free of app-only dependencies.
+`WhippetCore`, which tests reach with `@testable import WhippetCore`, and compiles the launcher's core, every
+module's manifest and every module's `Core/` folder, listed in `project.yml` under `WhippetTests.sources`. Put a
+module's testable logic in its `Core/` folder, free of app-only dependencies. Contributions and the main search are
+tested against `FakeHost` and `FakeModule` in `RootScreenTests`.
 
 ## Conventions
 
@@ -114,9 +126,9 @@ free of app-only dependencies.
   tone of the surrounding code.
 - **Dependencies** in `project.yml` and `Packages/WhippetCore/Package.swift` are pinned to exact commits on purpose.
   GRDB is in both, at the same commit. GitHub Actions are pinned to full SHAs with a version comment.
-- **Feature flags**: an unfinished feature ships behind a `FeatureFlag` (`FeatureFlags.swift`), off by default and
-  turned on under Settings › General › Beta Features. Whatever it gates should do no work while it's off, and start
-  or stop from `FeatureFlags.onChange` in `AppDelegate`.
+- **Beta modules**: an unfinished module declares `stage: .beta(summary:)` in its manifest. It's off by default,
+  turned on under Settings › General › Beta Features (`featureFlag.<module id>` in user defaults), and does no work
+  while it's off: its module's `update(_:)` runs whenever a flag changes.
 - **Commits** use Conventional Commits (`feat:`, `fix:`, `ci:`, `chore:`) and go straight to `main`. User-visible
   changes get an entry under `## [Unreleased]` in `CHANGELOG.md`.
 

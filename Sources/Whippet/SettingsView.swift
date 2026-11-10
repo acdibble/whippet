@@ -14,74 +14,6 @@ final class SettingsNavigation {
     var isCreatingQuicklink = false
 }
 
-enum SettingsPane: String, CaseIterable, Identifiable {
-    case general
-    case commands
-    case shortcuts
-    case clipboard
-    case quicklinks
-    case extensions
-    case notifications
-    case cloudSync
-    case usage
-    case feedback
-    case developer
-    case about
-
-    var id: Self { self }
-
-    var title: LocalizedStringKey {
-        switch self {
-        case .general: "General"
-        case .commands: "Commands"
-        case .shortcuts: "Shortcuts"
-        case .clipboard: "Clipboard History"
-        case .quicklinks: "Quicklinks"
-        case .extensions: "Extensions"
-        case .notifications: "Notifications"
-        case .cloudSync: "Cloud Sync"
-        case .usage: "Usage"
-        case .feedback: "Feedback"
-        case .developer: "Developer"
-        case .about: "About"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .general: "gearshape.fill"
-        case .commands: "switch.2"
-        case .shortcuts: "command"
-        case .clipboard: "list.clipboard.fill"
-        case .quicklinks: "link"
-        case .extensions: "puzzlepiece.extension.fill"
-        case .notifications: "bell.badge.fill"
-        case .cloudSync: "icloud.fill"
-        case .usage: "chart.bar.fill"
-        case .feedback: "tray.full.fill"
-        case .developer: "hammer.fill"
-        case .about: "info.circle.fill"
-        }
-    }
-
-    var tint: Color {
-        switch self {
-        case .general: .gray
-        case .commands: .purple
-        case .shortcuts: .purple
-        case .clipboard: .teal
-        case .quicklinks: .indigo
-        case .extensions: .pink
-        case .notifications: .red
-        case .cloudSync: .blue
-        case .usage: .green
-        case .feedback: .orange
-        case .developer: .gray
-        case .about: .gray
-        }
-    }
-}
-
 struct SettingsView: View {
     static let windowID = "settings"
 
@@ -97,31 +29,36 @@ struct SettingsView: View {
     let extensions: ExtensionManager
     let featureFlags: FeatureFlags
     let moduleSettings: ModuleSettings
-    /// The Developer pane is for accounts with the CloudKit Admin role, and always shows in development builds; the
-    /// Feedback pane also needs the feedback key on this Mac.
+    /// Where the modules are, whose panes are listed while they're on.
+    let launcher: LauncherModel
+    /// The Developer pane is for accounts with the CloudKit Admin role, and always shows in development builds.
     @State private var hasAdminRole = false
-    @State private var canReadFeedback = false
 
     var body: some View {
+        let modulePanes = modulePanes
         NavigationSplitView {
-            List(SettingsPane.allCases.filter(isShown), selection: $navigation.pane) { pane in
-                Label {
-                    HStack {
-                        Text(pane.title)
-                        if pane == .feedback || pane == .developer {
-                            Spacer()
-                            AdminBadge()
-                        }
-                    }
-                } icon: {
-                    PaneIcon(symbol: pane.symbol, tint: pane.tint)
+            List(selection: $navigation.pane) {
+                ForEach([SettingsPane.general, .commands, .shortcuts]) { row($0) }
+                ForEach(modulePanes.filter { !$0.pane.isAdminOnly }, id: \.id) { modulePane in
+                    row(.module(modulePane.id), pane: modulePane.pane)
                 }
-                .tag(pane)
+                row(.usage)
+                ForEach(modulePanes.filter(\.pane.isAdminOnly), id: \.id) { modulePane in
+                    row(.module(modulePane.id), pane: modulePane.pane)
+                }
+                if isDeveloperShown {
+                    row(.developer, isAdminOnly: true)
+                }
+                row(.about)
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
         } detail: {
             Group {
                 switch navigation.pane ?? .general {
+                case .module(let id):
+                    if let pane = modulePanes.first(where: { $0.id == id })?.pane {
+                        pane.view()
+                    }
                 case .general:
                     GeneralPane(
                         caffeine: caffeine, timers: timers, updater: updater, featureFlags: featureFlags,
@@ -135,19 +72,13 @@ struct SettingsView: View {
                     ShortcutsPane(
                         appIndex: appIndex, quicklinks: quicklinks, extensions: extensions, featureFlags: featureFlags,
                         modules: moduleSettings)
-                case .quicklinks: QuicklinksPane(quicklinks: quicklinks, navigation: navigation)
-                case .extensions: ExtensionsPane(extensions: extensions)
-                case .notifications: NotificationsPane(timers: timers)
-                case .cloudSync: CloudSyncPane(cloudSync: cloudSync)
-                case .clipboard: ClipboardPane(clipboard: clipboard)
                 case .usage: UsagePane(clipboard: clipboard)
-                case .feedback: FeedbackAdminPane(store: feedbackStore)
                 case .developer: DeveloperPane(cloudSync: cloudSync)
                 case .about: AboutPane(clipboard: clipboard)
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle(Text((navigation.pane ?? .general).title))
+            .navigationTitle(title(of: navigation.pane ?? .general, in: modulePanes))
         }
         .frame(minWidth: 680, minHeight: 440)
         // Turning off a beta feature or a module hides its pane, so the window doesn't stay on it.
@@ -155,40 +86,57 @@ struct SettingsView: View {
         .onChange(of: moduleSettings.revision) { leaveHiddenPane() }
         .onAppear { DockIcon.update() }
         .onDisappear { DockIcon.update() }
-        .task {
-            hasAdminRole = await feedbackStore.hasAdminRole
-            canReadFeedback = hasAdminRole && FeedbackKey.matchingPrivateKey != nil
+        .task { hasAdminRole = await feedbackStore.hasAdminRole }
+    }
+
+    private func row(_ pane: SettingsPane, pane modulePane: ModuleSettingsPane? = nil, isAdminOnly: Bool = false)
+        -> some View
+    {
+        Label {
+            HStack {
+                Text(modulePane?.title ?? pane.title)
+                if isAdminOnly || modulePane?.isAdminOnly == true {
+                    Spacer()
+                    AdminBadge()
+                }
+            }
+        } icon: {
+            PaneIcon(symbol: modulePane?.symbol ?? pane.symbol, tint: modulePane?.tint ?? pane.tint)
         }
+        .tag(pane)
+    }
+
+    /// The panes of the modules that are on, each by its module's id.
+    private var modulePanes: [(id: String, pane: ModuleSettingsPane)] {
+        launcher.launcherModules.compactMap { module in
+            guard let pane = module.settingsPane, moduleSettings.isEnabled(pane.ref ?? module.manifest.ref),
+                pane.isShown()
+            else { return nil }
+            return (module.id, pane)
+        }
+    }
+
+    private func title(of pane: SettingsPane, in modulePanes: [(id: String, pane: ModuleSettingsPane)]) -> String {
+        guard case .module(let id) = pane else { return pane.title }
+        return modulePanes.first { $0.id == id }?.pane.title ?? ""
+    }
+
+    private var isDeveloperShown: Bool {
+        #if DEBUG
+            true
+        #else
+            hasAdminRole
+        #endif
     }
 
     private func leaveHiddenPane() {
-        if let pane = navigation.pane, !isShown(pane) {
+        switch navigation.pane {
+        case .module(let id)? where !modulePanes.contains(where: { $0.id == id }):
             navigation.pane = .general
-        }
-    }
-
-    private func isShown(_ pane: SettingsPane) -> Bool {
-        switch pane {
-        case .feedback:
-            return canReadFeedback && moduleSettings.isEnabled(.readFeedback)
-        case .extensions:
-            return featureFlags.isEnabled(.extensions)
-        case .clipboard:
-            return moduleSettings.isEnabled(.clipboardModule)
-        case .quicklinks:
-            return moduleSettings.isEnabled(.quicklinksModule)
-        case .notifications:
-            return moduleSettings.isEnabled(.timersModule)
-        case .cloudSync:
-            return moduleSettings.isEnabled(.cloudSyncModule)
-        case .developer:
-            #if DEBUG
-                return true
-            #else
-                return hasAdminRole
-            #endif
+        case .developer? where !isDeveloperShown:
+            navigation.pane = .general
         default:
-            return true
+            break
         }
     }
 }
@@ -383,7 +331,7 @@ private struct ShortcutsPane: View {
         // Every command can have a hotkey, listed under its module. What's turned off in Settings › Commands isn't
         // listed.
         let manifests = ModuleRegistry.builtIn.filter { manifest in
-            manifest.requiredFlag.map(featureFlags.isEnabled) ?? true
+            manifest.flag.map(featureFlags.isEnabled) ?? true
         }
         let sections = manifests.map { manifest in
             (
@@ -460,56 +408,6 @@ private struct ShortcutsPane: View {
 
     private func matches(_ name: String) -> Bool {
         search.isEmpty || name.localizedCaseInsensitiveContains(search)
-    }
-}
-
-private struct CloudSyncPane: View {
-    @Bindable var cloudSync: CloudSync
-    @State private var isConfirmingDelete = false
-
-    var body: some View {
-        Form {
-            Section {
-                Toggle(isOn: $cloudSync.isEnabled) {
-                    Text("Sync with iCloud")
-                    Text("Clipboard history, pins and calculations, across your Macs")
-                }
-                Toggle(isOn: $cloudSync.includesImages) {
-                    Text("Include Images")
-                    Text("Copied images and their recognized text")
-                }
-                .disabled(!cloudSync.isEnabled)
-            } footer: {
-                Text(
-                    "Everything that syncs is end-to-end encrypted, images included. Apple can see only how many items there are, their sizes and when they changed."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
-            Section("Status") {
-                LabeledContent("Status", value: cloudSync.statusDescription)
-                LabeledContent("Waiting to Upload", value: cloudSync.pendingChanges.formatted())
-                HStack {
-                    Button("Sync Now") {
-                        Task { await cloudSync.syncNow() }
-                    }
-                    Spacer()
-                    Button("Delete iCloud Data…", role: .destructive) {
-                        isConfirmingDelete = true
-                    }
-                }
-                .disabled(!cloudSync.isEnabled)
-            }
-        }
-        .toggleStyle(.switch)
-        .confirmationDialog("Delete Whippet data from iCloud?", isPresented: $isConfirmingDelete) {
-            Button("Delete iCloud Data", role: .destructive) {
-                Task { await cloudSync.deleteCloudData() }
-            }
-        } message: {
-            Text("This removes the copy in iCloud and turns sync off. History on this Mac is kept.")
-        }
     }
 }
 

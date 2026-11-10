@@ -12,10 +12,12 @@ versions follow [Semantic Versioning](https://semver.org/).
   `www.ecb.europa.eu` or Capture Text needing Screen Recording, and Permissions… lists them by permission. What's
   turned off does no work: Clipboard History stops saving what you copy, Applications stops watching for new apps, and
   Updates stops checking. Something in use, such as a running timer, can't be turned off until it ends. Settings and
-  Quit are always on.
+  Quit are always on. Whippet holds each feature to what it declares: currency conversion can only connect to the
+  ECB, and nothing uses the network, Accessibility or Apple Events while it's turned off.
 - Settings › Shortcuts lists every command by module, including the system and Caffeinate commands, so any of them
   can have a hotkey.
 - A Check for Updates command.
+- Set Hotkey… in the ⌘K menu of any app or command, which opens Settings › Shortcuts.
 
 ## [1.5.1] - 2026-11-03
 

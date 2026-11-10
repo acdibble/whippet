@@ -911,6 +911,26 @@
         }
       }
     },
+    "Whippet blocked a request made while its feature is turned off." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whippet درخواستی را که در زمان خاموش بودن ویژگی‌اش انجام شد مسدود کرد."
+          }
+        }
+      }
+    },
+    "Whippet blocked a request to %@, which isn't declared." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whippet درخواستی به %@ را مسدود کرد، چون اعلام نشده است."
+          }
+        }
+      }
+    },
     "Whippet blocked a request to %@, which the extension's manifest doesn't list." : {
       "localizations" : {
         "fa" : {

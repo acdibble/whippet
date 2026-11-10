@@ -145,7 +145,48 @@ public struct AutomationTarget: Hashable, Sendable {
     public static let finder = AutomationTarget(bundleIdentifier: "com.apple.finder", name: "Finder")
 }
 
+extension Permission {
+    /// Whether declaring this permits `other`: the same kind and use, with every host `other` connects to matching one
+    /// of these patterns, and every app it asks being one of these. Whippet checks what a command or feature does
+    /// against what it declared with this.
+    public func covers(_ other: Permission) -> Bool {
+        switch (self, other) {
+        case (.network(let patterns), .network(let hosts)):
+            hosts.allSatisfy { Self.host($0, matchesAnyOf: patterns) }
+        case (.automation(let targets), .automation(let others)):
+            others.allSatisfy { other in targets.contains { $0.bundleIdentifier == other.bundleIdentifier } }
+        default:
+            self == other
+        }
+    }
+
+    /// Whether a host matches a pattern as extensions write them: `*` matches any host, `*.example.com` any host under
+    /// example.com, and anything else only itself, ignoring case.
+    public static func host(_ host: String, matchesAnyOf patterns: [String]) -> Bool {
+        let host = host.lowercased()
+        return patterns.contains { pattern in
+            let pattern = pattern.lowercased()
+            if pattern == "*" { return true }
+            if pattern.hasPrefix("*.") { return host.hasSuffix(pattern.dropFirst(1)) }
+            return host == pattern
+        }
+    }
+}
+
 extension Array where Element == Permission {
+    /// Whether any of these permits `permission`.
+    public func covers(_ permission: Permission) -> Bool {
+        contains { $0.covers(permission) }
+    }
+
+    /// The host patterns in every `network` permission.
+    public var hosts: [String] {
+        flatMap { permission -> [String] in
+            if case .network(let hosts) = permission { return hosts }
+            return []
+        }
+    }
+
     /// The permissions without repeats, in the order of their kinds, with network hosts gathered into one: what a
     /// module needs, from what each of its commands and features needs.
     public var combined: [Permission] {

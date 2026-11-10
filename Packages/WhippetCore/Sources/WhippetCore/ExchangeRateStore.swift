@@ -20,10 +20,11 @@ public final class ExchangeRateStore {
     private static let refreshInterval: Duration = .seconds(6 * 60 * 60)
     /// How often to look at whether the rates are due, which also retries a failed fetch.
     private static let checkInterval: Duration = .seconds(60 * 60)
-    /// Fetched without cookies, as the ECB needs none.
-    private static let session = URLSession(configuration: .ephemeral)
+    /// Allowed only the ECB's host, and only while currency conversion is on.
+    @ObservationIgnored private let session: ScopedSession
 
-    public init() {
+    public init(session: ScopedSession) {
+        self.session = session
         if let data = UserDefaults.standard.data(forKey: Self.defaultsKey),
             let saved = try? JSONDecoder().decode(Saved.self, from: data)
         {
@@ -64,7 +65,7 @@ public final class ExchangeRateStore {
         if let fetchedAt = rates?.fetchedAt, Date.now.timeIntervalSince(fetchedAt) < interval { return }
         let request = URLRequest(url: ExchangeRates.sourceURL, timeoutInterval: 30)
         guard
-            let (data, response) = try? await Self.session.data(for: request),
+            let (data, response) = try? await session.data(for: request),
             (response as? HTTPURLResponse)?.statusCode == 200,
             var rates = ExchangeRates(ecbXML: String(decoding: data, as: UTF8.self))
         else { return }

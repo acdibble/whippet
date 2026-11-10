@@ -25,10 +25,3 @@ extension AppEntry {
         KeyboardShortcuts.Name("app.\(stableID)")
     }
 }
-
-extension LauncherResult {
-    /// The global hotkey set for this app or command in Settings, if any.
-    @MainActor var hotkey: KeyboardShortcuts.Shortcut? {
-        hotkeyName.flatMap { KeyboardShortcuts.getShortcut(for: $0) }
-    }
-}

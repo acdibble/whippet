@@ -135,13 +135,7 @@ public struct ExtensionPermissions: Codable, Hashable, Sendable {
     }
 
     public func allowsHost(_ host: String) -> Bool {
-        let host = host.lowercased()
-        return network.contains { pattern in
-            let pattern = pattern.lowercased()
-            if pattern == "*" { return true }
-            if pattern.hasPrefix("*.") { return host.hasSuffix(pattern.dropFirst(1)) }
-            return host == pattern
-        }
+        Permission.host(host, matchesAnyOf: network)
     }
 
     static func isValidHostPattern(_ pattern: String) -> Bool {

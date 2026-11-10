@@ -6,7 +6,8 @@ import Translation
 import UniformTypeIdentifiers
 import WhippetCore
 
-/// Owns the search panel, the global hotkey and the services shared with the SwiftUI scenes in `WhippetApp`.
+/// Owns the search panel, the global hotkey, the services shared with the SwiftUI scenes in `WhippetApp`, and the
+/// modules, which it builds from those services.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let clipboard: ClipboardHistory
@@ -24,34 +25,61 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let feedbackStore = FeedbackStore()
     let settingsNavigation = SettingsNavigation()
     let quicklinks: Quicklinks
-    let exchangeRates = ExchangeRateStore()
+    let exchangeRates = ExchangeRateStore(session: PermissionGate.shared.network(for: .currencyConversion))
     let featureFlags = FeatureFlags()
     /// What's turned on in Settings › Commands.
     let moduleSettings: ModuleSettings
     let extensions = ExtensionManager()
-    private var registeredQuicklinkHotkeys: Set<String> = []
-    private var registeredExtensionHotkeys: Set<String> = []
     private lazy var floatingCalculator = FloatingCalculator(clipboard: clipboard, exchangeRates: exchangeRates)
     /// Created with the delegate, as Sparkle recommends, so its scheduled checks start at launch.
     let updater = Updater()
-    private var model: LauncherModel!
+    let model: LauncherModel
     private var panel: LauncherPanel!
-    private var registeredAppHotkeys: Set<String> = []
-    private var caffeineStatusItem: CaffeineStatusItem?
-    private var timersStatusItem: TimersStatusItem?
     /// Holds the session downloading translation languages while the system asks to.
     private var downloadWindow: NSWindow?
 
     override init() {
         let moduleSettings = ModuleSettings()
         self.moduleSettings = moduleSettings
+        PermissionGate.shared.modules = moduleSettings
         clipboard = ClipboardHistory()
         cloudSync = CloudSync(
             store: clipboard.store, directory: ClipboardStore.defaultDirectory,
             isAllowed: moduleSettings.isEnabled(.cloudSyncModule))
         appIndex = AppIndex(history: launchHistory)
         quicklinks = Quicklinks(store: clipboard.store)
+        model = LauncherModel(modules: moduleSettings, history: launchHistory)
         super.init()
+    }
+
+    /// Every built-in module, in the order their rows are listed in the empty search: the commands first, then
+    /// windows, quicklinks, extensions, recent timers and apps.
+    private func makeModules() -> [any LauncherModule] {
+        return [
+            CalculatorModule(
+                clipboard: clipboard, exchangeRates: exchangeRates, floatingCalculator: floatingCalculator),
+            ClipboardModule(clipboard: clipboard) { [weak self] item in self?.saveImage(item) },
+            CaptureTextModule { [weak self] in self?.captureText() },
+            WhippetModule(clipboard: clipboard),
+            FeedbackModule(
+                store: feedbackStore, showFeedback: { [weak self] in self?.showFeedback() },
+                readFeedback: { [weak self] in self?.showSettings(pane: .feedback) }),
+            UpdatesModule(updater: updater),
+            TranslationModule(featureFlags: featureFlags) { [weak self] configuration, onFinish in
+                self?.downloadTranslation(configuration, onFinish: onFinish)
+            },
+            CaffeinateModule(caffeine: caffeine),
+            SystemModule(),
+            WindowManagementModule(),
+            QuicklinksModule(quicklinks: quicklinks, navigation: settingsNavigation) { [weak self] in
+                self?.settingsNavigation.isCreatingQuicklink = true
+                self?.showSettings(pane: .quicklinks)
+            },
+            ExtensionsModule(extensions: extensions, featureFlags: featureFlags),
+            TimersModule(timers: timers),
+            ApplicationsModule(appIndex: appIndex, clipboard: clipboard),
+            CloudSyncModule(cloudSync: cloudSync),
+        ]
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -63,61 +91,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         clipboard.onLocalDelete = { [weak self] in self?.cloudSync.recordDeleted($0) }
         quicklinks.onLocalChange = { [weak self] in self?.cloudSync.recordChanged($0) }
         quicklinks.onLocalDelete = { [weak self] in self?.cloudSync.recordDeleted($0) }
-        quicklinks.onListChange = { [weak self] in self?.registerQuicklinkHotkeys() }
         cloudSync.onRemoteChanges = { [weak self] in
             self?.clipboard.didMergeRemoteChanges()
             self?.quicklinks.reload()
         }
 
-        model = LauncherModel(
-            appIndex: appIndex,
-            clipboard: clipboard,
-            caffeine: caffeine,
-            timers: timers,
-            history: launchHistory,
-            quicklinks: quicklinks,
-            exchangeRates: exchangeRates,
-            extensions: extensions,
-            modules: moduleSettings
-        )
         model.onDismiss = { [weak self] in self?.dismissPanel() }
-        model.onOpenSettings = { [weak self] in self?.showSettings() }
-        model.onSendFeedback = { [weak self] in self?.showFeedback() }
-        model.onCheckForUpdates = { [weak self] in self?.updater.checkForUpdates() }
-        model.onReadFeedback = { [weak self] in self?.showSettings(pane: .feedback) }
-        Task { model.isFeedbackAdmin = await feedbackStore.isAdmin }
+        model.onShowPanel = { [weak self] in self?.showPanel() }
         model.onShowActions = { [weak self] in self?.showActions() }
-        model.onCreateQuicklink = { [weak self] in
-            self?.settingsNavigation.isCreatingQuicklink = true
-            self?.showSettings(pane: .quicklinks)
-        }
-        model.onPopOutCalculator = { [weak self] expression in
-            guard let self else { return }
-            dismissPanel()
-            floatingCalculator.show(expression: expression)
-        }
-
-        model.onSaveImage = { [weak self] item in self?.saveImage(item) }
-        model.onCaptureText = { [weak self] in self?.captureText() }
-        model.onDownloadTranslation = { [weak self] configuration in self?.downloadTranslation(configuration) }
-        model.onOpenExtensionSettings = { [weak self] in self?.showSettings(pane: .extensions) }
-        extensions.onEvent = { [weak self] extensionID, event in
-            self?.model.handleExtensionEvent(event, from: extensionID)
-        }
-        extensions.host = { [weak self] request in
-            self?.model.handleExtensionRequest(request) ?? .null
-        }
-        extensions.onReload = { [weak self] ids in self?.model.extensionsReloaded(ids) }
-        extensions.onCommandsChange = { [weak self] in self?.registerExtensionHotkeys() }
-        featureFlags.onChange = { [weak self] flag, isEnabled in
-            guard let self else { return }
-            switch flag {
-            case .extensions: extensions.setActive(isEnabled)
-            case .translation: applyModules()
-            }
-        }
-        extensions.setActive(featureFlags.isEnabled(.extensions))
-        moduleSettings.locks = { [weak self] in self?.activityLocks ?? [] }
+        model.onOpenSettings = { [weak self] pane in self?.showSettings(pane: pane) }
+        model.onHotkeysChanged = { [weak self] in self?.syncHotkeys() }
+        Notifications.shared.configure()
+        model.install(makeModules())
+        featureFlags.onChange = { [weak self] _, _ in self?.applyModules() }
+        moduleSettings.locks = { [weak self] in self?.model.launcherModules.flatMap(\.activity) ?? [] }
         moduleSettings.onChange = { [weak self] in self?.applyModules() }
 
         panel = LauncherPanel(rootView: SearchView(model: model))
@@ -134,112 +121,70 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 }
             }
         }
-        registerAppHotkeys()
-        registerQuicklinkHotkeys()
-        registerExtensionHotkeys()
-        appIndex.onChange = { [weak self] in self?.registerAppHotkeys() }
         applyModules()
-        caffeineStatusItem = CaffeineStatusItem(caffeine: caffeine) { [weak self] in
-            self?.moduleSettings.isEnabled(.caffeinateModule) ?? true
-        }
-        Notifications.shared.configure()
-        timers.start()
-        timersStatusItem = TimersStatusItem(timers: timers) { [weak self] in
-            self?.moduleSettings.isEnabled(.timersModule) ?? true
-        }
-        timersStatusItem?.onStartTimer = { [weak self] in self?.runCommand(.startTimer) }
-        timersStatusItem?.onStartStopwatch = { [weak self] in self?.runCommand(.startStopwatch) }
-        timersStatusItem?.onOpenTimers = { [weak self] in self?.runCommand(.timers) }
-        timersStatusItem?.onCopyTime = { [weak self] item in self?.model.copyTime(of: item) }
-        timersStatusItem?.onOpenStopwatch = { [weak self] id in
-            guard let self else { return }
-            showPanel()
-            model.openDirectly { model.showStopwatch(id) }
-        }
-        timersStatusItem?.onRename = { [weak self] item in
-            guard let self else { return }
-            showPanel()
-            model.openDirectly { model.beginArgument(.rename(item), text: item.name) }
-        }
 
         // Navigation keys are handled before they reach the focused view, because text fields treat Escape as "complete"
         // and focus can sit outside the search field.
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, event.window === panel else { return event }
-            // While an input method is composing, arrows, Return and Escape pick and confirm its candidates.
-            if let editor = panel.firstResponder as? NSTextView, editor.hasMarkedText() { return event }
-            // Only these four, so Caps Lock and the keypad's own flag don't stop a shortcut matching.
-            let modifiers = event.modifierFlags.intersection([.shift, .control, .option, .command])
-            let isPlainArrow = modifiers.isEmpty
-            switch Int(event.keyCode) {
-            case kVK_Escape: model.back()
-            case kVK_Return where model.usesPlainKeys && modifiers.isEmpty,
-                kVK_Space where model.usesPlainKeys && modifiers.isEmpty:
-                model.activate()
-            // An extension's view runs its first action on Return when no field takes it: always in a detail, and in a
-            // list whose search field hasn't got focus yet.
-            case kVK_Return
-            where model.mode == .extensionView && modifiers.isEmpty && !(panel.firstResponder is NSTextView):
-                model.activate()
-            case kVK_Delete where model.usesPlainKeys && modifiers.isEmpty:
-                model.deleteWithPlainKey()
-            case kVK_Tab where modifiers.isEmpty:
-                guard model.beginArgumentForSelection() else { return event }
-            // An extension's form or detail leaves the arrows to its fields and scrolling.
-            case kVK_UpArrow where model.leavesArrowsToExtension, kVK_DownArrow where model.leavesArrowsToExtension:
-                return event
-            case kVK_UpArrow: model.moveSelection(by: -1)
-            case kVK_DownArrow: model.moveSelection(by: 1)
-            case kVK_Return where modifiers == [.command], kVK_ANSI_KeypadEnter where modifiers == [.command]:
-                model.perform(.secondary)
-            case kVK_LeftArrow where isPlainArrow, kVK_RightArrow where isPlainArrow:
-                // Columns swap sides in right-to-left languages, so the arrow keys follow the screen rather than the column order.
-                let towardStart =
-                    (Int(event.keyCode) == kVK_LeftArrow) == (NSApp.userInterfaceLayoutDirection == .leftToRight)
-                guard model.moveColumn(by: towardStart ? -1 : 1) || model.switchStopwatch(by: towardStart ? -1 : 1)
-                else {
-                    return event
-                }
-            default:
-                guard let key = Self.shortcutKey(for: event) else { return event }
-                // Shift too, which types + on most layouts.
-                if model.usesPlainKeys, modifiers.isEmpty || modifiers == [.shift] {
-                    model.performPlainKey(key)
-                    return nil
-                }
-                guard performShortcut(key, modifiers: modifiers) else { return event }
-            }
-            return nil
+            return handleKey(event) ? nil : event
         }
     }
 
-    /// Runs the panel shortcut for a key, returning false when there is none.
-    private func performShortcut(_ key: Character, modifiers: NSEvent.ModifierFlags) -> Bool {
-        // An extension's own shortcuts come first in its view, so its ⌃X or ⇧⌘C isn't taken by Whippet's actions for
-        // other results. ⌘K still opens the menu.
-        if model.mode == .extensionView, !(key == "k" && modifiers == [.command]),
-            model.performExtensionShortcut(key, modifiers: modifiers)
-        {
-            return true
+    /// A key pressed in the panel, true when the launcher took it.
+    private func handleKey(_ event: NSEvent) -> Bool {
+        // While an input method is composing, arrows, Return and Escape pick and confirm its candidates.
+        if let editor = panel.firstResponder as? NSTextView, editor.hasMarkedText() { return false }
+        // Only these four, so Caps Lock and the keypad's own flag don't stop a shortcut matching.
+        let modifiers = event.modifierFlags.intersection([.shift, .control, .option, .command])
+        let keys = model.activeScreen.keys
+        let isInField = panel.firstResponder is NSTextView
+        switch Int(event.keyCode) {
+        case kVK_Escape:
+            model.back()
+        case kVK_Return where modifiers.isEmpty && (model.usesPlainKeys || !isInField),
+            kVK_Space where modifiers.isEmpty && model.usesPlainKeys:
+            model.activate()
+        case kVK_Return where modifiers.isEmpty, kVK_ANSI_KeypadEnter where modifiers.isEmpty:
+            // The focused field submits, which runs the same.
+            return false
+        case kVK_Delete where modifiers.isEmpty && model.usesPlainKeys:
+            return model.performPlainKey("\u{8}")
+        case kVK_Tab where modifiers.isEmpty:
+            return model.runTabAction()
+        case kVK_UpArrow where keys.leavesArrows && model.input == nil,
+            kVK_DownArrow where keys.leavesArrows && model.input == nil:
+            return false
+        case kVK_UpArrow:
+            model.moveSelection(by: -1)
+        case kVK_DownArrow:
+            model.moveSelection(by: 1)
+        case kVK_Return where modifiers == [.command], kVK_ANSI_KeypadEnter where modifiers == [.command]:
+            model.activateSecondary()
+        case kVK_LeftArrow where modifiers.isEmpty, kVK_RightArrow where modifiers.isEmpty:
+            // Columns swap sides in right-to-left languages, so the arrow keys follow the screen rather than the order.
+            let towardStart =
+                (Int(event.keyCode) == kVK_LeftArrow) == (NSApp.userInterfaceLayoutDirection == .leftToRight)
+            return model.horizontalMove(by: towardStart ? -1 : 1)
+        default:
+            guard let key = Self.shortcutKey(for: event) else { return false }
+            // Shift too, which types + on most layouts.
+            if model.usesPlainKeys, modifiers.isEmpty || modifiers == [.shift] {
+                _ = model.performPlainKey(key)
+                return true
+            }
+            return performShortcut(key, modifiers: modifiers)
         }
+        return true
+    }
+
+    /// The launcher's own shortcuts, then the selection's and the screen's actions. False when nothing has the key.
+    private func performShortcut(_ key: Character, modifiers: NSEvent.ModifierFlags) -> Bool {
         switch (key, modifiers) {
-        case ("p", [.command, .shift]): model.perform(.togglePin)
-        case ("c", [.command, .shift]): model.perform(.copyPath)
-        case ("x", [.control]):
-            let dismisses = model.selectedResult.map { model.isAvailable(.dismiss, for: $0) } ?? false
-            model.perform(dismisses ? .dismiss : .delete)
-        case ("o", [.command, .shift]): model.perform(.popOut)
-        case ("f", [.command, .shift]): model.perform(.toggleFavorite)
-        case ("=", [.command]): model.perform(.addMinute)
-        case ("l", [.command]): model.perform(.lap)
-        case ("r", [.command]): model.perform(.restart)
-        case ("t", [.command]): model.perform(.startTimer)
-        case ("s", [.command]): model.perform(.saveImage)
-        case ("s", [.command, .shift]): model.perform(.swapLanguages)
         case ("k", [.command]): showActions()
         case ("q", [.command]): NSApp.terminate(nil)
         case (",", [.command]): showSettings()
-        default: return false
+        default: return model.performShortcut(KeyShortcut(String(key), modifiers))
         }
         return true
     }
@@ -257,10 +202,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private static let usKeys: [Int: Character] = [
         kVK_ANSI_P: "p", kVK_ANSI_C: "c", kVK_ANSI_X: "x", kVK_ANSI_K: "k", kVK_ANSI_Q: "q", kVK_ANSI_Comma: ",",
-        kVK_ANSI_Equal: "=", kVK_ANSI_L: "l", kVK_ANSI_R: "r", kVK_ANSI_T: "t", kVK_ANSI_F: "f",
+        kVK_ANSI_Equal: "=", kVK_ANSI_L: "l", kVK_ANSI_R: "r", kVK_ANSI_T: "t", kVK_ANSI_F: "f", kVK_ANSI_S: "s",
+        kVK_ANSI_O: "o", kVK_ANSI_N: "n",
     ]
 
-    /// Clicking the Dock icon, which only shows while Settings is open, brings Settings forward.
     /// The Dock icon only shows while a window is open, so clicking it brings back that window, such as Send Feedback,
     /// and opens Settings only when nothing is open.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -312,24 +257,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         openFeedbackWindow()
     }
 
-    /// Downloads translation languages, which the system confirms in a window of its own, then opens the launcher again
-    /// where it was, pasting into the same app, so the text is translated straight away.
-    private func downloadTranslation(_ configuration: TranslationSession.Configuration) {
-        let mode = model.mode
-        let query = model.query
+    /// Downloads translation languages, which the system confirms in a window of its own, then lets the translation
+    /// module open the launcher again where it was, pasting into the same app.
+    private func downloadTranslation(_ configuration: TranslationSession.Configuration, onFinish: @escaping () -> Void)
+    {
         let targetApp = model.targetApp
         panel.orderOut(nil)
         let view = TranslationDownloadView(configuration: configuration) { [weak self] in
             guard let self else { return }
             downloadWindow?.close()
             downloadWindow = nil
-            showPanel()
+            onFinish()
             model.targetApp = targetApp
             model.targetWindow = nil
-            if mode == .translate {
-                model.openDirectly { model.show(.translate) }
-            }
-            model.query = query
         }
         // Only there to hold the session, so it can't be seen or clicked.
         let window = NSWindow(
@@ -375,238 +315,77 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    /// Registers a handler once per app; the handler looks the app up when pressed, so it follows the app if it moves.
-    private func registerAppHotkeys() {
-        defer { syncHotkeys() }
-        for app in appIndex.apps where !registeredAppHotkeys.contains(app.stableID) {
-            registeredAppHotkeys.insert(app.stableID)
-            let name = app.shortcutName
-            KeyboardShortcuts.onKeyDown(for: name) { [weak self] in
-                guard let self, let app = appIndex.apps.first(where: { $0.shortcutName == name }),
-                    moduleSettings.isEnabled(.app(app.stableID))
-                else { return }
-                appIndex.open(app)
-            }
-        }
-    }
-
-    /// Like app hotkeys, looked up when pressed, so they follow a command through its extension reloading.
-    private func registerExtensionHotkeys() {
-        defer { syncHotkeys() }
-        for info in extensions.commands where !registeredExtensionHotkeys.contains(info.key) {
-            registeredExtensionHotkeys.insert(info.key)
-            let key = info.key
-            KeyboardShortcuts.onKeyDown(for: info.shortcutName) { [weak self] in
-                guard let self, let info = extensions.commands.first(where: { $0.key == key }),
-                    moduleSettings.isEnabled(info.moduleRef)
-                else { return }
-                runExtensionCommand(info)
-            }
-        }
-    }
-
-    /// A command without a view or argument runs without the panel, into the app in front. Others open the panel on the
-    /// command, or on its argument.
-    private func runExtensionCommand(_ info: ExtensionCommandInfo) {
-        launchHistory.record(LauncherResult.extensionCommand(info).id)
-        if info.command.mode == .noView, info.command.argument == nil {
-            let frontmost = NSWorkspace.shared.frontmostApplication
-            model.targetWindow = nil
-            model.targetApp =
-                frontmost?.processIdentifier == ProcessInfo.processInfo.processIdentifier ? nil : frontmost
-            model.launchExtension(info)
-            return
-        }
-        showPanel()
-        model.openDirectly {
-            if info.command.argument != nil {
-                model.beginArgument(.extensionCommand(info))
-            } else {
-                model.launchExtension(info)
-            }
-        }
-    }
-
-    /// Like app hotkeys, looked up when pressed. A quicklink that takes text opens the panel ready for it.
-    private func registerQuicklinkHotkeys() {
-        defer { syncHotkeys() }
-        for quicklink in quicklinks.items where !registeredQuicklinkHotkeys.contains(quicklink.uuid) {
-            registeredQuicklinkHotkeys.insert(quicklink.uuid)
-            let uuid = quicklink.uuid
-            KeyboardShortcuts.onKeyDown(for: quicklink.shortcutName) { [weak self] in
-                guard let self, let quicklink = quicklinks.items.first(where: { $0.uuid == uuid }),
-                    moduleSettings.isEnabled(.quicklink(uuid))
-                else { return }
-                guard quicklink.takesArgument else {
-                    launchHistory.record("quicklink:\(uuid)")
-                    Quicklinks.open(quicklink)
-                    return
-                }
-                // Counted when it opens with the text.
-                showPanel()
-                model.openDirectly { model.beginArgument(for: quicklink) }
-            }
-        }
-    }
-
-    /// Runs a built-in command from its hotkey or the timers menu. Window and system commands act straight away, on the
-    /// front window or the Mac, and commands that ask for something open the panel at that step.
-    private func runCommand(_ ref: ModuleRef) {
-        guard moduleSettings.isEnabled(ref) else { return }
-        if ref.module == ModuleRef.windowModule.module, let command = ref.row.flatMap(WindowCommand.init(rawValue:)) {
-            WindowManager.perform(command, in: NSWorkspace.shared.frontmostApplication)
-            return
-        }
-        if ref.module == ModuleRef.systemModule.module, let command = ref.row.flatMap(SystemCommand.init(rawValue:)) {
-            LauncherModel.run(command)
-            return
-        }
-        switch ref {
-        case .calculator:
-            showPanel()
-            model.openDirectly { model.show(.calculator) }
-        case .floatingCalculator:
-            floatingCalculator.toggle()
-        case .clipboardHistory:
-            showPanel()
-            model.openDirectly { model.show(.clipboard) }
-        case .captureText:
-            captureText()
-        case .translate:
-            guard featureFlags.isEnabled(.translation) else { return }
-            showPanel()
-            model.openDirectly { model.show(.translate) }
-        case .settings:
-            showSettings()
-        case .changelog:
-            showPanel()
-            model.openDirectly { model.show(.changelog) }
-        case .shareWhippet:
-            ShareLink.copy(using: clipboard)
-        case .quit:
-            NSApp.terminate(nil)
-        case .caffeinate:
-            caffeine.toggle()
-        case .caffeinateFor:
-            showPanel()
-            model.openDirectly { model.beginTimedCaffeinate() }
-        case .decaffeinate:
-            guard caffeine.isActive else { return }
-            caffeine.stop()
-        case .caffeinateMenuBar:
-            model.toggleCaffeineInMenuBar()
-        case .startTimer:
-            showPanel()
-            model.openDirectly { model.beginArgument(.timerDuration) }
-        case .startStopwatch:
-            showPanel()
-            model.openDirectly { model.startStopwatch() }
-        case .stopwatch:
-            showPanel()
-            model.openDirectly { model.showStopwatch() }
-        case .timers:
-            showPanel()
-            model.openDirectly { model.showTimers() }
-        case .createQuicklink:
-            settingsNavigation.isCreatingQuicklink = true
-            showSettings(pane: .quicklinks)
-        case .sendFeedback:
-            showFeedback()
-        case .readFeedback:
-            guard model.isFeedbackAdmin else { return }
-            showSettings(pane: .feedback)
-        case .checkForUpdates:
-            updater.checkForUpdates()
-        default:
-            break
-        }
+    /// Runs a built-in command from its hotkey or a menu, through the module it's in.
+    func runCommand(_ ref: ModuleRef) {
+        guard moduleSettings.isEnabled(ref), let row = ref.row else { return }
+        model.launcherModule(ref.module)?.run(command: row)
     }
 
     /// Starts and stops what Settings › Commands turns on and off, so a module that's off does no work.
     private func applyModules() {
-        let modules = moduleSettings
-        if modules.isEnabled(.applications) {
-            appIndex.startWatching()
-        } else {
-            appIndex.stopWatching()
+        for module in model.launcherModules {
+            module.update(moduleSettings)
         }
-        clipboard.isRecording = modules.isEnabled(.clipboardRecording)
-        clipboard.allowsLinkPreviews = modules.isEnabled(.clipboardModule)
-        if modules.isEnabled(.currencyConversion) {
-            exchangeRates.start()
-        } else {
-            exchangeRates.stop()
-        }
-        model.translator.setEnabled(featureFlags.isEnabled(.translation) && modules.isEnabled(.translationModule))
-        cloudSync.isAllowed = modules.isEnabled(.cloudSyncModule)
-        updater.isAllowed = modules.isEnabled(.updatesModule)
         syncHotkeys()
     }
 
     /// Turns each hotkey on or off with its command. The keys set for a command that's off are kept for when it's
     /// turned back on.
     private func syncHotkeys() {
-        var names: [(KeyboardShortcuts.Name, Bool)] = []
+        var names: [(name: KeyboardShortcuts.Name, isOn: Bool)] = []
         for manifest in ModuleRegistry.builtIn {
             for command in manifest.commands {
                 let ref = manifest.ref(command.id)
                 names.append((KeyboardShortcuts.Name(for: ref), moduleSettings.isEnabled(ref)))
             }
         }
-        names += appIndex.apps.map { ($0.shortcutName, moduleSettings.isEnabled(.app($0.stableID))) }
-        names += quicklinks.items.map { ($0.shortcutName, moduleSettings.isEnabled(.quicklink($0.uuid))) }
-        names += extensions.commands.map { ($0.shortcutName, moduleSettings.isEnabled($0.moduleRef)) }
-        KeyboardShortcuts.enable(names.filter(\.1).map(\.0))
-        KeyboardShortcuts.disable(names.filter { !$0.1 }.map(\.0))
+        for module in model.launcherModules {
+            names += module.hotkeys(moduleSettings)
+        }
+        KeyboardShortcuts.enable(names.filter(\.isOn).map(\.name))
+        KeyboardShortcuts.disable(names.filter { !$0.isOn }.map(\.name))
     }
 
-    /// What's running that keeps part of a module on, since turning it off would leave no way to stop it.
-    private var activityLocks: [ActivityLock] {
-        var locks: [ActivityLock] = []
-        if timers.hasAny {
-            locks.append(
-                ActivityLock(
-                    module: ModuleRef.timersModule.module, rows: ["timers", "stopwatch"],
-                    reason: String(localized: "A timer or stopwatch is running")))
-        }
-        if caffeine.isActive {
-            locks.append(
-                ActivityLock(
-                    module: ModuleRef.caffeinateModule.module, rows: ["decaffeinate"],
-                    reason: String(localized: "This Mac is being kept awake")))
-        }
-        if floatingCalculator.isVisible {
-            locks.append(
-                ActivityLock(
-                    module: ModuleRef.calculatorModule.module, rows: ["floating-calculator"],
-                    reason: String(localized: "The floating calculator is open")))
-        }
-        if model.mode == .extensionView, let info = model.extensionSession?.command {
-            locks.append(
-                ActivityLock(
-                    module: info.moduleRef.module, rows: [info.command.name],
-                    reason: String(localized: "Open in Whippet")))
-        }
-        if downloadWindow != nil {
-            locks.append(
-                ActivityLock(
-                    module: ModuleRef.translationModule.module, rows: ["translate", "card"],
-                    reason: String(localized: "Downloading translation languages")))
-        }
-        return locks
-    }
-
-    /// A native menu of the selected result's actions, which brings arrow keys, Return, Escape and type-to-select with it.
-    /// It opens above the footer at the panel's bottom right, or bottom left in right-to-left languages, beside the footer actions.
-    /// The menu opens above the footer, so it's only offered while the panel is expanded and has one. Collapsed, as
-    /// for an inline answer such as `10 min in s`, the selected result's own shortcuts still work.
+    /// A native menu of the selection's and the screen's actions, which brings arrow keys, Return, Escape and
+    /// type-to-select with it, with their sections as headers and destructive ones in red. It opens above the footer
+    /// at the panel's bottom right, or bottom left in right-to-left languages, beside the footer actions, so it's only
+    /// offered while the panel is expanded. Collapsed, as for an inline answer, the actions' own shortcuts still work.
     private func showActions() {
         guard model.isExpanded, let view = panel.contentView else { return }
         let menu = NSMenu()
-        if model.mode == .extensionView {
-            addExtensionActions(to: menu)
-        } else if let result = model.selectedResult {
-            addActions(for: result, to: menu)
+        let item = model.selectedItem
+        var section: String?
+        for (index, action) in model.menuActions.enumerated() {
+            if action.section != section {
+                section = action.section
+                if index > 0 {
+                    menu.addItem(.separator())
+                }
+                if let section {
+                    menu.addItem(.sectionHeader(title: section))
+                }
+            }
+            let menuItem = ActionMenuItem(title: action.title) { [weak self] in
+                self?.model.run(action, on: item)
+            }
+            menuItem.image = action.icon.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
+            if action.isDestructive {
+                menuItem.attributedTitle = NSAttributedString(
+                    string: action.title, attributes: [.foregroundColor: NSColor.systemRed])
+            }
+            // Return without modifiers is left to the menu, which runs the highlighted action with it; as a key
+            // equivalent it would run the first action whichever is highlighted.
+            if let shortcut = action.shortcut, shortcut != .returnKey {
+                menuItem.keyEquivalent = shortcut.key
+                menuItem.keyEquivalentModifierMask = shortcut.modifiers
+            } else if index == 1, item != nil {
+                menuItem.keyEquivalent = "\r"
+                menuItem.keyEquivalentModifierMask = .command
+            } else if model.usesPlainKeys, let key = action.plainKeys?.first, key != "\u{8}" {
+                menuItem.keyEquivalent = String(key)
+                menuItem.keyEquivalentModifierMask = []
+            }
+            menu.addItem(menuItem)
         }
         guard !menu.items.isEmpty else { return }
 
@@ -619,66 +398,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             y: inset + size.height - footerHeight - menu.size.height
         )
         menu.popUp(positioning: nil, at: origin, in: view)
-    }
-
-    private func addActions(for result: LauncherResult, to menu: NSMenu) {
-        for action in ResultAction.allCases where model.isAvailable(action, for: result) {
-            let item = ActionMenuItem(title: action.title(for: result, model: model)) { [weak self] in
-                self?.model.perform(action)
-            }
-            item.image = NSImage(systemSymbolName: action.symbol, accessibilityDescription: nil)
-            // Return without modifiers is left to the menu, which runs the highlighted action with it; as a key equivalent it
-            // would run the primary action whichever is highlighted. The footer shows that Return runs it.
-            if let shortcut = model.shortcut(for: action), !(shortcut.key == "\r" && shortcut.modifiers.isEmpty) {
-                item.keyEquivalent = shortcut.key
-                item.keyEquivalentModifierMask = shortcut.modifiers
-            }
-            menu.addItem(item)
-        }
-    }
-
-    /// The extension's actions for the selected item, or for its detail or form, with its sections as headers. The
-    /// first runs on Return, the second on ⌘Return, as the menu shows; a form's first runs on ⌘Return too.
-    private func addExtensionActions(to menu: NSMenu) {
-        let actions = model.extensionActions
-        let isForm = if case .form? = model.extensionSession?.view { true } else { false }
-        var section: String?
-        for (index, action) in actions.enumerated() {
-            if action.section != section {
-                section = action.section
-                if index > 0 {
-                    menu.addItem(.separator())
-                }
-                if let section {
-                    menu.addItem(.sectionHeader(title: section))
-                }
-            }
-            let item = ActionMenuItem(title: action.title) { [weak self] in
-                self?.model.runExtensionAction(action)
-            }
-            item.image = action.icon.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
-            if action.isDestructive {
-                item.attributedTitle = NSAttributedString(
-                    string: action.title, attributes: [.foregroundColor: NSColor.systemRed])
-            }
-            if let shortcut = action.shortcut {
-                item.keyEquivalent = shortcut.key
-                item.keyEquivalentModifierMask = Self.modifierFlags(shortcut.modifiers)
-            } else if index == 1 && !isForm || index == 0 && isForm {
-                item.keyEquivalent = "\r"
-                item.keyEquivalentModifierMask = .command
-            }
-            menu.addItem(item)
-        }
-    }
-
-    private static func modifierFlags(_ modifiers: ExtensionShortcut.Modifiers) -> NSEvent.ModifierFlags {
-        var flags: NSEvent.ModifierFlags = []
-        if modifiers.contains(.command) { flags.insert(.command) }
-        if modifiers.contains(.shift) { flags.insert(.shift) }
-        if modifiers.contains(.option) { flags.insert(.option) }
-        if modifiers.contains(.control) { flags.insert(.control) }
-        return flags
     }
 
     private func togglePanel() {

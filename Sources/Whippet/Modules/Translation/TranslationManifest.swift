@@ -22,7 +22,10 @@ extension ModuleManifest {
                 id: "fallback", title: String(localized: "Translate from the Search Bar"),
                 summary: String(localized: "Offered for anything you type, under “Use … with”.")),
         ],
-        requiredFlag: .translation
+        stage: .beta(
+            summary: String(
+                localized: "Translate text on this Mac by typing the language after it, or with the Translate command.")
+        )
     )
 }
 

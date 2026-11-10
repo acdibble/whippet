@@ -39,9 +39,11 @@ test filter="": generate
 format:
     git ls-files -z '*.swift' | xargs -0 xcrun swift-format format --in-place --parallel
 
-# Checks the Swift sources' formatting and style without changing them, as CI does.
+# Checks the Swift sources' formatting and style without changing them, and that APIs behind a permission are only
+# used through PermissionGate, as CI does.
 lint:
     git ls-files -z '*.swift' | xargs -0 xcrun swift-format lint --strict --parallel
+    scripts/check-permissions.sh
 
 # Publishes a beta of the current branch, once pushed, as a GitHub prerelease such as 1.4.0-beta.d226ff9.
 beta:

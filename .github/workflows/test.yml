@@ -35,6 +35,11 @@ jobs:
       - name: Lint
         run: git ls-files -z '*.swift' | xargs -0 xcrun swift-format lint --strict --parallel
 
+      # APIs behind a permission, such as URLSession or NSAppleScript, are only used in Sources/Whippet/Permissions/
+      # and ScopedSession, where each use is checked against what its module declares.
+      - name: Check permissions go through PermissionGate
+        run: scripts/check-permissions.sh
+
       # The extension runtime is built from Extensions/api and committed, so building Whippet needs no Node. This
       # checks the committed bundle matches its source.
       - name: Check the extension runtime is built

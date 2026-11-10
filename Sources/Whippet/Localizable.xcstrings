@@ -2331,6 +2331,16 @@
         }
       }
     },
+    "Name…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نام…"
+          }
+        }
+      }
+    },
     "Needs Accessibility permission to send ⌘V and move other apps' windows; without it, Return only copies" : {
       "localizations" : {
         "fa" : {
@@ -2377,16 +2387,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نمایشگر بعدی"
-          }
-        }
-      }
-    },
-    "No Actions" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "بدون عملکرد"
           }
         }
       }
@@ -2587,16 +2587,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "روی این Mac، اما این نسخه از کلید دیگری استفاده می‌کند"
-          }
-        }
-      }
-    },
-    "Open" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "باز کردن"
           }
         }
       }
@@ -2911,6 +2901,16 @@
         }
       }
     },
+    "Picking an area of the screen" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در حال انتخاب بخشی از صفحه"
+          }
+        }
+      }
+    },
     "Pin" : {
       "localizations" : {
         "fa" : {
@@ -3177,6 +3177,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حذف‌شده"
+          }
+        }
+      }
+    },
+    "Rename" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغییر نام"
           }
         }
       }
@@ -3547,6 +3557,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ را برای %2$@ تنظیم کنید"
+          }
+        }
+      }
+    },
+    "Set Hotkey…" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنظیم کلید میان‌بر…"
           }
         }
       }

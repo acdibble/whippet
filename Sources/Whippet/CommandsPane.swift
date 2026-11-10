@@ -287,7 +287,7 @@ struct CommandsPane: View {
 
     private var allRows: [CommandRow] {
         let builtIn = ModuleRegistry.builtIn.filter { manifest in
-            manifest.requiredFlag.map(featureFlags.isEnabled) ?? true
+            manifest.flag.map(featureFlags.isEnabled) ?? true
         }.map(moduleRow)
         let installed = featureFlags.isEnabled(.extensions) ? extensions.installed.map(extensionRow) : []
         return builtIn + installed

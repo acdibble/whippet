@@ -97,24 +97,27 @@ targets:
     sources:
       - Tests/WhippetTests
       - Sources/Whippet/AppContainer.swift
-      - Sources/Whippet/CaffeineDuration.swift
-      - Sources/Whippet/Changelog.swift
       - Sources/Whippet/FeatureFlags.swift
-      - Sources/Whippet/FeedbackImage.swift
-      - Sources/Whippet/FeedbackKey.swift
-      - Sources/Whippet/Modules
-      - Sources/Whippet/ImageConversion.swift
-      - Sources/Whippet/PageImage.swift
-      - Sources/Whippet/Ranking.swift
-      - Sources/Whippet/SystemCommand.swift
-      - Sources/Whippet/TextRecognition.swift
-      - Sources/Whippet/Thumbnail.swift
-      - Sources/Whippet/TimerDuration.swift
-      - Sources/Whippet/TimerItem.swift
-      - Sources/Whippet/TranslationLanguages.swift
-      - Sources/Whippet/WindowLayout.swift
+      - Sources/Whippet/Launcher/Ranking.swift
+      # The launcher's core, which modules are tested against with a fake host.
+      - Sources/Whippet/Launcher/LauncherItem.swift
+      - Sources/Whippet/Launcher/ItemAction.swift
+      - Sources/Whippet/Launcher/LauncherScreen.swift
+      - Sources/Whippet/Launcher/LauncherModule.swift
+      - Sources/Whippet/Launcher/RootScreen.swift
+      - Sources/Whippet/Launcher/CommandItem.swift
+      - Sources/Whippet/ModuleBridge.swift
+      - Sources/Whippet/SettingsPane.swift
+      # Each module's manifest, and the logic in its Core folder, which has no app-only dependencies.
+      - path: Sources/Whippet/Modules
+        includes:
+          - "ModuleManifest.swift"
+          - "ModuleSettings.swift"
+          - "*/*Manifest.swift"
+          - "*/Core/**"
     dependencies:
       - package: GRDB
+      - package: KeyboardShortcuts
       - package: WhippetCore
     settings:
       base:

@@ -41,7 +41,7 @@ public final class ExtensionRuntime: @unchecked Sendable {
     private let queue: DispatchQueue
     private let host: Host
     private let onEvent: @Sendable (Event) -> Void
-    private let urlSession: URLSession
+    private let urlSession: ScopedSession
 
     // Only touched on `queue`.
     private var context: JSContext?
@@ -74,9 +74,7 @@ public final class ExtensionRuntime: @unchecked Sendable {
         self.host = host
         self.onEvent = onEvent
         queue = DispatchQueue(label: "codes.dibble.whippet.extension.\(manifest.id)", qos: .userInitiated)
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 30
-        urlSession = URLSession(configuration: configuration)
+        urlSession = ScopedSession(hosts: manifest.permissions.network, timeout: 30)
         queue.async {
             self.load(environment: environment, preferences: preferences)
         }
@@ -144,7 +142,7 @@ public final class ExtensionRuntime: @unchecked Sendable {
     /// Stops timers and requests and lets the context go. A script stuck in a loop keeps its thread until Whippet
     /// quits, since JavaScriptCore has no public way to interrupt it.
     public func shutdown() {
-        urlSession.invalidateAndCancel()
+        urlSession.invalidate()
         queue.async {
             self.timers.removeAll()
             self.pendingCalls.removeAll()
@@ -413,8 +411,7 @@ public final class ExtensionRuntime: @unchecked Sendable {
             request.setValue(value.string, forHTTPHeaderField: name)
         }
         request.httpBody = arguments["body"]?.string.map { Data($0.utf8) }
-        let (data, response) = try await urlSession.data(
-            for: request, delegate: RedirectGuard(permissions: permissions))
+        let (data, response) = try await urlSession.data(for: request)
         let http = response as? HTTPURLResponse
         let status = http?.statusCode ?? 200
         var headers: [String: JSONValue] = [:]
@@ -437,24 +434,6 @@ public final class ExtensionRuntime: @unchecked Sendable {
             String(
                 localized: "Whippet blocked a request to \(host), which the extension's manifest doesn't list.",
                 bundle: .module))
-    }
-
-    /// Stops a redirect to a host the manifest doesn't list, which would otherwise get round the check on the first
-    /// request.
-    private final class RedirectGuard: NSObject, URLSessionTaskDelegate, Sendable {
-        let permissions: ExtensionPermissions
-
-        init(permissions: ExtensionPermissions) {
-            self.permissions = permissions
-        }
-
-        func urlSession(
-            _ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
-            newRequest request: URLRequest
-        ) async -> URLRequest? {
-            guard let host = request.url?.host(), permissions.allowsHost(host) else { return nil }
-            return request
-        }
     }
 
     // MARK: - Storage
