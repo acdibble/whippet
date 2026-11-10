@@ -7,9 +7,14 @@ import WhippetCore
 @MainActor
 final class TimersModule: LauncherModule {
     let manifest = ModuleManifest.timers
-    let timers = Timers()
+    let timers: Timers
     private var statusItem: TimersStatusItem?
     private weak var host: (any ModuleHost)?
+
+    /// A test gives it timers kept in defaults of its own.
+    init(timers: Timers = Timers()) {
+        self.timers = timers
+    }
 
     /// What a timers row stands for.
     enum Row: Hashable {

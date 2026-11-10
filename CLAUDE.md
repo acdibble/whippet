@@ -114,10 +114,16 @@ only what the app uses as `public`. The app chooses where data lives (`Clipboard
 ### Tests
 
 The test target doesn't load the app, so tests never open the real database or start iCloud sync. It depends on
-`WhippetCore`, which tests reach with `@testable import WhippetCore`, and compiles the launcher's core, every
-module's manifest and every module's `Core/` folder, listed in `project.yml` under `WhippetTests.sources`. Put a
-module's testable logic in its `Core/` folder, free of app-only dependencies. Contributions and the main search are
-tested against `FakeHost` and `FakeModule` in `RootScreenTests`.
+`WhippetCore`, which tests reach with `@testable import WhippetCore`, and compiles all of `Sources/Whippet` itself
+except the entry point, `WhippetApp.swift` (see `WhippetTests.sources` in `project.yml`), so a new file needs no
+listing. A test builds what it needs with a store and defaults of its own, such as
+`ClipboardHistory(directory:)` and `Timers(defaults:)`, never the app's.
+
+The main search is tested against `FakeHost` and `FakeModule` in `RootScreenTests`, and the real modules against
+`FakeHost` in `ModuleTests`, which checks every command in a manifest has a row and an action. Tests look at a
+module's actions rather than run them, unless they only open a screen or ask for text: running Sleep or Quit would do
+it. Updates and Cloud Sync aren't built in tests, since they start Sparkle and open iCloud as they're made. Logic with
+no app-only dependencies still goes in a module's `Core/` folder, where it's simplest to test.
 
 ## Conventions
 
