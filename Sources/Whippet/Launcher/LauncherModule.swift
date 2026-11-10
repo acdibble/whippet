@@ -16,6 +16,9 @@ protocol LauncherModule: AnyObject {
     func update(_ modules: ModuleSettings)
     /// What's running that keeps parts of it on, such as a timer counting down.
     var activity: [ActivityLock] { get }
+    /// Whether a window of its own is open that stays up beside other apps, such as the floating calculator. Whippet
+    /// isn't hidden when the panel closes then, since hiding it would hide that window too.
+    var hasOpenWindow: Bool { get }
     /// Called as the panel opens, such as to notice What's New running out while Whippet stays open.
     func panelWillShow()
     /// Called as the main search's text changes, for work that follows it, such as translating it.
@@ -59,6 +62,7 @@ extension LauncherModule {
     func attach(to host: any ModuleHost) {}
     func update(_ modules: ModuleSettings) {}
     var activity: [ActivityLock] { [] }
+    var hasOpenWindow: Bool { false }
     func panelWillShow() {}
     func searchTextChanged(_ query: String) {}
     var revision: AnyHashable { 0 }
@@ -144,6 +148,9 @@ protocol ModuleHost: AnyObject {
     var targetApp: NSRunningApplication? { get }
     /// One of Whippet's own windows when the panel opened over it.
     var targetWindow: NSWindow? { get }
+    var isPanelVisible: Bool { get }
+    /// The panel's window, to leave it out of a picture of the screen taken as it closes.
+    var panelWindowNumber: Int? { get }
     /// The screen the panel shows, for a module to tell whether it's one of its own.
     var activeScreen: any LauncherScreen { get }
     /// Whether the panel shows more than the search bar, which is all it shows for an answer typed into it.
@@ -152,6 +159,12 @@ protocol ModuleHost: AnyObject {
     var history: LaunchHistory { get }
 
     func dismiss()
+    /// Closes the panel and brings Whippet to the front instead of handing focus back, for a window of the module's
+    /// own such as a save panel, which would close the panel anyway by taking focus.
+    func closePanelForWindow()
+    /// Sends pastes to `app` again, once the panel is opened again after such a window, when Whippet itself was in
+    /// front.
+    func restoreTarget(_ app: NSRunningApplication?)
     func push(_ screen: any LauncherScreen)
     /// Goes back to the screen under the top one.
     func pop()

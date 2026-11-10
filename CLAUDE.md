@@ -70,7 +70,8 @@ only what the app uses as `public`. The app chooses where data lives (`Clipboard
 `Modules/Clipboard/ClipboardHistory.swift`) and passes it in.
 
 - **`AppDelegate`** owns the floating search panel (`LauncherPanel`, an `NSPanel`), the global hotkey
-  (KeyboardShortcuts) and the shared services, and builds the modules from them (`makeModules()`). `WhippetApp` holds
+  (KeyboardShortcuts) and the services more than one module or scene shares, and builds the modules from them
+  (`makeModules()`). A module owns whatever only it uses. `WhippetApp` holds
   the SwiftUI scenes (settings and other windows).
 - **Modules**: every feature is a module in `Sources/Whippet/Modules/<Name>/`: a manifest declaring its commands,
   features and what each uses (`Permission`), listed in `ModuleRegistry.all`, and a `LauncherModule`. The host lists

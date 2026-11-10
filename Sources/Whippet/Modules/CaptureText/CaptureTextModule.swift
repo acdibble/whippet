@@ -4,11 +4,10 @@ import AppKit
 @MainActor
 final class CaptureTextModule: LauncherModule {
     let manifest = ModuleManifest.captureText
-    /// Closes the launcher, leaving it out of the screen's picture, and lets an area be picked.
-    private let capture: () -> Void
+    private weak var host: (any ModuleHost)?
 
-    init(capture: @escaping () -> Void) {
-        self.capture = capture
+    func attach(to host: any ModuleHost) {
+        self.host = host
     }
 
     var activity: [ActivityLock] {
@@ -21,10 +20,21 @@ final class CaptureTextModule: LauncherModule {
 
     func actions(for item: LauncherItem) -> [ItemAction] {
         [
-            .command(owner: .captureText) { [capture] in
-                capture()
+            .command(owner: .captureText) { [weak self] in
+                self?.capture()
                 return .stay
             }
         ]
+    }
+
+    /// Closes the launcher first, and leaves it out of the screen's picture in case it hasn't gone yet, then lets an
+    /// area be picked.
+    private func capture() {
+        guard let host else { return }
+        let launcher = host.panelWindowNumber
+        if host.isPanelVisible {
+            host.dismiss()
+        }
+        Task { await ScreenCapture.captureText(excludingWindows: launcher.map { [$0] } ?? []) }
     }
 }

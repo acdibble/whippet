@@ -1,6 +1,7 @@
 import AppKit
 import Observation
 import SwiftUI
+import UniformTypeIdentifiers
 import WhippetCore
 
 /// What's copied, kept to search and paste again, with previews of copied links.
@@ -8,13 +9,10 @@ import WhippetCore
 final class ClipboardModule: LauncherModule {
     let manifest = ModuleManifest.clipboard
     let clipboard: ClipboardHistory
-    /// Asks where to save an image, as PNG or JPEG.
-    private let saveImage: (ClipboardItem) -> Void
     private weak var host: (any ModuleHost)?
 
-    init(clipboard: ClipboardHistory, saveImage: @escaping (ClipboardItem) -> Void) {
+    init(clipboard: ClipboardHistory) {
         self.clipboard = clipboard
-        self.saveImage = saveImage
     }
 
     func attach(to host: any ModuleHost) {
@@ -58,7 +56,28 @@ final class ClipboardModule: LauncherModule {
     }
 
     func screen() -> ClipboardScreen {
-        ClipboardScreen(clipboard: clipboard, host: host, saveImage: saveImage)
+        ClipboardScreen(clipboard: clipboard, host: host) { [weak self] item in self?.saveImage(item) }
+    }
+
+    /// Asks where to save a clipboard image, as PNG or, given a `.jpg` name, JPEG. The panel closes first, since the
+    /// save panel is a window of its own and would otherwise close the panel by taking focus anyway.
+    private func saveImage(_ item: ClipboardItem) {
+        host?.closePanelForWindow()
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.png, .jpeg]
+        savePanel.canCreateDirectories = true
+        savePanel.isExtensionHidden = false
+        savePanel.nameFieldStringValue = clipboard.suggestedImageName(for: item)
+        savePanel.directoryURL = .downloadsDirectory
+        savePanel.level = .floating
+        savePanel.begin { [clipboard] response in
+            guard response == .OK, let url = savePanel.url else { return }
+            if clipboard.saveImage(item, to: url) {
+                Toast.shared.show(String(localized: "Saved Image"), symbol: "square.and.arrow.down")
+            } else {
+                NSSound.beep()
+            }
+        }
     }
 
     /// Link Previews has its switch in the Clipboard History pane too.

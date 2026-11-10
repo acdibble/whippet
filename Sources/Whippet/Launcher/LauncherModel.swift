@@ -32,6 +32,8 @@ final class LauncherModel: ModuleHost {
 
     var targetApp: NSRunningApplication?
     weak var targetWindow: NSWindow?
+    /// The launcher's window, set once the app delegate has made it.
+    @ObservationIgnored weak var panel: NSWindow?
 
     @ObservationIgnored var onDismiss: () -> Void = {}
     @ObservationIgnored var onShowPanel: () -> Void = {}
@@ -162,6 +164,24 @@ final class LauncherModel: ModuleHost {
 
     func dismiss() {
         onDismiss()
+    }
+
+    var isPanelVisible: Bool {
+        panel?.isVisible ?? false
+    }
+
+    var panelWindowNumber: Int? {
+        panel?.windowNumber
+    }
+
+    func closePanelForWindow() {
+        panel?.orderOut(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func restoreTarget(_ app: NSRunningApplication?) {
+        targetApp = app
+        targetWindow = nil
     }
 
     func showActions() {

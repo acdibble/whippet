@@ -10,13 +10,15 @@ final class ApplicationsModule: LauncherModule {
     private weak var host: (any ModuleHost)?
     private var registeredHotkeys: Set<String> = []
 
-    init(appIndex: AppIndex, clipboard: ClipboardHistory) {
-        self.appIndex = appIndex
+    /// `history` counts each app's launches, from the search and from its hotkey.
+    init(history: LaunchHistory, clipboard: ClipboardHistory) {
+        appIndex = AppIndex(history: history)
         self.clipboard = clipboard
     }
 
     func attach(to host: any ModuleHost) {
         self.host = host
+        appIndex.refresh()
         appIndex.onChange = { [weak self] in self?.registerHotkeys() }
         registerHotkeys()
     }

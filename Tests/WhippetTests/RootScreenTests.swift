@@ -28,7 +28,14 @@ final class FakeHost: ModuleHost {
         history = LaunchHistory(defaults: defaults)
     }
 
+    var isPanelVisible = true
+    var panelWindowNumber: Int?
     func dismiss() { dismissals += 1 }
+    func closePanelForWindow() { dismissals += 1 }
+    func restoreTarget(_ app: NSRunningApplication?) {
+        targetApp = app
+        targetWindow = nil
+    }
     func push(_ screen: any LauncherScreen) { pushed.append(screen) }
     func pop() { _ = pushed.popLast() }
     func leave() { pop() }

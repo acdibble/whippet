@@ -8,14 +8,10 @@ import Translation
 final class TranslationModule: LauncherModule {
     let manifest = ModuleManifest.translation
     let translator = Translator()
-    /// Downloads languages, which the system confirms in a window of its own, calling back once it's done.
-    private let download: (TranslationSession.Configuration, @escaping () -> Void) -> Void
     private var isDownloading = false
+    /// Holds the session downloading translation languages while the system asks to.
+    private var downloadWindow: NSWindow?
     private weak var host: (any ModuleHost)?
-
-    init(download: @escaping (TranslationSession.Configuration, @escaping () -> Void) -> Void) {
-        self.download = download
-    }
 
     func attach(to host: any ModuleHost) {
         self.host = host
@@ -172,6 +168,8 @@ final class TranslationModule: LauncherModule {
         guard let host else { return }
         let query = host.query
         let inScreen = host.isTranslateScreenOpen
+        // Opening the launcher again puts Whippet in front, so the app to paste into is remembered.
+        let targetApp = host.targetApp
         isDownloading = true
         download(TranslationSession.Configuration(source: translator.source, target: translator.target)) {
             [weak self] in
@@ -181,7 +179,28 @@ final class TranslationModule: LauncherModule {
                 if inScreen { host.push(self.screen()) }
             }
             host.query = query
+            host.restoreTarget(targetApp)
         }
+    }
+
+    /// Downloads languages, which the system confirms in a window of its own, calling back once it's done or
+    /// cancelled. The panel closes for it, and the session lives in a window that can't be seen or clicked.
+    private func download(_ configuration: TranslationSession.Configuration, onFinish: @escaping () -> Void) {
+        host?.closePanelForWindow()
+        let view = TranslationDownloadView(configuration: configuration) { [weak self] in
+            self?.downloadWindow?.close()
+            self?.downloadWindow = nil
+            onFinish()
+        }
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1, height: 1), styleMask: [.borderless], backing: .buffered,
+            defer: false)
+        window.isReleasedWhenClosed = false
+        window.alphaValue = 0
+        window.ignoresMouseEvents = true
+        window.contentView = NSHostingView(rootView: view)
+        downloadWindow = window
+        window.orderFrontRegardless()
     }
 
 }

@@ -6,12 +6,8 @@ import SwiftUI
 @MainActor
 final class CaffeinateModule: LauncherModule {
     let manifest = ModuleManifest.caffeinate
-    let caffeine: Caffeine
+    let caffeine = Caffeine()
     private var statusItem: CaffeineStatusItem?
-
-    init(caffeine: Caffeine) {
-        self.caffeine = caffeine
-    }
 
     func attach(to host: any ModuleHost) {
         statusItem = CaffeineStatusItem(caffeine: caffeine) { [weak host, manifest] in

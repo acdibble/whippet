@@ -118,7 +118,10 @@ the top of the test. Turning a module off means Whippet never uses its entitleme
 ## The module
 
 Each module is a `LauncherModule` in its folder, such as `Modules/Timers/TimersModule.swift`, built in
-`AppDelegate.makeModules()` from the services it needs. The host, `LauncherModel`, knows nothing of what modules do:
+`AppDelegate.makeModules()`. A module owns what only it uses, such as `Timers` or the floating calculator, and is
+given only what's shared, such as clipboard history. What it does with the panel or with windows of its own goes
+through the host too (`closePanelForWindow()`, `panelWindowNumber`, `hasOpenWindow`), so the app delegate holds no
+module's code. The host, `LauncherModel`, knows nothing of what modules do:
 it asks them for rows and actions and runs them.
 
 ```swift

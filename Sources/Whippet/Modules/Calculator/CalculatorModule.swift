@@ -8,8 +8,8 @@ import WhippetCore
 final class CalculatorModule: LauncherModule {
     let manifest = ModuleManifest.calculator
     let clipboard: ClipboardHistory
-    let exchangeRates: ExchangeRateStore
-    let floatingCalculator: FloatingCalculator
+    let exchangeRates = ExchangeRateStore(session: PermissionGate.shared.network(for: .currencyConversion))
+    private(set) lazy var floatingCalculator = FloatingCalculator(clipboard: clipboard, exchangeRates: exchangeRates)
     private(set) weak var host: (any ModuleHost)?
     /// The screen the main search shows in its place while a calculation is typed.
     private lazy var inline = CalculatorScreen(module: self, isInline: true)
@@ -18,10 +18,8 @@ final class CalculatorModule: LauncherModule {
 
     static let columnLength = 10
 
-    init(clipboard: ClipboardHistory, exchangeRates: ExchangeRateStore, floatingCalculator: FloatingCalculator) {
+    init(clipboard: ClipboardHistory) {
         self.clipboard = clipboard
-        self.exchangeRates = exchangeRates
-        self.floatingCalculator = floatingCalculator
     }
 
     func attach(to host: any ModuleHost) {
@@ -43,6 +41,10 @@ final class CalculatorModule: LauncherModule {
                 module: manifest.id, rows: ["floating-calculator"],
                 reason: String(localized: "The floating calculator is open"))
         ]
+    }
+
+    var hasOpenWindow: Bool {
+        floatingCalculator.isVisible
     }
 
     var revision: AnyHashable {

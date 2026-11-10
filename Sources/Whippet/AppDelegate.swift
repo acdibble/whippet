@@ -2,8 +2,6 @@ import AppKit
 import Carbon.HIToolbox
 import KeyboardShortcuts
 import SwiftUI
-import Translation
-import UniformTypeIdentifiers
 import WhippetCore
 
 /// Owns the search panel, the global hotkey, the services shared with the SwiftUI scenes in `WhippetApp`, and the
@@ -19,24 +17,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Launches from the panel and from hotkeys, which rank results and fill the Suggestions section.
     let launchHistory = LaunchHistory()
-    let appIndex: AppIndex
-    let caffeine = Caffeine()
-    let timers = Timers()
     let feedbackStore = FeedbackStore()
     let settingsNavigation = SettingsNavigation()
     let quicklinks: Quicklinks
-    let exchangeRates = ExchangeRateStore(session: PermissionGate.shared.network(for: .currencyConversion))
     let featureFlags = FeatureFlags()
     /// What's turned on in Settings › Commands.
     let moduleSettings: ModuleSettings
     let extensions = ExtensionManager()
-    private lazy var floatingCalculator = FloatingCalculator(clipboard: clipboard, exchangeRates: exchangeRates)
     /// Created with the delegate, as Sparkle recommends, so its scheduled checks start at launch.
     let updater = Updater()
     let model: LauncherModel
     private var panel: LauncherPanel!
-    /// Holds the session downloading translation languages while the system asks to.
-    private var downloadWindow: NSWindow?
 
     override init() {
         let moduleSettings = ModuleSettings(flags: featureFlags)
@@ -46,7 +37,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         cloudSync = CloudSync(
             store: clipboard.store, directory: ClipboardStore.defaultDirectory,
             isAllowed: moduleSettings.isEnabled(.cloudSyncModule))
-        appIndex = AppIndex(history: launchHistory)
         quicklinks = Quicklinks(store: clipboard.store)
         model = LauncherModel(modules: moduleSettings, history: launchHistory)
         super.init()
@@ -56,19 +46,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// the commands first, then windows, quicklinks, extensions, recent timers and apps.
     private func makeModules() -> [any LauncherModule] {
         return [
-            CalculatorModule(
-                clipboard: clipboard, exchangeRates: exchangeRates, floatingCalculator: floatingCalculator),
-            ClipboardModule(clipboard: clipboard) { [weak self] item in self?.saveImage(item) },
-            CaptureTextModule { [weak self] in self?.captureText() },
+            CalculatorModule(clipboard: clipboard),
+            ClipboardModule(clipboard: clipboard),
+            CaptureTextModule(),
             WhippetModule(clipboard: clipboard),
             FeedbackModule(
                 store: feedbackStore, showFeedback: { [weak self] in self?.showFeedback() },
                 readFeedback: { [weak self] in self?.showSettings(pane: .feedback) }),
             UpdatesModule(updater: updater),
-            TranslationModule { [weak self] configuration, onFinish in
-                self?.downloadTranslation(configuration, onFinish: onFinish)
-            },
-            CaffeinateModule(caffeine: caffeine),
+            TranslationModule(),
+            CaffeinateModule(),
             SystemModule(),
             WindowManagementModule(),
             QuicklinksModule(quicklinks: quicklinks, navigation: settingsNavigation) { [weak self] in
@@ -76,15 +63,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self?.showSettings(pane: .quicklinks)
             },
             ExtensionsModule(extensions: extensions),
-            TimersModule(timers: timers),
-            ApplicationsModule(appIndex: appIndex, clipboard: clipboard),
+            TimersModule(),
+            ApplicationsModule(history: launchHistory, clipboard: clipboard),
             CloudSyncModule(cloudSync: cloudSync),
         ]
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppAppearance.current.apply()
-        appIndex.refresh()
         clipboard.start()
 
         clipboard.onLocalChange = { [weak self] in self?.cloudSync.recordChanged($0) }
@@ -108,6 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         panel = LauncherPanel(rootView: SearchView(model: model))
         panel.delegate = self
+        model.panel = panel
 
         KeyboardShortcuts.onKeyDown(for: .togglePanel) { [weak self] in
             self?.togglePanel()
@@ -256,64 +243,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         openFeedbackWindow()
     }
 
-    /// Downloads translation languages, which the system confirms in a window of its own, then lets the translation
-    /// module open the launcher again where it was, pasting into the same app.
-    private func downloadTranslation(_ configuration: TranslationSession.Configuration, onFinish: @escaping () -> Void)
-    {
-        let targetApp = model.targetApp
-        panel.orderOut(nil)
-        let view = TranslationDownloadView(configuration: configuration) { [weak self] in
-            guard let self else { return }
-            downloadWindow?.close()
-            downloadWindow = nil
-            onFinish()
-            model.targetApp = targetApp
-            model.targetWindow = nil
-        }
-        // Only there to hold the session, so it can't be seen or clicked.
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 1, height: 1), styleMask: [.borderless], backing: .buffered,
-            defer: false)
-        window.isReleasedWhenClosed = false
-        window.alphaValue = 0
-        window.ignoresMouseEvents = true
-        window.contentView = NSHostingView(rootView: view)
-        downloadWindow = window
-        NSApp.activate(ignoringOtherApps: true)
-        window.orderFrontRegardless()
-    }
-
-    /// Closes the launcher first, and leaves it out of the screen's picture in case it hasn't gone yet.
-    private func captureText() {
-        let launcher = panel.windowNumber
-        if panel.isVisible {
-            dismissPanel()
-        }
-        Task { await ScreenCapture.captureText(excludingWindows: [launcher]) }
-    }
-
-    /// Asks where to save a clipboard image, as PNG or, given a `.jpg` name, JPEG. The panel closes first, since the
-    /// save panel is a window of its own and would otherwise close the panel by taking focus anyway.
-    private func saveImage(_ item: ClipboardItem) {
-        panel.orderOut(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        let savePanel = NSSavePanel()
-        savePanel.allowedContentTypes = [.png, .jpeg]
-        savePanel.canCreateDirectories = true
-        savePanel.isExtensionHidden = false
-        savePanel.nameFieldStringValue = clipboard.suggestedImageName(for: item)
-        savePanel.directoryURL = .downloadsDirectory
-        savePanel.level = .floating
-        savePanel.begin { [weak self] response in
-            guard response == .OK, let url = savePanel.url, let self else { return }
-            if clipboard.saveImage(item, to: url) {
-                Toast.shared.show(String(localized: "Saved Image"), symbol: "square.and.arrow.down")
-            } else {
-                NSSound.beep()
-            }
-        }
-    }
-
     /// Starts and stops what Settings › Commands turns on and off, so a module that's off does no work.
     private func applyModules() {
         for module in model.launcherModules {
@@ -403,8 +332,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Hiding Whippet hands focus back to the app the panel opened over, which is where pastes land.
     /// While Settings is open only the panel closes, so Settings is not hidden with it.
-    /// Hiding Whippet would also hide the floating calculator, so while it's open, the app the panel opened over is
-    /// brought back instead.
+    /// Hiding Whippet would also hide a module's own window, such as the floating calculator, so while one is open,
+    /// the app the panel opened over is brought back instead.
     private func dismissPanel() {
         panel.orderOut(nil)
         if let window = model.targetWindow, window.isVisible {
@@ -413,7 +342,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         // Hiding Whippet would hide its open window too, such as Settings.
         guard NSApp.isActive, openWindow == nil else { return }
-        if floatingCalculator.isVisible, let targetApp = model.targetApp {
+        if model.launcherModules.contains(where: \.hasOpenWindow), let targetApp = model.targetApp {
             targetApp.activate()
             return
         }
