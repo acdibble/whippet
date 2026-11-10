@@ -19,6 +19,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 - A Check for Updates command.
 - Set Hotkey… in the ⌘K menu of any app or command, which opens Settings › Shortcuts.
 
+### Changed
+
+- Settings opens afresh on General each time, instead of where it was left when closed, with searches cleared and
+  open pages and editors closed.
+
 ## [1.5.1] - 2026-11-03
 
 ### Added

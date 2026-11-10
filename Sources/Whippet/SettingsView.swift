@@ -12,6 +12,16 @@ final class SettingsNavigation {
     var pane: SettingsPane? = .general
     /// Set by the Create Quicklink command, so the Quicklinks pane opens its editor.
     var isCreatingQuicklink = false
+    /// Counts the times Settings has closed. The window's content is identified by it, so every pane's own state,
+    /// such as a search, a pushed page or an open editor, starts afresh the next time Settings opens.
+    private(set) var session = 0
+
+    /// Puts Settings back as it first opens, on General, once its window closes.
+    func reset() {
+        pane = .general
+        isCreatingQuicklink = false
+        session += 1
+    }
 }
 
 struct SettingsView: View {
@@ -80,12 +90,16 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .navigationTitle(title(of: navigation.pane ?? .general, in: modulePanes))
         }
+        .id(navigation.session)
         .frame(minWidth: 680, minHeight: 440)
         // Turning off a beta feature or a module hides its pane, so the window doesn't stay on it.
         .onChange(of: featureFlags.enabled) { leaveHiddenPane() }
         .onChange(of: moduleSettings.revision) { leaveHiddenPane() }
         .onAppear { DockIcon.update() }
-        .onDisappear { DockIcon.update() }
+        .onDisappear {
+            DockIcon.update()
+            navigation.reset()
+        }
         .task { hasAdminRole = await feedbackStore.hasAdminRole }
     }
 
