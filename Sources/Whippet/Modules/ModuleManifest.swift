@@ -61,15 +61,8 @@ struct ModuleManifest: Identifiable {
     var features: [ModuleFeature] = []
     /// A beta module starts off, and is turned on under Settings › General › Beta Features.
     var stage = ModuleStage.stable
-    /// Rows that come and go, such as each app or quicklink, which Settings › Commands lists after the commands.
-    var dynamicRows: DynamicRows?
     /// Listed in Settings › Commands by what it holds rather than as itself, as Extensions is by each extension.
     var isListedByItsParts = false
-
-    enum DynamicRows {
-        case apps
-        case quicklinks
-    }
 
     var ref: ModuleRef {
         ModuleRef(module: id)
@@ -135,9 +128,6 @@ struct ModuleFeature: Identifiable {
     let title: String
     let summary: String
     var permissions: [Permission] = []
-    /// Kept by the service it belongs to, such as Cloud Sync's own switch, so the switch in Settings › Commands and the
-    /// one in its pane are the same switch.
-    var isStoredElsewhere = false
 }
 
 /// Something running that keeps part of a module on until it ends, such as a timer counting down: turning Timers off

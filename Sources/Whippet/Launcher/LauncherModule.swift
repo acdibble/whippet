@@ -43,11 +43,16 @@ protocol LauncherModule: AnyObject {
     /// Caffeinate's also stopping it: true when it did. False, the default, has the host run the first action of the
     /// command's row, opening the panel on whatever screen or input it asks for.
     func runHotkey(for command: ModuleRef) -> Bool
-    /// Hotkeys for rows that come and go, such as each app's, with whether each is on. It registers their handlers
-    /// itself, and calls `ModuleHost.hotkeysChanged()` when the list changes.
-    func hotkeys(_ modules: ModuleSettings) -> [(name: KeyboardShortcuts.Name, isOn: Bool)]
+    /// Its rows that come and go, such as each app, which Settings lists with a switch and a hotkey each. It registers
+    /// their hotkeys' handlers itself, and calls `ModuleHost.hotkeysChanged()` when the list changes.
+    var dynamicRows: [DynamicRow] { get }
+    /// The switch one of its features already has in a service, such as Cloud Sync's own, so the feature's switch in
+    /// Settings › Commands and the one in its pane are the same switch. Nil keeps it in `ModuleSettings`.
+    func externalSwitch(for feature: ModuleRef) -> Binding<Bool>?
     /// Its pane in Settings, listed while it's on.
     var settingsPane: ModuleSettingsPane? { get }
+    /// What it adds to Settings › General while it's on.
+    var generalSettings: GeneralSettings? { get }
 }
 
 extension LauncherModule {
@@ -64,8 +69,10 @@ extension LauncherModule {
     func traits(of item: LauncherItem) -> ItemTraits { ItemTraits() }
     func contributedActions(for item: LauncherItem, traits: ItemTraits) -> [ItemAction] { [] }
     func runHotkey(for command: ModuleRef) -> Bool { false }
-    func hotkeys(_ modules: ModuleSettings) -> [(name: KeyboardShortcuts.Name, isOn: Bool)] { [] }
+    var dynamicRows: [DynamicRow] { [] }
+    func externalSwitch(for feature: ModuleRef) -> Binding<Bool>? { nil }
     var settingsPane: ModuleSettingsPane? { nil }
+    var generalSettings: GeneralSettings? { nil }
 
     var id: String { manifest.id }
 }
@@ -101,6 +108,28 @@ struct ModuleSettingsPane {
     /// Whether it's listed, beyond the module being on, such as only once Extensions is turned on.
     var isShown: () -> Bool = { true }
     let view: () -> AnyView
+}
+
+/// A row of a module's that comes and goes, such as an app, a quicklink or an extension's command. Settings › Commands
+/// lists it under the module with a switch of its own, and Settings › Shortcuts with its hotkey.
+struct DynamicRow: Identifiable {
+    /// What its switch is kept under, such as `.app("com.apple.Safari")`.
+    let ref: ModuleRef
+    let title: String
+    let icon: ItemIcon
+    let hotkey: KeyboardShortcuts.Name
+    /// What a search in Settings matches besides the title, such as the extension a command belongs to.
+    var searchText: String?
+
+    var id: ModuleRef { ref }
+}
+
+/// What a module adds to Settings › General, which holds the few settings that don't warrant a pane.
+struct GeneralSettings {
+    /// Switches listed with Whippet's own at the top, such as showing in the menu bar.
+    var rows: (() -> AnyView)?
+    /// A section of its own.
+    var section: (() -> AnyView)?
 }
 
 /// What modules reach the launcher through.

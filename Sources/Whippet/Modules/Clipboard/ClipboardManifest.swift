@@ -21,7 +21,7 @@ extension ModuleManifest {
             ModuleFeature(
                 id: "link-previews", title: String(localized: "Link Previews"),
                 summary: String(localized: "Fetches the title and preview image of links you copy."),
-                permissions: [.network(["*"])], isStoredElsewhere: true),
+                permissions: [.network(["*"])]),
             ModuleFeature(
                 id: "search-fallback", title: String(localized: "Search Clipboard History from the Search Bar"),
                 summary: String(localized: "Offered for anything you type, under “Use … with”.")),

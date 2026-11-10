@@ -6,8 +6,7 @@ extension ModuleManifest {
         title: String(localized: "Applications"),
         summary: String(localized: "Opens apps from the search, and with their own hotkeys."),
         icon: "square.grid.2x2",
-        tint: .blue,
-        dynamicRows: .apps
+        tint: .blue
     )
 }
 

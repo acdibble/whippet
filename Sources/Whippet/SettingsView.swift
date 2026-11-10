@@ -29,17 +29,13 @@ struct SettingsView: View {
 
     let cloudSync: CloudSync
     let clipboard: ClipboardHistory
-    let appIndex: AppIndex
-    let caffeine: Caffeine
-    let timers: Timers
     let feedbackStore: FeedbackStore
     @Bindable var navigation: SettingsNavigation
-    let updater: Updater
-    let quicklinks: Quicklinks
     let extensions: ExtensionManager
     let featureFlags: FeatureFlags
     let moduleSettings: ModuleSettings
-    /// Where the modules are, whose panes are listed while they're on.
+    /// Where the modules are. Each supplies its own pane and what it adds to the others, so Settings needs none of
+    /// their services.
     let launcher: LauncherModel
     /// The Developer pane is for accounts with the CloudKit Admin role, and always shows in development builds.
     @State private var hasAdminRole = false
@@ -71,16 +67,13 @@ struct SettingsView: View {
                     }
                 case .general:
                     GeneralPane(
-                        caffeine: caffeine, timers: timers, updater: updater, featureFlags: featureFlags,
-                        modules: moduleSettings)
+                        featureFlags: featureFlags, modules: moduleSettings, launcherModules: launcher.launcherModules)
                 case .commands:
                     CommandsPane(
-                        modules: moduleSettings, appIndex: appIndex,
-                        quicklinks: quicklinks, extensions: extensions, clipboard: clipboard, cloudSync: cloudSync,
-                        updater: updater, navigation: navigation, showsAdminCommands: hasAdminRole)
+                        modules: moduleSettings, launcherModules: launcher.launcherModules, extensions: extensions,
+                        navigation: navigation, showsAdminCommands: hasAdminRole)
                 case .shortcuts:
-                    ShortcutsPane(
-                        appIndex: appIndex, quicklinks: quicklinks, extensions: extensions, modules: moduleSettings)
+                    ShortcutsPane(modules: moduleSettings, launcherModules: launcher.launcherModules)
                 case .usage: UsagePane(clipboard: clipboard)
                 case .developer: DeveloperPane(cloudSync: cloudSync)
                 case .about: AboutPane(clipboard: clipboard)
@@ -170,18 +163,13 @@ struct PaneIcon: View {
 }
 
 private struct GeneralPane: View {
-    let caffeine: Caffeine
-    let timers: Timers
-    @Bindable var updater: Updater
     let featureFlags: FeatureFlags
     let modules: ModuleSettings
+    let launcherModules: [any LauncherModule]
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
     @State private var canPaste = Paster.isTrusted
     @State private var canCaptureScreen = ScreenCapture.isAllowed
     @AppStorage(TextRecognition.keepsLineBreaksKey) private var keepsLineBreaks = true
-    /// Empty for Automatic, the Mac's preferred language.
-    @AppStorage(Translator.targetKey) private var translateTarget = ""
-    @State private var translationLanguages: [Locale.Language] = []
     @State private var language = AppLanguage.current
     @State private var appearance = AppAppearance.current
     @State private var needsRelaunch = false
@@ -191,15 +179,7 @@ private struct GeneralPane: View {
             Section {
                 Toggle("Open at Login", isOn: Binding(get: { launchesAtLogin }, set: { setLaunchAtLogin($0) }))
                 KeyboardShortcuts.Recorder("Whippet Hotkey", name: .togglePanel)
-                if modules.isEnabled(.caffeinateModule) {
-                    Toggle("Show Caffeinate in Menu Bar", isOn: Bindable(caffeine).showsInMenuBar)
-                }
-                if modules.isEnabled(.timersModule) {
-                    Toggle(isOn: Bindable(timers).showsInMenuBar) {
-                        Text("Show Timers in Menu Bar")
-                        Text("While a timer or stopwatch is running")
-                    }
-                }
+                ForEach(moduleRows, id: \.id) { $0.view() }
             }
 
             Section {
@@ -261,36 +241,7 @@ private struct GeneralPane: View {
                 }
             }
 
-            if modules.isEnabled(.translationModule) {
-                Section("Translate") {
-                    Picker("Translate To", selection: $translateTarget) {
-                        Text("Automatic").tag("")
-                        ForEach(translationLanguages, id: \.minimalIdentifier) { language in
-                            Text(TranslationLanguages.name(of: language)).tag(language.minimalIdentifier)
-                        }
-                    }
-                    LabeledContent {
-                        Button("Manage Languages…") {
-                            NSWorkspace.shared.open(
-                                URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!)
-                        }
-                    } label: {
-                        Text("Downloaded Languages")
-                        Text("Managed in System Settings › General › Language & Region › Translation Languages")
-                    }
-                }
-                .task { translationLanguages = await Translator.supportedLanguages() }
-            }
-
-            if modules.isEnabled(.updatesModule) {
-                Section("Updates") {
-                    Toggle("Check for Updates Automatically", isOn: $updater.automaticallyChecksForUpdates)
-                    LabeledContent("Check for Updates") {
-                        Button("Check Now") { updater.checkForUpdates() }
-                            .disabled(!updater.canCheckForUpdates)
-                    }
-                }
-            }
+            ForEach(moduleSections, id: \.id) { $0.view() }
 
             Section {
                 ForEach(FeatureFlag.allCases) { flag in
@@ -320,6 +271,24 @@ private struct GeneralPane: View {
         }
     }
 
+    /// The switches of the modules that are on, in the order their panes are listed.
+    private var moduleRows: [(id: String, view: () -> AnyView)] {
+        launcherModules.compactMap { module in
+            guard modules.isEnabled(module.manifest.ref), let rows = module.generalSettings?.rows else { return nil }
+            return (module.id, rows)
+        }
+    }
+
+    /// The sections of the modules that are on, in the order Settings › Commands lists modules.
+    private var moduleSections: [(id: String, view: () -> AnyView)] {
+        ModuleRegistry.all.compactMap { manifest in
+            guard modules.isEnabled(manifest.ref),
+                let section = launcherModules.first(where: { $0.id == manifest.id })?.generalSettings?.section
+            else { return nil }
+            return (manifest.id, section)
+        }
+    }
+
     private func setLaunchAtLogin(_ isEnabled: Bool) {
         do {
             try LaunchAtLogin.set(isEnabled)
@@ -333,10 +302,8 @@ private struct GeneralPane: View {
 /// A hotkey recorder for each command, by module, and each quicklink and installed application; recorded hotkeys are live
 /// immediately. The search filters every list, and a list with nothing matching is left out.
 private struct ShortcutsPane: View {
-    let appIndex: AppIndex
-    let quicklinks: Quicklinks
-    let extensions: ExtensionManager
     let modules: ModuleSettings
+    let launcherModules: [any LauncherModule]
     @State private var search = ""
 
     var body: some View {
@@ -350,11 +317,16 @@ private struct ShortcutsPane: View {
                 }
             )
         }.filter { !$0.1.isEmpty }
-        let quicklinks = quicklinks.items.filter { matches($0.name) && modules.isEnabled(.quicklink($0.uuid)) }
-        let extensionCommands = extensions.commands.filter {
-            (matches($0.title) || matches($0.extensionName)) && modules.isEnabled($0.moduleRef)
-        }
-        let apps = appIndex.apps.filter { matches($0.name) && modules.isEnabled(.app($0.stableID)) }
+        // Then the rows that come and go, by module in the order the search lists them: quicklinks, extensions' commands
+        // and apps.
+        let dynamic = launcherModules.map { module in
+            (
+                module.manifest,
+                module.dynamicRows.filter { row in
+                    modules.isEnabled(row.ref) && (matches(row.title) || row.searchText.map(matches) == true)
+                }
+            )
+        }.filter { !$0.1.isEmpty }
 
         Form {
             ForEach(sections, id: \.0.id) { manifest, commands in
@@ -366,53 +338,33 @@ private struct ShortcutsPane: View {
                     }
                 }
             }
-            if !quicklinks.isEmpty {
-                Section("Quicklinks") {
-                    ForEach(quicklinks) { quicklink in
-                        KeyboardShortcuts.Recorder(for: quicklink.shortcutName) {
-                            Label(quicklink.name, systemImage: "link")
-                        }
-                    }
-                }
-            }
-            if !extensionCommands.isEmpty {
-                Section("Extensions") {
-                    ForEach(extensionCommands, id: \.key) { info in
-                        KeyboardShortcuts.Recorder(for: info.shortcutName) {
-                            Label {
-                                Text(info.title)
-                            } icon: {
-                                ExtensionIcon(name: info.icon, directory: info.directory)
-                                    .frame(width: 16, height: 16)
-                            }
-                        }
-                    }
-                }
-            }
-            if !apps.isEmpty {
-                Section("Applications") {
-                    ForEach(apps) { app in
-                        KeyboardShortcuts.Recorder(for: app.shortcutName) {
-                            Label {
-                                Text(app.name)
-                            } icon: {
-                                Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
-                                    .resizable()
-                                    .frame(width: 18, height: 18)
-                            }
-                        }
+            ForEach(dynamic, id: \.0.id) { manifest, rows in
+                Section(manifest.title) {
+                    ForEach(rows) { row in
+                        KeyboardShortcuts.Recorder(for: row.hotkey) { label(for: row) }
                     }
                 }
             }
         }
         .overlay {
-            if sections.isEmpty, quicklinks.isEmpty,
-                extensionCommands.isEmpty, apps.isEmpty
-            {
+            if sections.isEmpty, dynamic.isEmpty {
                 ContentUnavailableView.search(text: search)
             }
         }
         .searchable(text: $search, prompt: "Search shortcuts")
+    }
+
+    @ViewBuilder
+    private func label(for row: DynamicRow) -> some View {
+        if case .symbol(let name) = row.icon {
+            Label(row.title, systemImage: name)
+        } else {
+            Label {
+                Text(row.title)
+            } icon: {
+                row.icon.view.frame(width: 18, height: 18)
+            }
+        }
     }
 
     private func matches(_ name: String) -> Bool {

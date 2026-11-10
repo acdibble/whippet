@@ -7,12 +7,9 @@ import WhippetCore
 /// doesn't want can be turned off. Hotkeys are set in Settings › Shortcuts.
 struct CommandsPane: View {
     let modules: ModuleSettings
-    let appIndex: AppIndex
-    let quicklinks: Quicklinks
+    /// The modules, each of which lists its own rows that come and go and says which switches a service keeps.
+    let launcherModules: [any LauncherModule]
     let extensions: ExtensionManager
-    @Bindable var clipboard: ClipboardHistory
-    @Bindable var cloudSync: CloudSync
-    @Bindable var updater: Updater
     let navigation: SettingsNavigation
     /// Whether this account has the CloudKit Admin role, which lists Read Feedback.
     let showsAdminCommands: Bool
@@ -297,28 +294,19 @@ struct CommandsPane: View {
                 id: "\(manifest.id)/\(command.id)", kind: .command, title: command.title, icon: .symbol(command.icon),
                 permissions: command.permissions, ref: ref)
         }
+        let module = launcherModules.first { $0.id == manifest.id }
         let features = manifest.features.map { feature in
-            CommandRow(
+            let ref = manifest.ref(feature.id)
+            return CommandRow(
                 id: "\(manifest.id)/\(feature.id)", kind: .feature, title: feature.title, summary: feature.summary,
-                icon: .none, permissions: feature.permissions, ref: manifest.ref(feature.id),
-                storage: feature.isStoredElsewhere ? externalStorage(for: manifest.ref(feature.id)) : .settings)
+                icon: .none, permissions: feature.permissions, ref: ref,
+                storage: module?.externalSwitch(for: ref).map(CommandRow.Storage.external) ?? .settings)
         }
-        let dynamic: [CommandRow] =
-            switch manifest.dynamicRows {
-            case .apps?:
-                appIndex.apps.map { app in
-                    CommandRow(
-                        id: "app/\(app.stableID)", kind: .dynamic, title: app.name, icon: .file(app.url),
-                        permissions: [], ref: .app(app.stableID))
-                }
-            case .quicklinks?:
-                quicklinks.items.map { quicklink in
-                    CommandRow(
-                        id: "quicklink/\(quicklink.uuid)", kind: .dynamic, title: quicklink.name, icon: .symbol("link"),
-                        permissions: [], ref: .quicklink(quicklink.uuid))
-                }
-            case nil: []
-            }
+        let dynamic = (module?.dynamicRows ?? []).map { row in
+            CommandRow(
+                id: "\(manifest.id)/\(row.ref.row ?? "")", kind: .dynamic, title: row.title, icon: .item(row.icon),
+                permissions: [], ref: row.ref)
+        }
         return CommandRow(
             id: manifest.id, kind: .module, title: manifest.title, summary: manifest.summary,
             icon: .tile(manifest.icon, manifest.tint.color), permissions: manifest.permissions, ref: manifest.ref,
@@ -344,16 +332,6 @@ struct CommandsPane: View {
                 : manifest.description,
             icon: .extension(manifest.icon, installed.directory), permissions: manifest.permissions.permissions,
             ref: ref, storage: .extensionApproval(installed), children: commands)
-    }
-
-    /// Features whose switch belongs to a service, so this switch and the one in its pane stay the same.
-    private func externalStorage(for ref: ModuleRef) -> CommandRow.Storage {
-        switch ref {
-        case .linkPreviews: .external($clipboard.fetchesLinkPreviews)
-        case .iCloudSync: .external($cloudSync.isEnabled)
-        case .automaticUpdateChecks: .external($updater.automaticallyChecksForUpdates)
-        default: .settings
-        }
     }
 
     // MARK: - Switches
@@ -435,8 +413,8 @@ struct CommandRow: Identifiable {
         case symbol(String)
         /// A white symbol on a coloured tile, as Settings' sidebar draws panes.
         case tile(String, Color)
-        /// An app's icon from its bundle.
-        case file(URL)
+        /// A row's own icon, such as an app's from its bundle.
+        case item(ItemIcon)
         /// An extension's icon: a symbol, an emoji or an image in its folder.
         case `extension`(String?, URL)
     }
@@ -499,10 +477,12 @@ private struct ModuleIcon: View {
                 .frame(width: size, height: size)
         case .tile(let name, let tint):
             PaneIcon(symbol: name, tint: tint, size: size)
-        case .file(let url):
-            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                .resizable()
+        case .item(.symbol(let name)):
+            Image(systemName: name)
+                .foregroundStyle(.secondary)
                 .frame(width: size, height: size)
+        case .item(let icon):
+            icon.view.frame(width: size, height: size)
         case .extension(let name, let directory):
             ExtensionIcon(name: name, directory: directory)
                 .frame(width: size, height: size)

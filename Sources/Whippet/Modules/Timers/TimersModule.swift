@@ -395,6 +395,16 @@ final class TimersModule: LauncherModule {
         return true
     }
 
+    var generalSettings: GeneralSettings? {
+        GeneralSettings(rows: { [timers] in
+            AnyView(
+                Toggle(isOn: Bindable(timers).showsInMenuBar) {
+                    Text("Show Timers in Menu Bar")
+                    Text("While a timer or stopwatch is running")
+                })
+        })
+    }
+
     var settingsPane: ModuleSettingsPane? {
         ModuleSettingsPane(title: String(localized: "Notifications"), symbol: "bell.badge.fill", tint: .red) {
             [timers] in AnyView(NotificationsPane(timers: timers))

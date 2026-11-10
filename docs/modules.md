@@ -53,10 +53,7 @@ extension ModuleRef {
   and its place in Favorites are kept. New commands leave it out.
 - **`isRequired`** keeps a command on, as for Settings and Quit, so Settings can always be reached. A module with a
   required command can't be turned off.
-- **`isStoredElsewhere`** is for a feature whose switch already belongs to a service, such as Cloud Sync's own switch.
-  `CommandsPane.externalStorage(for:)` binds the two, so they're the same switch.
 - **`stage: .beta(summary:)`** keeps a module off, and out of Settings › Commands, until its beta feature is on.
-- **`dynamicRows`** lists rows that come and go under the commands, such as each app or quicklink.
 
 `ModuleRef` names a module, or a command or feature in it, and is what everything checks: `ModuleSettings.isEnabled`,
 `PermissionGate.allows` and the hotkeys.
@@ -184,12 +181,16 @@ final class CaffeinateModule: LauncherModule {
   and Escape are its to take, through `keys`, `verticalMove`, `horizontalMove` and `back()`.
 - **Text in the bar** is an `InputRequest`: a label and one or more fields, submitted with Return. Its submit returns
   an outcome too, so `.input` asks for more, as Start Timer… asks for a name after the duration.
-- **Settings** lists a module's `settingsPane` while it's on.
+- **Settings** is filled in by the modules, so it names none of them. While a module is on, its `settingsPane` is
+  listed in the sidebar and its `generalSettings` (switches, or a section) in General. Its `dynamicRows`, the rows
+  that come and go such as each app, get a switch each under it in Commands and a hotkey each in Shortcuts. A feature
+  whose switch already belongs to a service, such as Cloud Sync's own, returns that switch from
+  `externalSwitch(for:)`, so the one in Commands and the one in its pane are the same.
 - **Hotkeys**: every command in the manifest has one, which runs the first action of the command's row, opening the
   panel on a screen or input the action asks for (`LauncherModel.runCommand`, or `ModuleHost.runCommand` from a
   module's own menu). A module takes the hotkey itself in `runHotkey(for:)` only where it differs from choosing the
-  command, as Caffeinate's also stops it. Rows that come and go, such as each app, register their own and report
-  them with `hotkeys(_:)`.
+  command, as Caffeinate's also stops it. Rows that come and go, such as each app, register their own handlers and
+  name the hotkeys in `dynamicRows`.
 
 ## Turning things off
 

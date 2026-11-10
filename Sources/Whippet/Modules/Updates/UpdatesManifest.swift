@@ -20,7 +20,7 @@ extension ModuleManifest {
             ModuleFeature(
                 id: "automatic-checks", title: String(localized: "Check for Updates Automatically"),
                 summary: String(localized: "Looks for a new version once a day."),
-                permissions: [.network(updateHosts)], isStoredElsewhere: true)
+                permissions: [.network(updateHosts)])
         ]
     )
 }

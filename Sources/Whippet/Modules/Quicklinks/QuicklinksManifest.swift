@@ -14,8 +14,7 @@ extension ModuleManifest {
             ModuleFeature(
                 id: "fallbacks", title: String(localized: "Search with Quicklinks from the Search Bar"),
                 summary: String(localized: "Quicklinks that take text are offered for anything you type."))
-        ],
-        dynamicRows: .quicklinks
+        ]
     )
 }
 

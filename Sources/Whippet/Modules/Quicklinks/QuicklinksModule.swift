@@ -110,8 +110,12 @@ final class QuicklinksModule: LauncherModule {
         }
     }
 
-    func hotkeys(_ modules: ModuleSettings) -> [(name: KeyboardShortcuts.Name, isOn: Bool)] {
-        quicklinks.items.map { ($0.shortcutName, modules.isEnabled(.quicklink($0.uuid))) }
+    var dynamicRows: [DynamicRow] {
+        quicklinks.items.map { quicklink in
+            DynamicRow(
+                ref: .quicklink(quicklink.uuid), title: quicklink.name, icon: .symbol("link"),
+                hotkey: quicklink.shortcutName)
+        }
     }
 
     /// Registers a handler once per quicklink, which looks it up when pressed. One that takes text opens the panel

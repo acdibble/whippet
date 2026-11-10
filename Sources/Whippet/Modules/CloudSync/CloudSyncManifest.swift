@@ -12,7 +12,7 @@ extension ModuleManifest {
             ModuleFeature(
                 id: "sync", title: String(localized: "Sync with iCloud"),
                 summary: String(localized: "End-to-end encrypted, set up under Settings › Cloud Sync."),
-                permissions: [.iCloud(.privateDatabase)], isStoredElsewhere: true)
+                permissions: [.iCloud(.privateDatabase)])
         ]
     )
 }

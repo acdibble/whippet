@@ -70,8 +70,10 @@ final class ApplicationsModule: LauncherModule {
         ItemTraits(fileURL: item.payload(as: AppEntry.self)?.url)
     }
 
-    func hotkeys(_ modules: ModuleSettings) -> [(name: KeyboardShortcuts.Name, isOn: Bool)] {
-        appIndex.apps.map { ($0.shortcutName, modules.isEnabled(.app($0.stableID))) }
+    var dynamicRows: [DynamicRow] {
+        appIndex.apps.map { app in
+            DynamicRow(ref: .app(app.stableID), title: app.name, icon: .file(app.url), hotkey: app.shortcutName)
+        }
     }
 
     /// Registers a handler once per app, which looks the app up when pressed, so it follows the app if it moves.

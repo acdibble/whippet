@@ -202,8 +202,12 @@ final class ExtensionsModule: LauncherModule {
             view: { [extensions] in AnyView(ExtensionsPane(extensions: extensions)) })
     }
 
-    func hotkeys(_ modules: ModuleSettings) -> [(name: KeyboardShortcuts.Name, isOn: Bool)] {
-        extensions.commands.map { ($0.shortcutName, modules.isEnabled($0.moduleRef)) }
+    var dynamicRows: [DynamicRow] {
+        extensions.commands.map { info in
+            DynamicRow(
+                ref: info.moduleRef, title: info.title, icon: .extension(info.icon, info.directory),
+                hotkey: info.shortcutName, searchText: info.extensionName)
+        }
     }
 
     /// Registers a handler once per command, which looks it up when pressed, so it follows the command through its

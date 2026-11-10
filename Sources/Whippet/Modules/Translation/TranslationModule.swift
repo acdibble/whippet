@@ -64,6 +64,10 @@ final class TranslationModule: LauncherModule {
         return contributions
     }
 
+    var generalSettings: GeneralSettings? {
+        GeneralSettings(section: { AnyView(TranslationSettings()) })
+    }
+
     func cardItem(ref: ModuleRef) -> LauncherItem {
         LauncherItem(
             id: "translation", module: manifest.id, title: String(localized: "Translation"), icon: .symbol("translate"),
@@ -237,5 +241,33 @@ final class TranslateScreen: LauncherScreen {
     func queryChanged(_ query: String) {
         let typed = TranslationLanguages.parse(query, languages: module.translator.languages)
         module.translator.setText(typed?.text ?? query, target: typed?.target)
+    }
+}
+
+/// Translate in Settings › General: the language to translate into, and where downloaded languages are managed.
+private struct TranslationSettings: View {
+    /// Empty for Automatic, the Mac's preferred language.
+    @AppStorage(Translator.targetKey) private var translateTarget = ""
+    @State private var translationLanguages: [Locale.Language] = []
+
+    var body: some View {
+        Section("Translate") {
+            Picker("Translate To", selection: $translateTarget) {
+                Text("Automatic").tag("")
+                ForEach(translationLanguages, id: \.minimalIdentifier) { language in
+                    Text(TranslationLanguages.name(of: language)).tag(language.minimalIdentifier)
+                }
+            }
+            LabeledContent {
+                Button("Manage Languages…") {
+                    NSWorkspace.shared.open(
+                        URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!)
+                }
+            } label: {
+                Text("Downloaded Languages")
+                Text("Managed in System Settings › General › Language & Region › Translation Languages")
+            }
+        }
+        .task { translationLanguages = await Translator.supportedLanguages() }
     }
 }

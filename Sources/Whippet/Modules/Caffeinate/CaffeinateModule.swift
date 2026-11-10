@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import SwiftUI
 
 /// Keeping the Mac awake, for a while or until it's stopped, with an item in the menu bar.
 @MainActor
@@ -28,6 +29,12 @@ final class CaffeinateModule: LauncherModule {
 
     var revision: AnyHashable {
         [caffeine.isActive, caffeine.showsInMenuBar, caffeine.endsAt as AnyHashable]
+    }
+
+    var generalSettings: GeneralSettings? {
+        GeneralSettings(rows: { [caffeine] in
+            AnyView(Toggle("Show Caffeinate in Menu Bar", isOn: Bindable(caffeine).showsInMenuBar))
+        })
     }
 
     func row(for command: ModuleRef, _ item: LauncherItem) -> LauncherItem? {

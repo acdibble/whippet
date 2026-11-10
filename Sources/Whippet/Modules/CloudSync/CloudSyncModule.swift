@@ -15,6 +15,11 @@ final class CloudSyncModule: LauncherModule {
         cloudSync.isAllowed = modules.isEnabled(manifest.ref)
     }
 
+    /// Sync with iCloud is the switch in the Cloud Sync pane.
+    func externalSwitch(for feature: ModuleRef) -> Binding<Bool>? {
+        feature == .iCloudSync ? Bindable(cloudSync).isEnabled : nil
+    }
+
     var settingsPane: ModuleSettingsPane? {
         ModuleSettingsPane(title: String(localized: "Cloud Sync"), symbol: "icloud.fill", tint: .blue) { [cloudSync] in
             AnyView(CloudSyncPane(cloudSync: cloudSync))

@@ -333,7 +333,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         }
         for module in model.launcherModules {
-            names += module.hotkeys(moduleSettings)
+            names += module.dynamicRows.map { ($0.hotkey, moduleSettings.isEnabled($0.ref)) }
         }
         KeyboardShortcuts.enable(names.filter(\.isOn).map(\.name))
         KeyboardShortcuts.disable(names.filter { !$0.isOn }.map(\.name))

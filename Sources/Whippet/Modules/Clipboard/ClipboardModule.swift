@@ -61,6 +61,11 @@ final class ClipboardModule: LauncherModule {
         ClipboardScreen(clipboard: clipboard, host: host, saveImage: saveImage)
     }
 
+    /// Link Previews has its switch in the Clipboard History pane too.
+    func externalSwitch(for feature: ModuleRef) -> Binding<Bool>? {
+        feature == .linkPreviews ? Bindable(clipboard).fetchesLinkPreviews : nil
+    }
+
     var settingsPane: ModuleSettingsPane? {
         ModuleSettingsPane(title: String(localized: "Clipboard History"), symbol: "list.clipboard.fill", tint: .teal) {
             [clipboard] in AnyView(ClipboardPane(clipboard: clipboard))

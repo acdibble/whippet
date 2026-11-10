@@ -18,13 +18,8 @@ struct WhippetApp: App {
             SettingsView(
                 cloudSync: appDelegate.cloudSync,
                 clipboard: appDelegate.clipboard,
-                appIndex: appDelegate.appIndex,
-                caffeine: appDelegate.caffeine,
-                timers: appDelegate.timers,
                 feedbackStore: appDelegate.feedbackStore,
                 navigation: appDelegate.settingsNavigation,
-                updater: appDelegate.updater,
-                quicklinks: appDelegate.quicklinks,
                 extensions: appDelegate.extensions,
                 featureFlags: appDelegate.featureFlags,
                 moduleSettings: appDelegate.moduleSettings,
