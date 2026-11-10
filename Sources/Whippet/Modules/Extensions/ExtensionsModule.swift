@@ -10,15 +10,13 @@ import WhippetCore
 final class ExtensionsModule: LauncherModule {
     let manifest = ModuleManifest.extensions
     let extensions: ExtensionManager
-    private let featureFlags: FeatureFlags
     private weak var host: (any ModuleHost)?
     private var registeredHotkeys: Set<String> = []
     /// The view command that's open, which keeps its extension on.
     private weak var openScreen: ExtensionScreen?
 
-    init(extensions: ExtensionManager, featureFlags: FeatureFlags) {
+    init(extensions: ExtensionManager) {
         self.extensions = extensions
-        self.featureFlags = featureFlags
     }
 
     func attach(to host: any ModuleHost) {
@@ -30,7 +28,7 @@ final class ExtensionsModule: LauncherModule {
     }
 
     func update(_ modules: ModuleSettings) {
-        extensions.setActive(featureFlags.isEnabled(.extensions))
+        extensions.setActive(modules.isEnabled(manifest.ref))
     }
 
     var activity: [ActivityLock] {
@@ -44,7 +42,6 @@ final class ExtensionsModule: LauncherModule {
     var revision: AnyHashable { extensions.commands }
 
     func contributions(for query: String) -> [Contribution] {
-        guard featureFlags.isEnabled(.extensions) else { return [] }
         var contributions = extensions.commands.map { Contribution.listed(item(for: $0)) }
         if !query.isEmpty {
             for info in extensions.commands where info.command.fallback {
@@ -191,7 +188,7 @@ final class ExtensionsModule: LauncherModule {
             NSPasteboard.general.setString(text, forType: .string)
             _ = host?.dismissAndPaste(
                 copyOnly: false,
-                for: openScreen?.session.command.moduleRef.moduleRef ?? ModuleRef(module: "extension.unknown"))
+                for: openScreen?.session.command.moduleRef.moduleRef ?? .extension("unknown"))
         case .readClipboard:
             return NSPasteboard.general.string(forType: .string).map(JSONValue.string) ?? .null
         }
@@ -202,7 +199,6 @@ final class ExtensionsModule: LauncherModule {
     var settingsPane: ModuleSettingsPane? {
         ModuleSettingsPane(
             title: String(localized: "Extensions"), symbol: "puzzlepiece.extension.fill", tint: .pink,
-            isShown: { [featureFlags] in featureFlags.isEnabled(.extensions) },
             view: { [extensions] in AnyView(ExtensionsPane(extensions: extensions)) })
     }
 
@@ -443,6 +439,6 @@ extension ExtensionsModule {
 extension ExtensionCommandInfo {
     /// The extension as a module, so its commands are turned on and off like built-in ones.
     var moduleRef: ModuleRef {
-        ModuleRef(module: "extension.\(extensionID)", row: command.name)
+        .extension(extensionID, row: command.name)
     }
 }

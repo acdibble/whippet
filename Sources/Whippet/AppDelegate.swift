@@ -39,7 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var downloadWindow: NSWindow?
 
     override init() {
-        let moduleSettings = ModuleSettings()
+        let moduleSettings = ModuleSettings(flags: featureFlags)
         self.moduleSettings = moduleSettings
         PermissionGate.shared.modules = moduleSettings
         clipboard = ClipboardHistory()
@@ -65,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 store: feedbackStore, showFeedback: { [weak self] in self?.showFeedback() },
                 readFeedback: { [weak self] in self?.showSettings(pane: .feedback) }),
             UpdatesModule(updater: updater),
-            TranslationModule(featureFlags: featureFlags) { [weak self] configuration, onFinish in
+            TranslationModule { [weak self] configuration, onFinish in
                 self?.downloadTranslation(configuration, onFinish: onFinish)
             },
             CaffeinateModule(caffeine: caffeine),
@@ -75,7 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self?.settingsNavigation.isCreatingQuicklink = true
                 self?.showSettings(pane: .quicklinks)
             },
-            ExtensionsModule(extensions: extensions, featureFlags: featureFlags),
+            ExtensionsModule(extensions: extensions),
             TimersModule(timers: timers),
             ApplicationsModule(appIndex: appIndex, clipboard: clipboard),
             CloudSyncModule(cloudSync: cloudSync),
@@ -103,7 +103,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model.onHotkeysChanged = { [weak self] in self?.syncHotkeys() }
         Notifications.shared.configure()
         model.install(makeModules())
-        featureFlags.onChange = { [weak self] _, _ in self?.applyModules() }
         moduleSettings.locks = { [weak self] in self?.model.launcherModules.flatMap(\.activity) ?? [] }
         moduleSettings.onChange = { [weak self] in self?.applyModules() }
 

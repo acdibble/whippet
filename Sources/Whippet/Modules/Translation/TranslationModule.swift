@@ -8,17 +8,12 @@ import Translation
 final class TranslationModule: LauncherModule {
     let manifest = ModuleManifest.translation
     let translator = Translator()
-    private let featureFlags: FeatureFlags
     /// Downloads languages, which the system confirms in a window of its own, calling back once it's done.
     private let download: (TranslationSession.Configuration, @escaping () -> Void) -> Void
     private var isDownloading = false
     private weak var host: (any ModuleHost)?
 
-    init(
-        featureFlags: FeatureFlags,
-        download: @escaping (TranslationSession.Configuration, @escaping () -> Void) -> Void
-    ) {
-        self.featureFlags = featureFlags
+    init(download: @escaping (TranslationSession.Configuration, @escaping () -> Void) -> Void) {
         self.download = download
     }
 
@@ -27,7 +22,7 @@ final class TranslationModule: LauncherModule {
     }
 
     func update(_ modules: ModuleSettings) {
-        translator.setEnabled(featureFlags.isEnabled(.translation) && modules.isEnabled(manifest.ref))
+        translator.setEnabled(modules.isEnabled(manifest.ref))
     }
 
     var activity: [ActivityLock] {

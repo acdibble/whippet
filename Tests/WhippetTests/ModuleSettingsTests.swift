@@ -28,7 +28,7 @@ final class ModuleSettingsTests {
         }
         // Rows that come and go, and extensions, are on too.
         #expect(settings.isEnabled(.app("com.apple.Safari")))
-        #expect(settings.isEnabled(ModuleRef(module: "extension.com.example.hello", row: "BrowseFruit")))
+        #expect(settings.isEnabled(.extension("com.example.hello", row: "BrowseFruit")))
     }
 
     @Test func aSwitchIsRememberedAndReported() {
@@ -56,6 +56,32 @@ final class ModuleSettingsTests {
 
         settings.setOn(.timersModule, true)
         #expect(settings.isEnabled(.startTimer))
+    }
+
+    /// A beta module does nothing until it's turned on under Beta Features, whatever its own switches say.
+    @Test func aBetaModuleIsOffUntilItsFlagIsOn() {
+        let flags = FeatureFlags(defaults: defaults)
+        let settings = ModuleSettings(defaults: defaults, flags: flags)
+        var changes = 0
+        settings.onChange = { changes += 1 }
+        let revision = settings.revision
+        let command = ModuleRef.extension("com.example.hello", row: "BrowseFruit")
+
+        #expect(!settings.isEnabled(.translate))
+        #expect(!settings.isAvailable(.translationModule))
+        #expect(settings.isOn(.translate))
+        #expect(!settings.isEnabled(command))
+        #expect(settings.isEnabled(.calculator))
+
+        flags.setEnabled(.translation, true)
+        #expect(settings.isEnabled(.translate))
+        #expect(!settings.isEnabled(command))
+        #expect(changes == 1)
+        #expect(settings.revision == revision + 1)
+
+        flags.setEnabled(.extensions, true)
+        #expect(settings.isEnabled(command))
+        #expect(settings.isEnabled(.extensionsModule))
     }
 
     @Test func settingsAndQuitStayOn() {

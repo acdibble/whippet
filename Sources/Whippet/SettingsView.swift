@@ -75,13 +75,12 @@ struct SettingsView: View {
                         modules: moduleSettings)
                 case .commands:
                     CommandsPane(
-                        modules: moduleSettings, featureFlags: featureFlags, appIndex: appIndex,
+                        modules: moduleSettings, appIndex: appIndex,
                         quicklinks: quicklinks, extensions: extensions, clipboard: clipboard, cloudSync: cloudSync,
                         updater: updater, navigation: navigation, showsAdminCommands: hasAdminRole)
                 case .shortcuts:
                     ShortcutsPane(
-                        appIndex: appIndex, quicklinks: quicklinks, extensions: extensions, featureFlags: featureFlags,
-                        modules: moduleSettings)
+                        appIndex: appIndex, quicklinks: quicklinks, extensions: extensions, modules: moduleSettings)
                 case .usage: UsagePane(clipboard: clipboard)
                 case .developer: DeveloperPane(cloudSync: cloudSync)
                 case .about: AboutPane(clipboard: clipboard)
@@ -262,7 +261,7 @@ private struct GeneralPane: View {
                 }
             }
 
-            if featureFlags.isEnabled(.translation), modules.isEnabled(.translationModule) {
+            if modules.isEnabled(.translationModule) {
                 Section("Translate") {
                     Picker("Translate To", selection: $translateTarget) {
                         Text("Automatic").tag("")
@@ -337,17 +336,13 @@ private struct ShortcutsPane: View {
     let appIndex: AppIndex
     let quicklinks: Quicklinks
     let extensions: ExtensionManager
-    let featureFlags: FeatureFlags
     let modules: ModuleSettings
     @State private var search = ""
 
     var body: some View {
         // Every command can have a hotkey, listed under its module. What's turned off in Settings › Commands isn't
         // listed.
-        let manifests = ModuleRegistry.builtIn.filter { manifest in
-            manifest.flag.map(featureFlags.isEnabled) ?? true
-        }
-        let sections = manifests.map { manifest in
+        let sections = ModuleRegistry.builtIn.map { manifest in
             (
                 manifest,
                 manifest.commands.filter { command in

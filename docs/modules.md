@@ -53,7 +53,7 @@ extension ModuleRef {
   required command can't be turned off.
 - **`isStoredElsewhere`** is for a feature whose switch already belongs to a service, such as Cloud Sync's own switch.
   `CommandsPane.externalStorage(for:)` binds the two, so they're the same switch.
-- **`requiredFlag`** lists a module only while a beta feature is on.
+- **`stage: .beta(summary:)`** keeps a module off, and out of Settings › Commands, until its beta feature is on.
 - **`dynamicRows`** lists rows that come and go under the commands, such as each app or quicklink.
 
 `ModuleRef` names a module, or a command or feature in it, and is what everything checks: `ModuleSettings.isEnabled`,
@@ -200,8 +200,10 @@ off.
 ### Beta modules
 
 A module that's still being tried out declares `stage: .beta(summary:)` in its manifest. It's listed under Settings ›
-General › Beta Features, starts off, and joins Settings › Commands once it's turned on. Its `update(_:)` runs when the
-flag changes.
+General › Beta Features, starts off, and joins Settings › Commands once it's turned on. The host enforces it:
+`ModuleSettings.isEnabled` is false for the module and everything in it until then, so its rows, actions, hotkeys and
+pane are left out like those of a module that's switched off, and its `update(_:)` runs when the flag changes. The
+module never reads the flag itself.
 
 ## Adding a module
 

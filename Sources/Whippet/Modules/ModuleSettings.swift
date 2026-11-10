@@ -2,7 +2,8 @@ import Foundation
 import Observation
 
 /// Which modules, commands and features are turned on in Settings › Commands, kept in user defaults. Everything is on
-/// until it's turned off, so features added in an update start on.
+/// until it's turned off, so features added in an update start on, except a beta module, which is off until it's
+/// turned on under Beta Features.
 @MainActor
 @Observable
 final class ModuleSettings {
@@ -18,13 +19,25 @@ final class ModuleSettings {
     private var stored: [String: Bool]
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let manifests: [String: ModuleManifest]
+    /// Which beta modules are on. Without it, as in most tests, every beta module counts as on.
+    @ObservationIgnored private let flags: FeatureFlags?
 
-    init(defaults: UserDefaults = .standard, manifests: [ModuleManifest] = ModuleRegistry.builtIn) {
+    init(
+        defaults: UserDefaults = .standard, manifests: [ModuleManifest] = ModuleRegistry.all,
+        flags: FeatureFlags? = nil
+    ) {
         self.defaults = defaults
+        self.flags = flags
         self.manifests = Dictionary(manifests.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         stored = defaults.dictionaryRepresentation().filter { key, _ in
             key.hasPrefix("module.") && key.hasSuffix(".enabled")
         }.compactMapValues { $0 as? Bool }
+        // A beta feature turning on or off changes what may run just as a switch does.
+        flags?.onChange = { [weak self] _, _ in
+            guard let self else { return }
+            revision += 1
+            onChange()
+        }
     }
 
     /// Where its own switch is, whatever the module it's in. Settings and Quit are always on.
@@ -32,9 +45,17 @@ final class ModuleSettings {
         isRequired(ref) || stored[ref.defaultsKey] ?? true
     }
 
-    /// Whether it may run: its module is on, and so is it.
+    /// Whether it may run: its module is past beta or turned on under Beta Features, its module is on, and so is it.
     func isEnabled(_ ref: ModuleRef) -> Bool {
-        isOn(ref.moduleRef) && (ref.row == nil || isOn(ref))
+        isAvailable(ref) && isOn(ref.moduleRef) && (ref.row == nil || isOn(ref))
+    }
+
+    /// Whether its module is there to be turned on at all: a beta module is only once its beta feature is on, and an
+    /// extension only while Extensions is.
+    func isAvailable(_ ref: ModuleRef) -> Bool {
+        guard let flags else { return true }
+        let manifest = ref.isExtension ? ModuleManifest.extensions : manifests[ref.module]
+        return manifest?.flag.map(flags.isEnabled) ?? true
     }
 
     /// Settings and Quit, and the Whippet module they're in.

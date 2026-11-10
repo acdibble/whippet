@@ -13,6 +13,23 @@ struct ModuleRef: Hashable, Sendable {
         self.row = row
     }
 
+    /// The module an extension is listed as, such as `extension.com.example.hello`, from its id.
+    static func `extension`(_ id: String, row: String? = nil) -> ModuleRef {
+        ModuleRef(module: extensionPrefix + id, row: row)
+    }
+
+    private static let extensionPrefix = "extension."
+
+    /// Whether it's an extension, or one of an extension's commands, rather than a built-in module.
+    var isExtension: Bool {
+        module.hasPrefix(Self.extensionPrefix)
+    }
+
+    /// The extension's id, for an extension or one of its commands.
+    var extensionID: String? {
+        isExtension ? String(module.dropFirst(Self.extensionPrefix.count)) : nil
+    }
+
     /// The module this command or feature belongs to, or the module itself.
     var moduleRef: ModuleRef {
         ModuleRef(module: module)

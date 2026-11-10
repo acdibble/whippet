@@ -13,3 +13,7 @@ extension ModuleManifest {
         )
     )
 }
+
+extension ModuleRef {
+    static let extensionsModule = ModuleManifest.extensions.ref
+}

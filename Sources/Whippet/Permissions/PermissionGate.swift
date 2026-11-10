@@ -31,7 +31,7 @@ final class PermissionGate {
     }
 
     private func declares(_ permission: Permission, for ref: ModuleRef) -> Bool {
-        if ref.module.hasPrefix("extension.") {
+        if ref.isExtension {
             // An extension's network and clipboard use is checked by its runtime, against its manifest.json. Pasting
             // with its Paste action is the one thing it does through Whippet, and it pastes what it shows.
             return permission == .accessibility(.paste)

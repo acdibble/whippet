@@ -7,7 +7,6 @@ import WhippetCore
 /// doesn't want can be turned off. Hotkeys are set in Settings › Shortcuts.
 struct CommandsPane: View {
     let modules: ModuleSettings
-    let featureFlags: FeatureFlags
     let appIndex: AppIndex
     let quicklinks: Quicklinks
     let extensions: ExtensionManager
@@ -286,10 +285,8 @@ struct CommandsPane: View {
     // MARK: - Rows
 
     private var allRows: [CommandRow] {
-        let builtIn = ModuleRegistry.builtIn.filter { manifest in
-            manifest.flag.map(featureFlags.isEnabled) ?? true
-        }.map(moduleRow)
-        let installed = featureFlags.isEnabled(.extensions) ? extensions.installed.map(extensionRow) : []
+        let builtIn = ModuleRegistry.builtIn.filter { modules.isAvailable($0.ref) }.map(moduleRow)
+        let installed = modules.isAvailable(.extensionsModule) ? extensions.installed.map(extensionRow) : []
         return builtIn + installed
     }
 
@@ -331,7 +328,8 @@ struct CommandsPane: View {
     /// An extension is turned on by approving what its manifest asks for, as in Settings › Extensions.
     private func extensionRow(_ installed: InstalledExtension) -> CommandRow {
         let manifest = installed.manifest
-        let module = "extension.\(installed.id)"
+        let ref = ModuleRef.extension(installed.id)
+        let module = ref.module
         let commands = manifest.commands.map { command in
             CommandRow(
                 id: "\(module)/\(command.name)", kind: .command, title: command.title, summary: command.subtitle,
@@ -345,7 +343,7 @@ struct CommandsPane: View {
                 ? String(localized: "This version asks for more access. Turn it on again to allow it.")
                 : manifest.description,
             icon: .extension(manifest.icon, installed.directory), permissions: manifest.permissions.permissions,
-            ref: ModuleRef(module: module), storage: .extensionApproval(installed), children: commands)
+            ref: ref, storage: .extensionApproval(installed), children: commands)
     }
 
     /// Features whose switch belongs to a service, so this switch and the one in its pane stay the same.
@@ -383,8 +381,7 @@ struct CommandsPane: View {
 
     /// The extension a row belongs to, if it's in one.
     private func installedExtension(for row: CommandRow) -> InstalledExtension? {
-        guard row.ref.module.hasPrefix("extension.") else { return nil }
-        return extensions.installed(id: String(row.ref.module.dropFirst("extension.".count)))
+        row.ref.extensionID.flatMap(extensions.installed(id:))
     }
 
     /// Whether the row's module is on, so the row can work. An extension is on once what it asks for is approved.

@@ -36,7 +36,8 @@ struct FeatureFlag: Hashable, Identifiable {
 final class FeatureFlags {
     private(set) var enabled: Set<FeatureFlag>
 
-    /// Called after a flag changes, so what it gates can start or stop.
+    /// Called after a flag changes, so what it gates can start or stop. `ModuleSettings` takes it when it's given
+    /// the flags, and passes the change on through its own `onChange`.
     @ObservationIgnored var onChange: (FeatureFlag, Bool) -> Void = { _, _ in }
     @ObservationIgnored private let defaults: UserDefaults
 

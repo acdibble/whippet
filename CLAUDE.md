@@ -128,7 +128,8 @@ tested against `FakeHost` and `FakeModule` in `RootScreenTests`.
   GRDB is in both, at the same commit. GitHub Actions are pinned to full SHAs with a version comment.
 - **Beta modules**: an unfinished module declares `stage: .beta(summary:)` in its manifest. It's off by default,
   turned on under Settings › General › Beta Features (`featureFlag.<module id>` in user defaults), and does no work
-  while it's off: its module's `update(_:)` runs whenever a flag changes.
+  while it's off: `ModuleSettings.isEnabled` is false for all of it until then, and its module's `update(_:)` runs
+  whenever a flag changes.
 - **Commits** use Conventional Commits (`feat:`, `fix:`, `ci:`, `chore:`) and go straight to `main`. User-visible
   changes get an entry under `## [Unreleased]` in `CHANGELOG.md`.
 
