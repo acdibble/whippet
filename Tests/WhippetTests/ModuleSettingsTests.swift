@@ -121,23 +121,6 @@ struct ModuleManifestTests {
         }
     }
 
-    /// Launches and favorites from before modules are kept under the same rows.
-    @Test func rowsKeepTheirIDs() {
-        func id(_ ref: ModuleRef) -> String? {
-            ModuleRegistry.command(ref).flatMap { command in
-                ModuleRegistry.manifest(ref.module).map { LauncherItem.command(command, of: $0).id }
-            }
-        }
-        #expect(id(.calculator) == "command:calculator")
-        #expect(id(.caffeinateMenuBar) == "command:caffeinate-menu-bar")
-        #expect(id(SystemCommand.sleep.moduleRef) == "command:system.sleep")
-        #expect(id(WindowCommand.leftHalf.moduleRef) == "command:window.leftHalf")
-        let ids = ModuleRegistry.all.flatMap { manifest in
-            manifest.commands.map { LauncherItem.command($0, of: manifest).id }
-        }
-        #expect(Set(ids).count == ids.count)
-    }
-
     /// Hotkeys set before modules keep working.
     @Test func hotkeysKeepTheirNames() {
         let names = Set(ModuleRegistry.all.flatMap(\.commands).compactMap(\.legacyHotkey))

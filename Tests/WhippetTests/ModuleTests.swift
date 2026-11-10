@@ -55,6 +55,7 @@ final class ModuleTests {
         ])
 
         var leftOut: [ModuleRef] = []
+        var ids: Set<String> = []
         var count = 0
         for module in host.launcherModules {
             for command in module.manifest.commands {
@@ -64,6 +65,7 @@ final class ModuleTests {
                     continue
                 }
                 count += 1
+                #expect(ids.insert(item.id).inserted, "\(item.id) is the row of two commands")
                 #expect(item.command == ref)
                 #expect(item.module == module.id)
                 let actions = host.ownActions(for: item)
@@ -83,8 +85,22 @@ final class ModuleTests {
         let rows = items(for: "")
         #expect(
             rows.map(\.id) == ["command:caffeinate", "command:caffeinate-for", "command:caffeinate-menu-bar"])
+        // The row is made from the manifest, under the id and hotkey it had before modules, with what the module adds.
+        #expect(rows[0].title == "Caffeinate")
         #expect(rows[0].subtitle == "Keep this Mac awake")
+        #expect(rows[0].command == .caffeinate)
+        #expect(rows[0].refs == [.caffeinate])
+        #expect(rows[0].launchKey == "command:caffeinate")
+        #expect(rows[0].hotkey?.rawValue == "command.caffeinate")
         #expect(rows[2].title == "Show Caffeinate in Menu Bar")
+
+        // A command that's off, or that its module leaves out, has no row to run.
+        #expect(host.root.commandItem(.caffeinateFor)?.id == "command:caffeinate-for")
+        #expect(host.root.commandItem(.decaffeinate) == nil)
+        host.modules.setOn(.caffeinateFor, false)
+        #expect(host.root.commandItem(.caffeinateFor) == nil)
+        #expect(!items(for: "").contains { $0.command == .caffeinateFor })
+        host.modules.setOn(.caffeinateFor, true)
         // Only Caffeinate's own hotkey differs from choosing it.
         #expect(!module.runHotkey(for: .caffeinateFor))
         #expect(module.generalSettings?.rows != nil)
@@ -109,7 +125,11 @@ final class ModuleTests {
         let windows = rows.filter { $0.module == "window" }
         #expect(windows.count == WindowCommand.allCases.count)
         #expect(windows.allSatisfy { $0.section == "Window" && $0.subtitle == "Window" })
-        #expect(rows.first { $0.id == "command:window.centerThird" }?.icon == .assetSymbol(WindowCommand.centerThird.symbol))
+        #expect(
+            rows.first { $0.id == "command:window.centerThird" }?.icon == .assetSymbol(WindowCommand.centerThird.symbol)
+        )
+        // Rows keep the ids their launches and favorites were kept under before modules.
+        #expect(rows.first { $0.id == "command:window.leftHalf" }?.command == WindowCommand.leftHalf.moduleRef)
         #expect(rows.first { $0.id == "command:system.sleep" }?.section == "Commands")
     }
 
@@ -125,6 +145,11 @@ final class ModuleTests {
         let timer = host.root.resolve("25m tea")
         #expect(timer.exclusive == nil)
         #expect(timer.items.first?.id == "timer:start")
+
+        // Anything else is searched as usual.
+        let search = host.root.resolve("stopwatch")
+        #expect(search.exclusive == nil)
+        #expect(search.items.contains { $0.id == "command:stopwatch" })
 
         host.modules.setOn(.inlineCalculation, false)
         #expect(host.root.resolve("2+3").exclusive == nil)
@@ -163,7 +188,8 @@ final class ModuleTests {
         let module = quicklinksModule()
         install([module])
         try module.quicklinks.save(
-            Quicklink(uuid: "test-search", name: "Search Example", keyword: "ex", template: "https://example.com/?q={query}"))
+            Quicklink(
+                uuid: "test-search", name: "Search Example", keyword: "ex", template: "https://example.com/?q={query}"))
         try module.quicklinks.save(Quicklink(uuid: "test-home", name: "Example Home", template: "https://example.com"))
 
         let rows = items(for: "")
