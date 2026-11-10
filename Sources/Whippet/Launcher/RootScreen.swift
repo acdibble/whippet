@@ -6,14 +6,18 @@ import SwiftUI
 @MainActor
 final class RootScreen: LauncherScreen {
     private unowned let host: any ModuleHost
+    /// Every module, in the order their rows are listed. Only the main search asks them all; modules don't reach
+    /// each other through the host.
+    private let modules: () -> [any LauncherModule]
     /// The heading over each item and how many are pinned, set with the items.
     private var sections: [String] = []
     private var pinned = 0
 
     private static let suggestionLimit = 5
 
-    init(host: any ModuleHost) {
+    init(host: any ModuleHost, modules: @escaping () -> [any LauncherModule]) {
         self.host = host
+        self.modules = modules
     }
 
     let id = "root"
@@ -23,7 +27,7 @@ final class RootScreen: LauncherScreen {
     }
 
     var revision: AnyHashable {
-        host.launcherModules.map(\.revision)
+        modules().map(\.revision)
     }
 
     func items(for query: String) -> [LauncherItem] {
@@ -32,7 +36,7 @@ final class RootScreen: LauncherScreen {
 
     /// The items for `query`, or the screen a module took the search over with and its items.
     func resolve(_ query: String) -> (items: [LauncherItem], exclusive: (any LauncherScreen)?) {
-        let on = host.launcherModules.filter { host.modules.isEnabled($0.manifest.ref) }
+        let on = modules().filter { host.modules.isEnabled($0.manifest.ref) }
         var contributions: [Contribution] = []
         for module in on {
             let theirs = module.contributions(for: query)
@@ -103,7 +107,7 @@ final class RootScreen: LauncherScreen {
 
     /// What `query` can be used with, from every module but `excluded`, as the Translate screen lists under it.
     func fallbacks(for query: String, excluding excluded: String) -> [LauncherItem] {
-        let fallbacks = host.launcherModules.filter { $0.id != excluded && host.modules.isEnabled($0.manifest.ref) }
+        let fallbacks = modules().filter { $0.id != excluded && host.modules.isEnabled($0.manifest.ref) }
             .flatMap { $0.contributions(for: query) }
             .compactMap { contribution -> (item: LauncherItem, tier: Int)? in
                 guard case .fallback(let item, let tier) = contribution, isListed(item) else { return nil }
@@ -153,10 +157,15 @@ final class RootScreen: LauncherScreen {
     }
 
     private func module(_ id: String) -> (any LauncherModule)? {
-        host.launcherModules.first { $0.id == id }
+        modules().first { $0.id == id }
     }
 
     func actions(for item: LauncherItem) -> [ItemAction] {
+        ownActions(for: item)
+    }
+
+    /// What an item's own module offers for it.
+    func ownActions(for item: LauncherItem) -> [ItemAction] {
         module(item.module)?.actions(for: item) ?? []
     }
 
@@ -173,7 +182,7 @@ final class RootScreen: LauncherScreen {
     }
 
     func queryChanged(_ query: String) {
-        for module in host.launcherModules {
+        for module in modules() {
             module.searchTextChanged(query)
         }
     }

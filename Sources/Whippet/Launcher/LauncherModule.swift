@@ -106,10 +106,12 @@ protocol ModuleHost: AnyObject {
     var targetApp: NSRunningApplication? { get }
     /// One of Whippet's own windows when the panel opened over it.
     var targetWindow: NSWindow? { get }
+    /// The screen the panel shows, for a module to tell whether it's one of its own.
+    var activeScreen: any LauncherScreen { get }
+    /// Whether the panel shows more than the search bar, which is all it shows for an answer typed into it.
+    var isExpanded: Bool { get }
     var modules: ModuleSettings { get }
     var history: LaunchHistory { get }
-    /// Every built-in module, in the order their rows are listed.
-    var launcherModules: [any LauncherModule] { get }
 
     func dismiss()
     func push(_ screen: any LauncherScreen)
@@ -130,9 +132,11 @@ protocol ModuleHost: AnyObject {
     /// Selects the same item again after the items change under it, such as a timer that finishes.
     func keepSelection()
     func select(_ id: String)
-    /// The module of a type, for the few that work together, such as the calculator listing numbers from clipboard
-    /// history while it's on.
-    func module<Module: LauncherModule>(_ type: Module.Type) -> Module?
+    /// What `query` can be used with, from every module but `excluded`, for a screen that lists them under what it
+    /// shows, as Translate does.
+    func fallbacks(for query: String, excluding excluded: String) -> [LauncherItem]
+    /// What an item's own module offers for it, for a screen showing another module's items, such as those fallbacks.
+    func ownActions(for item: LauncherItem) -> [ItemAction]
     /// Runs an action as the host would, handling its outcome.
     func run(_ action: ItemAction, on item: LauncherItem?)
     /// Turns modules' hotkeys on and off again, after one's list of them changed.

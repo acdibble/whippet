@@ -251,8 +251,8 @@ final class ExtensionScreen: LauncherScreen {
 
     var id: String { "extension.\(session.id)" }
 
-    private var host: LauncherModel? {
-        module.hostForScreens as? LauncherModel
+    private var host: (any ModuleHost)? {
+        module.hostForScreens
     }
 
     var searchBar: SearchBar {

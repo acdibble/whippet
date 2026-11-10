@@ -43,7 +43,7 @@ final class LauncherModel: ModuleHost {
     let history: LaunchHistory
     /// Every built-in module, in the order their rows are listed.
     private(set) var launcherModules: [any LauncherModule] = []
-    @ObservationIgnored private lazy var root = RootScreen(host: self)
+    @ObservationIgnored private lazy var root = RootScreen(host: self) { [unowned self] in launcherModules }
 
     /// The results of the top screen, with what the main search was taken over by, worked out again only when what
     /// they depend on changes.
@@ -168,12 +168,12 @@ final class LauncherModel: ModuleHost {
         onOpenSettings(pane)
     }
 
-    func module<Module: LauncherModule>(_ type: Module.Type) -> Module? {
-        launcherModules.lazy.compactMap { $0 as? Module }.first
+    func fallbacks(for query: String, excluding excluded: String) -> [LauncherItem] {
+        root.fallbacks(for: query, excluding: excluded)
     }
 
-    func fallbacks(for query: String, excluding module: String) -> [LauncherItem] {
-        root.fallbacks(for: query, excluding: module)
+    func ownActions(for item: LauncherItem) -> [ItemAction] {
+        root.ownActions(for: item)
     }
 
     func launcherModule(_ id: String) -> (any LauncherModule)? {
@@ -254,9 +254,7 @@ final class LauncherModel: ModuleHost {
     /// What can be done with an item: what its screen offers, then what other modules add for what it holds, then
     /// Favorites and Set Hotkey…. Those whose command or feature is off aren't offered.
     func actions(for item: LauncherItem) -> [ItemAction] {
-        let screen = activeScreen
-        var actions =
-            screen === root ? launcherModule(item.module)?.actions(for: item) ?? [] : screen.actions(for: item)
+        var actions = activeScreen.actions(for: item)
         if let owner = launcherModule(item.module) {
             let traits = owner.traits(of: item)
             for module in launcherModules where module !== owner && modules.isEnabled(module.manifest.ref) {

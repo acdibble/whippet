@@ -158,6 +158,10 @@ final class CaffeinateModule: LauncherModule {
 - **Other modules' rows** describe what they hold with `traits(of:)`, and a module can offer actions on them with
   `contributedActions(for:traits:)`, so neither names the other: Timers offers Start Timer on anything with a duration,
   such as a calculation.
+- **The host** is all a module or its screens know of the launcher: the `ModuleHost` it's given in `attach(to:)`.
+  A module never casts it to `LauncherModel` or reaches another module through it, so it runs the same against
+  `FakeHost` in tests. What a module needs from the launcher is added to `ModuleHost`. Only a module's SwiftUI views
+  read `LauncherModel` itself, from the environment.
 - **Screens** are `LauncherScreen`s, pushed with `.push`. A screen gives the search bar (`.field` or `.title`), an
   accessory at the end of the bar, its items for the query, the actions for each, its `content` (the host's list or a
   view of its own, `.custom`, which reads the host from the environment) and its `footer` (the selected item's

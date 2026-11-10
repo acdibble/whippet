@@ -204,7 +204,7 @@ final class CalculatorScreen: LauncherScreen {
 
     /// The answer at the end of the search bar while the panel shows only the bar.
     func accessory() -> AnyView? {
-        guard isInline, let host = module.host as? LauncherModel, !host.isExpanded,
+        guard isInline, let host = module.host, !host.isExpanded,
             let calculation = current ?? lastAnswer
         else { return nil }
         return AnyView(
@@ -279,7 +279,7 @@ final class CalculatorScreen: LauncherScreen {
     var screenActions: [ItemAction] { [] }
 
     var blocksReturn: Bool {
-        guard isInline, let host = module.host as? LauncherModel else { return false }
+        guard isInline, let host = module.host else { return false }
         return current == nil && !host.isExpanded
     }
 
@@ -316,7 +316,7 @@ final class CalculatorScreen: LauncherScreen {
 
     /// ← and → between the columns, or left to the field outside them.
     func horizontalMove(by offset: Int) -> Bool {
-        guard let host = module.host as? LauncherModel else { return false }
+        guard let host = module.host else { return false }
         let items = host.results
         let (_, columns) = layout(items)
         guard let (column, row) = position(of: host.selection, in: columns) else { return false }

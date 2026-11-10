@@ -14,7 +14,11 @@ final class FakeHost: ModuleHost {
     var targetWindow: NSWindow?
     let modules: ModuleSettings
     let history: LaunchHistory
+    /// The modules the main search is made of, which a test installs.
     var launcherModules: [any LauncherModule] = []
+    private(set) lazy var root = RootScreen(host: self) { [unowned self] in launcherModules }
+    var activeScreen: any LauncherScreen { pushed.last ?? root }
+    var isExpanded = true
     private(set) var pushed: [any LauncherScreen] = []
     private(set) var inputs: [InputRequest] = []
     private(set) var dismissals = 0
@@ -39,9 +43,10 @@ final class FakeHost: ModuleHost {
     func recordLaunch(_ key: String) { history.record(key) }
     func keepSelection() {}
     func select(_ id: String) {}
-    func module<Module: LauncherModule>(_ type: Module.Type) -> Module? {
-        launcherModules.lazy.compactMap { $0 as? Module }.first
+    func fallbacks(for query: String, excluding excluded: String) -> [LauncherItem] {
+        root.fallbacks(for: query, excluding: excluded)
     }
+    func ownActions(for item: LauncherItem) -> [ItemAction] { root.ownActions(for: item) }
     func run(_ action: ItemAction, on item: LauncherItem?) { _ = action.perform() }
     func hotkeysChanged() {}
 }
@@ -87,7 +92,7 @@ final class RootScreenTests {
 
     private func install(_ modules: FakeModule...) -> RootScreen {
         host.launcherModules = modules
-        return RootScreen(host: host)
+        return host.root
     }
 
     @Test func emptySearchLeadsWithTopsThenFavoritesSuggestionsAndSections() {
@@ -162,6 +167,18 @@ final class RootScreenTests {
         #expect(exclusive === screen)
         #expect(items.map(\.id) == ["calculation"])
         #expect(root.resolve("clip").items.map(\.id) == ["clip"])
+    }
+
+    /// A screen can list what its text can be used with through the host, leaving its own module out.
+    @Test func aScreenCanListFallbacksFromOtherModules() {
+        _ = install(
+            FakeModule(.translation) { [self] _ in [.fallback(item("translate", "Translate", module: .translation))] },
+            FakeModule(.quicklinks) { [self] _ in
+                [.fallback(item("google", "Google", module: .quicklinks)), .listed(item("new", "Create Quicklink"))]
+            })
+
+        #expect(host.fallbacks(for: "hello", excluding: "translation").map(\.id) == ["google"])
+        #expect(host.fallbacks(for: "hello", excluding: "quicklinks").map(\.id) == ["translate"])
     }
 
     /// What's turned off in Settings › Commands isn't listed, and a module that's off isn't asked at all.

@@ -197,7 +197,7 @@ final class TranslationModule: LauncherModule {
 
 extension ModuleHost {
     fileprivate var isTranslateScreenOpen: Bool {
-        (self as? LauncherModel)?.activeScreen is TranslateScreen
+        activeScreen is TranslateScreen
     }
 }
 
@@ -223,7 +223,7 @@ final class TranslateScreen: LauncherScreen {
 
     func items(for query: String) -> [LauncherItem] {
         // What the text can be used with too, as in the main search, except this screen.
-        let fallbacks = query.isEmpty ? [] : (host as? LauncherModel)?.fallbacks(for: query, excluding: module.id) ?? []
+        let fallbacks = query.isEmpty ? [] : host?.fallbacks(for: query, excluding: module.id) ?? []
         return [module.cardItem(ref: .translate)] + fallbacks
     }
 
@@ -231,7 +231,7 @@ final class TranslateScreen: LauncherScreen {
         if item.module == module.id {
             return module.actions(for: item)
         }
-        return (host as? LauncherModel)?.launcherModule(item.module)?.actions(for: item) ?? []
+        return host?.ownActions(for: item) ?? []
     }
 
     func sectionTitle(at index: Int, in items: [LauncherItem]) -> String? {
