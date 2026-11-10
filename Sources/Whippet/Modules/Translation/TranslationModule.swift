@@ -186,12 +186,16 @@ final class TranslationModule: LauncherModule {
     /// Downloads languages, which the system confirms in a window of its own, calling back once it's done or
     /// cancelled. The panel closes for it, and the session lives in a window that can't be seen or clicked.
     private func download(_ configuration: TranslationSession.Configuration, onFinish: @escaping () -> Void) {
-        host?.closePanelForWindow()
-        let view = TranslationDownloadView(configuration: configuration) { [weak self] in
+        let download = PermissionGate.shared.languageDownload(configuration, for: manifest.ref) { [weak self] in
             self?.downloadWindow?.close()
             self?.downloadWindow = nil
             onFinish()
         }
+        guard let view = download else {
+            isDownloading = false
+            return
+        }
+        host?.closePanelForWindow()
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1, height: 1), styleMask: [.borderless], backing: .buffered,
             defer: false)

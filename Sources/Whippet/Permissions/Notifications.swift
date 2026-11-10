@@ -1,8 +1,9 @@
 import AppKit
 import UserNotifications
 
-/// Posts Whippet's notifications and passes back what's clicked in them. Permission is asked for the first time
-/// something needs it, so people who never use a timer are never asked.
+/// Posts Whippet's notifications and passes back what's clicked in them, each for the command or feature it's from,
+/// which has to declare notifications and be on. Permission is asked for the first time something needs it, so
+/// people who never use a timer are never asked. A new kind of notification is a case of `Kind`, with its buttons.
 @MainActor
 final class Notifications: NSObject, UNUserNotificationCenterDelegate {
     static let shared = Notifications()
@@ -10,6 +11,13 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
     enum Action: String {
         case snooze
         case stop
+
+        var title: String {
+            switch self {
+            case .snooze: String(localized: "Snooze")
+            case .stop: String(localized: "Stop")
+            }
+        }
     }
 
     /// Each kind of notification, which can be turned off on its own in Settings › Notifications.
@@ -32,6 +40,20 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
             case .timerDone: String(localized: "When a timer finishes, with Stop and Snooze")
             }
         }
+
+        /// The buttons on the notification.
+        var actions: [Action] {
+            switch self {
+            case .timerDone: [.stop, .snooze]
+            }
+        }
+
+        /// What macOS knows this kind of notification by, which delivered ones keep.
+        var category: String {
+            switch self {
+            case .timerDone: "timer"
+            }
+        }
     }
 
     /// The UserDefaults key for whether Whippet sends notifications at all; on unless turned off.
@@ -47,31 +69,36 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
         defaults.object(forKey: key) as? Bool ?? true
     }
 
-    /// Called with a timer notification's identifier and the action chosen, or nil when the notification itself was
-    /// clicked or dismissed.
-    var onTimerResponse: (_ identifier: String, _ action: Action?) -> Void = { _, _ in }
+    typealias Handler = (_ identifier: String, _ action: Action?) -> Void
 
-    private nonisolated static let timerCategory = "timer"
+    private var handlers: [Kind: Handler] = [:]
     private var center: UNUserNotificationCenter { .current() }
 
     /// Called at launch, before any notification can be clicked.
     func configure() {
         center.delegate = self
-        let snooze = UNNotificationAction(identifier: Action.snooze.rawValue, title: String(localized: "Snooze"))
-        let stop = UNNotificationAction(identifier: Action.stop.rawValue, title: String(localized: "Stop"))
-        center.setNotificationCategories([
-            UNNotificationCategory(
-                identifier: Self.timerCategory,
-                actions: [stop, snooze],
-                intentIdentifiers: [],
-                options: [.customDismissAction]
-            )
-        ])
+        center.setNotificationCategories(
+            Set(
+                Kind.allCases.map { kind in
+                    UNNotificationCategory(
+                        identifier: kind.category,
+                        actions: kind.actions.map { UNNotificationAction(identifier: $0.rawValue, title: $0.title) },
+                        intentIdentifiers: [],
+                        options: [.customDismissAction]
+                    )
+                }))
     }
 
-    /// Asks once; later calls return the answer given.
-    func requestAuthorization() async -> Bool {
-        (try? await center.requestAuthorization(options: [.alert])) ?? false
+    /// Sets what's called with a notification's identifier and the action chosen in it, or nil when the notification
+    /// itself was clicked or dismissed.
+    func onResponse(to kind: Kind, _ handler: @escaping Handler) {
+        handlers[kind] = handler
+    }
+
+    /// Asks macOS to allow notifications, for `ref`. It asks the user once; later calls return the answer given.
+    func requestAuthorization(for ref: ModuleRef) async -> Bool {
+        guard PermissionGate.shared.allows(.notifications, for: ref) else { return false }
+        return (try? await center.requestAuthorization(options: [.alert])) ?? false
     }
 
     var isAuthorized: Bool {
@@ -85,14 +112,18 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
         get async { await center.notificationSettings().authorizationStatus }
     }
 
-    /// Whippet plays its own alert sound, so the notification itself is silent.
-    func postTimer(identifier: String, title: String, body: String) {
+    /// Posts a notification for `ref`, if it declares notifications and is on and macOS allows them. False when it
+    /// wasn't posted, so what it's about can be shown another way. Whippet plays its own alert sound, so the
+    /// notification itself is silent.
+    func post(_ kind: Kind, identifier: String, title: String, body: String, for ref: ModuleRef) async -> Bool {
+        guard PermissionGate.shared.allows(.notifications, for: ref), await isAuthorized else { return false }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.categoryIdentifier = Self.timerCategory
+        content.categoryIdentifier = kind.category
         content.interruptionLevel = .active
-        center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
+        try? await center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
+        return true
     }
 
     func remove(identifier: String) {
@@ -123,11 +154,12 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
     ) async {
         let identifier = response.notification.request.identifier
         let action = Action(rawValue: response.actionIdentifier)
-        guard response.notification.request.content.categoryIdentifier == Self.timerCategory else { return }
-        await handleTimerResponse(identifier: identifier, action: action)
+        let category = response.notification.request.content.categoryIdentifier
+        await handleResponse(category: category, identifier: identifier, action: action)
     }
 
-    private func handleTimerResponse(identifier: String, action: Action?) {
-        onTimerResponse(identifier, action)
+    private func handleResponse(category: String, identifier: String, action: Action?) {
+        guard let kind = Kind.allCases.first(where: { $0.category == category }) else { return }
+        handlers[kind]?(identifier, action)
     }
 }

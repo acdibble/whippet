@@ -92,21 +92,32 @@ PermissionGate.shared.paste(into: targetApp, for: .clipboardHistory)
 
 guard PermissionGate.shared.hasAccessibility(.windows, for: command.moduleRef) else { return }
 try PermissionGate.shared.runAppleScript(source, in: .finder, for: SystemCommand.emptyTrash.moduleRef)
-guard PermissionGate.shared.allows(.notifications, for: .timersModule) else { return }
+
+// The pasteboard to read from, the public database, and a notification, each nil, thrown or false while it's off.
+guard let pasteboard = PermissionGate.shared.clipboard(for: .clipboardRecording) else { return }
+let database = try PermissionGate.shared.publicDatabase(for: .sendFeedback)
+let isPosted = await Notifications.shared.post(.timerDone, identifier: id, title: title, body: body, for: .timersModule)
 ```
 
 - **Undeclared** use is a bug: a debug build stops at an assertion, and a release build refuses it and logs a fault
-  under the `permissions` category.
+  under the `permissions` category. The gate fails closed: until it's given the switches, first thing at launch,
+  nothing is allowed.
 - **Network** requests go through `ScopedSession`, which checks the scheme and host of every request and redirect
   against the declared patterns, and asks before each request whether the feature is still on, so turning it off stops
   it even mid-refresh. Requests macOS makes itself, such as LinkPresentation's, are checked against the session first
   (`LinkMetadata`).
-- **Requests the system makes** that Whippet can't route, such as CloudKit, Sparkle and translation downloads, are
-  declared like the rest and gated by the switch: the code that starts them runs only while the feature is on.
+- **Requests the system makes** that Whippet can't route are declared like the rest and started through the gate:
+  the public database (`publicDatabase(for:)`) and translation downloads (`languageDownload(_:for:onFinish:)`).
+  Cloud Sync's private database and Sparkle are started by their own services, which their modules allow only while
+  they're on.
+- **Notifications** are posted through `Notifications` for the command or feature they're from. A new kind is a case
+  of `Notifications.Kind` with its buttons, and whoever posts it sets what's called when it's clicked with
+  `onResponse(to:)`.
 
 `just lint` and CI run `scripts/check-permissions.sh`, which fails when `URLSession(`, `LPMetadataProvider`,
-`AXIsProcessTrusted`, Screen Recording's APIs, `NSAppleScript`, `UNUserNotificationCenter` or a synthesized key event
-is used outside `Sources/Whippet/Permissions/` and `ScopedSession`. A new kind of use gets a method on `PermissionGate`.
+`AXIsProcessTrusted`, Screen Recording's APIs, `NSAppleScript`, `UNUserNotificationCenter`, a synthesized key event,
+`CKContainer(`, `CKSyncEngine(`, `prepareTranslation` or a read of `NSPasteboard.general` is used outside
+`Sources/Whippet/Permissions/`, `ScopedSession` and `CloudSync`. A new kind of use gets a method on `PermissionGate`.
 
 ### Entitlements
 

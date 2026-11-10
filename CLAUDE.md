@@ -80,7 +80,8 @@ only what the app uses as `public`. The app chooses where data lives (`Clipboard
   starts and stops its own work, and supplies its settings pane. A command's hotkey runs its row's first action. Logic with no app-only dependencies
   goes in the module's `Core/` folder, which the tests compile. A beta module declares `stage: .beta` in its manifest.
   `ModuleSettings` holds the switches in Settings › Commands, and what's off does no work. Anything sensitive
-  (network, Accessibility, Screen Recording, Apple Events, notifications) goes through `PermissionGate` in
+  (network, reading the clipboard, Accessibility, Screen Recording, Apple Events, notifications, iCloud, system
+  downloads) goes through `PermissionGate` in
   `Sources/Whippet/Permissions/`, which checks the use is declared and on; `scripts/check-permissions.sh`, run by
   `just lint` and CI, fails on those APIs anywhere else. See `docs/modules.md`.
 - **The launcher** (`Sources/Whippet/Launcher/`): `LauncherModel` is the host. It holds the query, the selection, the

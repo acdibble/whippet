@@ -4061,6 +4061,16 @@
         }
       }
     },
+    "This is turned off in Settings › Commands." : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این در تنظیمات › فرمان‌ها خاموش است."
+          }
+        }
+      }
+    },
     "This language can't be translated on this Mac yet" : {
       "localizations" : {
         "fa" : {

@@ -317,8 +317,7 @@ final class ClipboardHistory {
     }
 
     private func poll() {
-        guard isRecording else { return }
-        let pasteboard = NSPasteboard.general
+        guard isRecording, let pasteboard = PermissionGate.shared.clipboard(for: .clipboardRecording) else { return }
         guard pasteboard.changeCount != lastChangeCount else { return }
         lastChangeCount = pasteboard.changeCount
 

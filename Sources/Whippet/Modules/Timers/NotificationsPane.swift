@@ -56,7 +56,7 @@ struct NotificationsPane: View {
         .onChange(of: isEnabled) { _, isEnabled in
             guard isEnabled, authorization == .notDetermined else { return }
             Task {
-                _ = await Notifications.shared.requestAuthorization()
+                _ = await Notifications.shared.requestAuthorization(for: .timersModule)
                 await refreshAuthorization()
             }
         }

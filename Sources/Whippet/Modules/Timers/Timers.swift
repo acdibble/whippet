@@ -63,7 +63,7 @@ final class Timers {
 
     /// Rings timers that ended while Whippet wasn't running, and waits for the next one.
     func start() {
-        Notifications.shared.onTimerResponse = { [weak self] identifier, action in
+        Notifications.shared.onResponse(to: .timerDone) { [weak self] identifier, action in
             guard let self, let id = UUID(uuidString: identifier) else { return }
             switch action {
             case .snooze: snooze(id)
@@ -89,8 +89,8 @@ final class Timers {
         }
         save()
         scheduleNext()
-        if Notifications.wants(.timerDone), PermissionGate.shared.allows(.notifications, for: .timersModule) {
-            Task { _ = await Notifications.shared.requestAuthorization() }
+        if Notifications.wants(.timerDone) {
+            Task { _ = await Notifications.shared.requestAuthorization(for: .timersModule) }
         }
         if announces {
             Toast.shared.show(String(localized: "\(item.name) started"), symbol: "timer")
@@ -198,14 +198,10 @@ final class Timers {
         // Turned off in Settings, it still rings and shows as done in the launcher and menu bar.
         guard Notifications.wants(.timerDone) else { return }
         Task {
-            if PermissionGate.shared.allows(.notifications, for: .timersModule), await Notifications.shared.isAuthorized
-            {
-                Notifications.shared.postTimer(
-                    identifier: item.id.uuidString,
-                    title: String(localized: "\(item.name) is done"),
-                    body: String(localized: "\(TimerNaming.duration(item.duration)) timer")
-                )
-            } else {
+            let isPosted = await Notifications.shared.post(
+                .timerDone, identifier: item.id.uuidString, title: String(localized: "\(item.name) is done"),
+                body: String(localized: "\(TimerNaming.duration(item.duration)) timer"), for: .timersModule)
+            if !isPosted {
                 pendingAlerts.append(item.id)
                 showPendingAlert()
             }

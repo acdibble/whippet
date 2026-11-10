@@ -190,7 +190,9 @@ final class ExtensionsModule: LauncherModule {
                 copyOnly: false,
                 for: openScreen?.session.command.moduleRef.moduleRef ?? .extension("unknown"))
         case .readClipboard:
-            return NSPasteboard.general.string(forType: .string).map(JSONValue.string) ?? .null
+            // The runtime has already checked the extension's manifest asks to; the gate checks it's still on.
+            let ref = openScreen?.session.command.moduleRef.moduleRef ?? .extension("unknown")
+            return PermissionGate.shared.clipboard(for: ref)?.string(forType: .string).map(JSONValue.string) ?? .null
         }
         return .null
     }

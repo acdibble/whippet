@@ -50,10 +50,19 @@ final class FeedbackStore {
 
     private static let recordType = "Feedback"
     private static let pageSize = 50
-    private let database = CKContainer(identifier: "iCloud.codes.dibble.whippet").publicCloudDatabase
+
+    /// The public database, for sending while Send Feedback is on.
+    private var outbox: CKDatabase {
+        get throws { try PermissionGate.shared.publicDatabase(for: .sendFeedback) }
+    }
+
+    /// The public database, for reading while Read Feedback is on.
+    private var database: CKDatabase {
+        get throws { try PermissionGate.shared.publicDatabase(for: .readFeedback) }
+    }
 
     var canSend: Bool {
-        get async { (try? await CKContainer(identifier: "iCloud.codes.dibble.whippet").accountStatus()) == .available }
+        get async { await PermissionGate.shared.hasCloudAccount(for: .sendFeedback) }
     }
 
     /// Every field but the images, which are fetched for one feedback at a time when it's shown.
@@ -94,7 +103,7 @@ final class FeedbackStore {
             record["attachments"] = assets
             record["attachmentCount"] = Int64(assets.count)
         }
-        _ = try await database.save(record)
+        _ = try await outbox.save(record)
     }
 
     // MARK: - Admin

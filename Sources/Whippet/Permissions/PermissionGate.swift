@@ -1,4 +1,5 @@
 import AppKit
+import CloudKit
 import OSLog
 import WhippetCore
 
@@ -13,7 +14,8 @@ import WhippetCore
 final class PermissionGate {
     static let shared = PermissionGate()
 
-    /// Set at launch. Until then, and in tests, whatever is declared counts as on.
+    /// Set first thing at launch. Until then nothing is allowed, so a use that comes too early is refused rather than
+    /// let through unchecked.
     var modules: ModuleSettings?
 
     private let log = Logger(subsystem: "codes.dibble.whippet", category: "permissions")
@@ -27,14 +29,18 @@ final class PermissionGate {
             assertionFailure("\(ref) uses \(permission) without declaring it in its module's manifest")
             return false
         }
-        return modules?.isEnabled(ref) ?? true
+        return isOn(ref)
+    }
+
+    private func isOn(_ ref: ModuleRef) -> Bool {
+        modules?.isEnabled(ref) ?? false
     }
 
     private func declares(_ permission: Permission, for ref: ModuleRef) -> Bool {
         if ref.isExtension {
-            // An extension's network and clipboard use is checked by its runtime, against its manifest.json. Pasting
-            // with its Paste action is the one thing it does through Whippet, and it pastes what it shows.
-            return permission == .accessibility(.paste)
+            // An extension's network and clipboard use is checked by its runtime, against its manifest.json, before it
+            // asks Whippet for either. Pasting with its Paste action pastes what it shows.
+            return permission == .accessibility(.paste) || permission == .clipboardRead
         }
         return ModuleRegistry.declares(permission, for: ref)
     }
@@ -46,8 +52,33 @@ final class PermissionGate {
         let hosts = ModuleRegistry.permissions(of: ref).hosts
         assert(!hosts.isEmpty, "\(ref) declares no network hosts")
         return ScopedSession(hosts: hosts, timeout: timeout) { [weak self] in
-            self?.modules?.isEnabled(ref) ?? true
+            self?.isOn(ref) ?? false
         }
+    }
+
+    // MARK: - Clipboard
+
+    /// The pasteboard, to read what was copied in any app, for `ref`. Nil when `ref` may not. Writing to it needs
+    /// nothing.
+    func clipboard(for ref: ModuleRef) -> NSPasteboard? {
+        allows(.clipboardRead, for: ref) ? .general : nil
+    }
+
+    // MARK: - iCloud
+
+    private static let container = CKContainer(identifier: "iCloud.codes.dibble.whippet")
+
+    /// The public database feedback is sent to and read from, for `ref`. Cloud Sync's private database is opened by
+    /// `CloudSync` in WhippetCore, which its module allows only while it's on.
+    func publicDatabase(for ref: ModuleRef) throws -> CKDatabase {
+        guard allows(.iCloud(.publicDatabase), for: ref) else { throw PermissionError.turnedOff }
+        return Self.container.publicCloudDatabase
+    }
+
+    /// Whether this Mac is signed in to iCloud, which sending to the public database needs, for `ref`.
+    func hasCloudAccount(for ref: ModuleRef) async -> Bool {
+        guard allows(.iCloud(.publicDatabase), for: ref) else { return false }
+        return (try? await Self.container.accountStatus()) == .available
     }
 
     // MARK: - Accessibility
@@ -84,5 +115,14 @@ final class PermissionGate {
         if let error {
             throw SystemCommandError.script(error[NSAppleScript.errorMessage] as? String)
         }
+    }
+}
+
+/// Thrown when something is asked of a command or feature that's turned off.
+enum PermissionError: LocalizedError {
+    case turnedOff
+
+    var errorDescription: String? {
+        String(localized: "This is turned off in Settings › Commands.")
     }
 }

@@ -9,6 +9,8 @@ final class FeedbackModule: LauncherModule {
     let manifest = ModuleManifest.feedback
     /// Set at launch when this iCloud account has the CloudKit Admin role, which shows Read Feedback.
     var isAdmin = false
+    /// Whether the admin check has been made for Read Feedback being on.
+    @ObservationIgnored private var checksAdmin = false
     @ObservationIgnored private let store: FeedbackStore
     @ObservationIgnored private let showFeedback: () -> Void
     @ObservationIgnored private let readFeedback: () -> Void
@@ -17,6 +19,18 @@ final class FeedbackModule: LauncherModule {
         self.store = store
         self.showFeedback = showFeedback
         self.readFeedback = readFeedback
+    }
+
+    /// Asks iCloud whether this account is an admin once Read Feedback is on, and forgets the answer when it's
+    /// turned off, so nothing is asked of iCloud for a command that's off.
+    func update(_ modules: ModuleSettings) {
+        let isOn = modules.isEnabled(.readFeedback)
+        guard isOn != checksAdmin else { return }
+        checksAdmin = isOn
+        guard isOn else {
+            isAdmin = false
+            return
+        }
         Task { isAdmin = await store.isAdmin }
     }
 
