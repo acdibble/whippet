@@ -246,11 +246,20 @@ extension ItemIcon {
     var view: some View {
         switch self {
         case .none: EmptyView()
-        case .symbol(let name): Image(systemName: name).resizable().scaledToFit()
-        case .assetSymbol(let name): Image(name).resizable().scaledToFit()
+        case .symbol(let name): Image(systemName: name).resizable().scaledToFit().symbolInset()
+        case .assetSymbol(let name): Image(name).resizable().scaledToFit().symbolInset()
         case .file(let url): Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().scaledToFit()
         case .extension(let name, let directory): ExtensionIcon(name: name, directory: directory)
         case .image(let box): Image(nsImage: box.image).resizable().scaledToFit()
         }
+    }
+}
+
+extension View {
+    /// Draws a symbol that fills its frame at the size an app's icon appears in the same frame. An app icon's artwork
+    /// covers about four fifths of its canvas, the rest being its margin and shadow, so a symbol drawn edge to edge
+    /// looks a size larger beside one.
+    func symbolInset() -> some View {
+        scaleEffect(0.8)
     }
 }

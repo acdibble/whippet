@@ -25,6 +25,7 @@ struct ExtensionIcon: View {
             Image(systemName: symbol)
                 .resizable()
                 .scaledToFit()
+                .symbolInset()
         case .emoji(let emoji):
             Text(emoji)
                 .font(.system(size: 17))

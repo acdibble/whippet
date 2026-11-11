@@ -5,6 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Symbol icons in results are drawn a little smaller, so they match the size of app icons beside them.
+
 ## [1.6.0] - 2026-11-11
 
 ### Added
