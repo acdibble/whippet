@@ -82,6 +82,7 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .navigationTitle(title(of: navigation.pane ?? .general, in: modulePanes))
         }
+        .background(InitialFocusClearer())
         .id(navigation.session)
         .frame(minWidth: 680, minHeight: 440)
         // Turning off a beta feature or a module hides its pane, so the window doesn't stay on it.
@@ -143,6 +144,50 @@ struct SettingsView: View {
             navigation.pane = .general
         default:
             break
+        }
+    }
+}
+
+/// Leaves nothing focused when Settings opens. The window would otherwise give the keyboard to the pane's first
+/// control, so General could open with the Whippet Hotkey recorder waiting for a shortcut and the next key pressed
+/// would replace the hotkey. It acts once, the first time its window becomes key, so coming back to Settings from
+/// another app keeps the focus where it was; `SettingsView` makes a new one each time Settings closes.
+private struct InitialFocusClearer: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { ClearingView() }
+
+    func updateNSView(_ view: NSView, context: Context) {}
+
+    private final class ClearingView: NSView {
+        private var observer: (any NSObjectProtocol)?
+        private var hasCleared = false
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            stopObserving()
+            guard let window, !hasCleared else { return }
+            if window.isKeyWindow {
+                clear(window)
+            } else {
+                observer = NotificationCenter.default.addObserver(
+                    forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main
+                ) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.clear(window) }
+                }
+            }
+        }
+
+        /// Waits a turn of the run loop, since the window picks its first responder as it becomes key.
+        private func clear(_ window: NSWindow) {
+            stopObserving()
+            hasCleared = true
+            DispatchQueue.main.async { window.makeFirstResponder(nil) }
+        }
+
+        private func stopObserving() {
+            if let observer {
+                NotificationCenter.default.removeObserver(observer)
+            }
+            observer = nil
         }
     }
 }

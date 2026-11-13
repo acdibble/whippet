@@ -9,6 +9,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 - Punctuation typed in Clipboard History filters the list: `{` or `://` finds only the items containing it, and
   `example.com` no longer finds items that have "example" and "com" apart.
+- Settings opens with nothing focused, so a key pressed by mistake no longer lands in a control such as the Whippet
+  Hotkey recorder.
 
 ## [1.6.1] - 2026-11-11
 
