@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Punctuation typed in Clipboard History filters the list: `{` or `://` finds only the items containing it, and
+  `example.com` no longer finds items that have "example" and "com" apart.
+
 ## [1.6.1] - 2026-11-11
 
 ### Changed

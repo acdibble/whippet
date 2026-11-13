@@ -448,7 +448,18 @@ public final class ClipboardStore: Sendable {
         return hash.map { .clipboard(contentHash: $0) }
     }
 
-    /// Pinned items first in the order they were pinned, then newest first; an empty query returns everything.
+    /// The words of a query that have punctuation or symbols in them, such as `://` and `foo.bar` in `://  foo.bar baz`.
+    /// The index holds only letters and digits, so on its own it would take `://` for no query at all and find
+    /// `foo.bar` in "bar of foo".
+    static func literalTerms(in query: String) -> [String] {
+        query.split(whereSeparator: \.isWhitespace).map(String.init).filter { term in
+            term.contains { !$0.isLetter && !$0.isNumber }
+        }
+    }
+
+    /// Pinned items first in the order they were pinned, then newest first; an empty query returns everything. Each
+    /// word matches the start of a word in the item, and a word with punctuation in it, such as `foo.bar` or `{`, must
+    /// also appear in the item as written, in any case.
     public func search(_ query: String, kind: ClipboardKind?, limit: Int) throws -> [ClipboardItem] {
         try database.read { db in
             var request = ClipboardItem.order(sql: "pinnedAt IS NULL, pinnedAt, copiedAt DESC").limit(limit)
@@ -459,6 +470,15 @@ public final class ClipboardStore: Sendable {
                 request = request.filter(
                     sql: "id IN (SELECT rowid FROM clipboardFts WHERE clipboardFts MATCH ?)",
                     arguments: [pattern]
+                )
+            }
+            for term in Self.literalTerms(in: query) {
+                // The same columns as the index. `%`, `_` and `\` mean themselves rather than LIKE's wildcards.
+                let escaped = term.replacing(/[%_\\]/) { "\\" + $0.output }
+                let columns = ["text", "ocrText", "linkTitle", "linkOcrText"]
+                request = request.filter(
+                    sql: columns.map { "\($0) LIKE ? ESCAPE '\\'" }.joined(separator: " OR "),
+                    arguments: StatementArguments(columns.map { _ in "%\(escaped)%" })
                 )
             }
             return try request.fetchAll(db)

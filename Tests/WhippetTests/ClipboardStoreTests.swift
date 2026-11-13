@@ -182,6 +182,25 @@ final class ClipboardStoreTests {
         #expect(try items("cherry").isEmpty)
     }
 
+    @Test func punctuationFilters() throws {
+        try store.recordText("let point = Point(x: 1)", sourceBundleID: nil)
+        try store.recordText("struct Point { var x = 1 }", sourceBundleID: nil)
+        try store.recordText("https://example.com/point", sourceBundleID: nil)
+        try store.recordText("100% of a_b", sourceBundleID: nil)
+        try store.recordText("100 of axb", sourceBundleID: nil)
+
+        #expect(try items("{").compactMap(\.text) == ["struct Point { var x = 1 }"])
+        #expect(try items("://").compactMap(\.text) == ["https://example.com/point"])
+        #expect(try items("point(").compactMap(\.text) == ["let point = Point(x: 1)"])
+        #expect(try items("poi =").count == 2)
+        // A dot between words keeps them together, and LIKE's wildcards are ordinary characters.
+        #expect(try items("example.com").count == 1)
+        #expect(try items("com.example").isEmpty)
+        #expect(try items("100%").compactMap(\.text) == ["100% of a_b"])
+        #expect(try items("a_b").compactMap(\.text) == ["100% of a_b"])
+        #expect(try items("{", kind: .link).isEmpty)
+    }
+
     @Test func pinnedItemsComeFirstInPinOrder() async throws {
         try store.recordText("one", sourceBundleID: nil)
         try await pause()
