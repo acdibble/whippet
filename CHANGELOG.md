@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- In Settings › Commands, what can't be turned off, such as Settings or a running timer, has no switch, in place of
+  a lock and "On".
+
 ### Fixed
 
 - Punctuation typed in Clipboard History filters the list: `{` or `://` finds only the items containing it, and

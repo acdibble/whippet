@@ -91,7 +91,7 @@ struct CommandsPane: View {
 
     /// A module's row, as a switch row in the other panes, whose label opens the module's page, with a chevron after
     /// the switch that opens it too. The symbols of what it uses are beside the switch. A module that has to stay on
-    /// shows that in place of its switch.
+    /// has no switch.
     private func moduleLink(_ module: CommandRow) -> some View {
         let label = HStack(spacing: 12) {
             Button {
@@ -251,17 +251,20 @@ struct CommandsPane: View {
         .opacity(isModuleOn(row) ? 1 : 0.5)
     }
 
-    /// A row's switch, or, for something that has to stay on, such as Settings or a running timer, “On” with a lock in
-    /// its place: a disabled switch would grey out the whole row as if it were off. A row whose module is off keeps its
-    /// disabled switch.
+    /// A row's switch, or, for something that has to stay on, such as Settings or a running timer, nothing in its
+    /// place, since there's nothing to turn off: a disabled switch would grey out the whole row as if it were off. A
+    /// hidden switch keeps the room, so the row is as tall as the others and what it uses lines up with theirs. A row
+    /// whose module is off keeps its disabled switch.
     @ViewBuilder
     private func switchRow(_ row: CommandRow, @ViewBuilder label: () -> some View) -> some View {
         if isModuleOn(row), !canChange(row) {
             HStack(spacing: 12) {
                 label()
                 Spacer(minLength: 0)
-                Label("On", systemImage: "lock.fill")
-                    .foregroundStyle(.secondary)
+                Toggle(isOn: .constant(true)) { EmptyView() }
+                    .labelsHidden()
+                    .hidden()
+                    .accessibilityHidden(true)
             }
             .help(help(for: row))
         } else {

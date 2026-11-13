@@ -2561,16 +2561,6 @@
         }
       }
     },
-    "On" : {
-      "localizations" : {
-        "fa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "روشن"
-          }
-        }
-      }
-    },
     "On this Mac" : {
       "localizations" : {
         "fa" : {
