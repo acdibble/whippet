@@ -5,6 +5,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-11-13
+
 ### Changed
 
 - In Settings › Commands, what can't be turned off, such as Settings or a running timer, has no switch, in place of
@@ -465,7 +467,8 @@ Tagged but never published, since notarization timed out; 0.2.0 was the first re
 - iCloud sync of clipboard history and pins across your Macs.
 - A Farsi translation.
 
-[Unreleased]: https://github.com/acdibble/whippet/compare/v1.6.1...HEAD
+[Unreleased]: https://github.com/acdibble/whippet/compare/v1.6.2...HEAD
+[1.6.2]: https://github.com/acdibble/whippet/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/acdibble/whippet/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/acdibble/whippet/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/acdibble/whippet/compare/v1.5.0...v1.5.1
