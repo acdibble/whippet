@@ -29,6 +29,11 @@ final class LauncherModel: ModuleHost {
     private var openedDirectly = false
     /// Changes whenever the search field should take focus again, such as after a screen or a request for input.
     private(set) var focusRevision = 0
+    /// When the panel last closed by losing focus, until it next opens.
+    @ObservationIgnored private var lostFocusAt: Date?
+    /// How long the panel stays as it was after a click elsewhere closes it, so a stray click or a glance at another
+    /// window doesn't lose what was typed.
+    static let resumeInterval: TimeInterval = 60
 
     var targetApp: NSRunningApplication?
     weak var targetWindow: NSWindow?
@@ -149,11 +154,34 @@ final class LauncherModel: ModuleHost {
         isShowingAll = false
         openedDirectly = false
         query = ""
+        lostFocusAt = nil
         for module in launcherModules {
             module.panelWillShow()
         }
         selection = 0
         focusRevision += 1
+    }
+
+    /// The panel closed because focus went elsewhere, as on a click into another app, rather than by Escape, the
+    /// hotkey or an action. What's in it is kept for `resumeInterval`.
+    func panelLostFocus(at date: Date = Date()) {
+        lostFocusAt = date
+    }
+
+    /// Readies the panel to open from its hotkey: as it was left, when a click elsewhere closed it within
+    /// `resumeInterval`, and otherwise on the empty main search. True when it was left as it was, so the search text
+    /// can be selected for typing over, as Spotlight does.
+    func resumeOrReset(at date: Date = Date()) -> Bool {
+        guard let lostFocusAt, date.timeIntervalSince(lostFocusAt) < Self.resumeInterval else {
+            reset()
+            return false
+        }
+        self.lostFocusAt = nil
+        for module in launcherModules {
+            module.panelWillShow()
+        }
+        focusRevision += 1
+        return true
     }
 
     func openDirectly(_ open: () -> Void) {

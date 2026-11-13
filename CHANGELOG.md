@@ -9,6 +9,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 - In Settings › Commands, what can't be turned off, such as Settings or a running timer, has no switch, in place of
   a lock and "On".
+- Clicking away from Whippet no longer clears it at once: opened again with its hotkey within a minute, it's as you
+  left it, with the search text selected so typing replaces it. Escape, the hotkey and running a result still close
+  it for a fresh start.
 
 ### Fixed
 

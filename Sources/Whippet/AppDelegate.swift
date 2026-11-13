@@ -204,14 +204,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     /// Clicking into another app takes focus away from the panel; that app is already active, so only the panel closes.
+    /// The panel also loses focus as Whippet closes it, but it's hidden by then, which tells the two apart: only a
+    /// click elsewhere leaves the search to come back to.
     func windowDidResignKey(_ notification: Notification) {
+        guard panel.isVisible else { return }
+        model.panelLostFocus()
         panel.orderOut(nil)
     }
 
     /// Activates Whippet, so anything opened from the panel such as Settings can come to the front.
     /// The hotkey is the user's own input, which is what lets macOS grant the activation.
-    func showPanel() {
-        model.reset()
+    /// With `resuming`, a panel that a click elsewhere closed a moment ago opens as it was, its text selected.
+    func showPanel(resuming: Bool = false) {
+        let resumed = resuming && model.resumeOrReset()
+        if !resuming {
+            model.reset()
+        }
+        defer {
+            if resumed {
+                // After the search field has taken focus again.
+                DispatchQueue.main.async { [panel] in (panel?.firstResponder as? NSTextView)?.selectAll(nil) }
+            }
+        }
         let frontmost = NSWorkspace.shared.frontmostApplication
         let isWhippetInFront = frontmost?.processIdentifier == ProcessInfo.processInfo.processIdentifier
         // Over one of Whippet's own windows, such as Send Feedback, pastes go to that window.
@@ -327,7 +341,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             dismissPanel()
             return
         }
-        showPanel()
+        showPanel(resuming: true)
     }
 
     /// Hiding Whippet hands focus back to the app the panel opened over, which is where pastes land.
