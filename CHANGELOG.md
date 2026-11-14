@@ -5,6 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Clean and Paste in Clipboard History, on ⌥Return: a link is pasted without its query, such as `?utm_source=…`,
+  and an image without the file it was copied from, so a photo's metadata, such as where it was taken, stays behind.
+  Holding Option shows it in the footer in place of Paste.
+
 ## [1.6.2] - 2026-11-13
 
 ### Changed

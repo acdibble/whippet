@@ -228,4 +228,28 @@ final class ModuleTests {
         host.modules.setOn(.clipboardSearchFallback, false)
         #expect(items(for: "clip").map(\.id) == ["command:clipboard-history"])
     }
+
+    /// Clean and Paste is offered on ⌥Return only for what cleaning changes: a link with a query, or an image copied
+    /// from a file.
+    @Test func cleanAndPasteIsOfferedForWhatItChanges() throws {
+        let store = try #require(clipboard.store)
+        try store.recordText("https://example.com/page?utm_source=x", sourceBundleID: nil)
+        try store.recordText("https://example.com/plain", sourceBundleID: nil)
+        try store.recordText("hello?", sourceBundleID: nil)
+        try store.recordImage(png: Data([1]), width: 1, height: 1, path: "/tmp/photo.jpg", sourceBundleID: nil)
+        try store.recordImage(png: Data([2]), width: 1, height: 1, sourceBundleID: nil)
+
+        func cleans(_ query: String, kind: ClipboardKind) throws -> Bool {
+            let item = try #require(clipboard.search(query, kind: kind).first)
+            let actions = ClipboardScreen.pasteActions(for: item, clipboard: clipboard, host: host)
+            #expect(actions.first?.id == "clipboard.paste")
+            return actions.contains { $0.id == "clipboard.clean-paste" && $0.shortcut == .optionReturn }
+        }
+        #expect(try cleans("utm_source", kind: .link))
+        #expect(try !cleans("plain", kind: .link))
+        #expect(try !cleans("hello", kind: .text))
+        let images = clipboard.search("", kind: .image)
+        #expect(images.count == 2)
+        #expect(images.map(ClipboardScreen.canClean).sorted { !$0 && $1 } == [false, true])
+    }
 }

@@ -156,21 +156,45 @@ final class ClipboardScreen: LauncherScreen {
         return Self.pasteActions(for: clip, clipboard: clipboard, host: host) + more(for: clip, host: host)
     }
 
-    /// Paste and copy, for a copy wherever it's listed, such as the calculator's numbers.
+    /// Paste and copy, for a copy wherever it's listed, such as the calculator's numbers, and for what can be cleaned,
+    /// Clean and Paste on ⌥Return, which the footer shows in place of Paste while Option is held.
     static func pasteActions(for item: ClipboardItem, clipboard: ClipboardHistory, host: any ModuleHost)
         -> [ItemAction]
     {
-        let deliver = { (copyOnly: Bool) -> ActionOutcome in
-            guard clipboard.copy(item) else { return .fail() }
+        let deliver = { (copyOnly: Bool, clean: Bool) -> ActionOutcome in
+            guard clipboard.copy(item, clean: clean) else { return .fail() }
             return host.dismissAndPaste(copyOnly: copyOnly, for: .clipboardHistory)
         }
-        return [
-            ItemAction(id: "clipboard.paste", title: pasteTitle(host), icon: "return") { deliver(false) },
+        var actions = [
+            ItemAction(id: "clipboard.paste", title: pasteTitle(host), icon: "return") { deliver(false, false) },
             ItemAction(
                 id: "clipboard.copy", title: String(localized: "Copy"), icon: "doc.on.doc",
                 shortcut: .commandReturn
-            ) { deliver(true) },
+            ) { deliver(true, false) },
         ]
+        if canClean(item) {
+            actions.append(
+                ItemAction(
+                    id: "clipboard.clean-paste", title: cleanPasteTitle(host), icon: "sparkles",
+                    shortcut: .optionReturn
+                ) { deliver(false, true) })
+        }
+        return actions
+    }
+
+    /// True when cleaning would change what's pasted: a link with a query, or an image copied from a file, which is
+    /// pasted along with it and may hold a photo's metadata.
+    static func canClean(_ item: ClipboardItem) -> Bool {
+        switch item.kind {
+        case .link: item.text.map { LinkCleaning.clean($0) != $0 } ?? false
+        case .image: !item.fileURLs.isEmpty
+        default: false
+        }
+    }
+
+    static func cleanPasteTitle(_ host: any ModuleHost) -> String {
+        host.targetApp?.localizedName.map { String(localized: "Clean and Paste to \($0)") }
+            ?? String(localized: "Clean and Copy to Clipboard")
     }
 
     static func pasteTitle(_ host: any ModuleHost) -> String {

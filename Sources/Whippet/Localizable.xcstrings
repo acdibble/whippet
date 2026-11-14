@@ -801,6 +801,26 @@
         }
       }
     },
+    "Clean and Copy to Clipboard" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پاک‌سازی و کپی در کلیپ‌بورد"
+          }
+        }
+      }
+    },
+    "Clean and Paste to %@" : {
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پاک‌سازی و جای‌گذاری در %@"
+          }
+        }
+      }
+    },
     "Clear" : {
       "localizations" : {
         "fa" : {

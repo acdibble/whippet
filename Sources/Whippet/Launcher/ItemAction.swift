@@ -1,8 +1,9 @@
 import AppKit
 
 /// Something that can be done with an item, offered by the screen it's shown in. Return runs a screen's first action
-/// for the selected item and ⌘Return its second, ⌘K lists them all, and each runs on its own shortcut. The host keeps
-/// no list of actions of its own: it runs what the screen offers.
+/// for the selected item and ⌘Return its second, ⌘K lists them all, and each runs on its own shortcut. One on
+/// ⌥Return is the alternate to the first, shown in the footer while Option is held, such as Clean and Paste. The host
+/// keeps no list of actions of its own: it runs what the screen offers.
 struct ItemAction: Identifiable {
     /// Stable, such as `timers.add-minute`, for telling actions apart.
     let id: String
@@ -57,6 +58,8 @@ struct KeyShortcut: Equatable {
 
     static let returnKey = KeyShortcut("\r")
     static let commandReturn = KeyShortcut("\r", .command)
+    /// An item's alternate to its first action, which the footer shows in its place while Option is held.
+    static let optionReturn = KeyShortcut("\r", .option)
     static let delete = KeyShortcut("x", .control)
 }
 

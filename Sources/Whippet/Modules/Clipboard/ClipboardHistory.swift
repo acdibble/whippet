@@ -203,8 +203,11 @@ final class ClipboardHistory {
     /// missing or unreadable, or none of the copied files still exist. Images go on as the stored PNG, with TIFF for
     /// apps that only read that, and the file they were copied from when it's still there, for pasting into Finder.
     /// Files in other apps' containers can't be checked, so they're assumed to still be there.
+    ///
+    /// With `clean`, a link goes on without its query, and an image without the file it was copied from: the stored
+    /// PNG is only the pixels, so that file is all that carries a photo's metadata, such as where it was taken.
     @discardableResult
-    func copy(_ item: ClipboardItem) -> Bool {
+    func copy(_ item: ClipboardItem, clean: Bool = false) -> Bool {
         let pasteboard = NSPasteboard.general
         let existingFiles = item.fileURLs.filter {
             $0.isInAppContainer || FileManager.default.fileExists(atPath: $0.path)
@@ -216,7 +219,7 @@ final class ClipboardHistory {
             if let tiff = NSImage(data: png)?.tiffRepresentation {
                 pasteboardItem.setData(tiff, forType: .tiff)
             }
-            if let original = existingFiles.first {
+            if !clean, let original = existingFiles.first {
                 pasteboardItem.setString(original.absoluteString, forType: .fileURL)
             }
             pasteboard.clearContents()
@@ -225,6 +228,9 @@ final class ClipboardHistory {
             guard !existingFiles.isEmpty else { return false }
             pasteboard.clearContents()
             pasteboard.writeObjects(existingFiles as [NSURL])
+        } else if clean, item.kind == .link {
+            pasteboard.clearContents()
+            pasteboard.setString(LinkCleaning.clean(item.text ?? ""), forType: .string)
         } else {
             pasteboard.clearContents()
             pasteboard.setString(item.text ?? "", forType: .string)

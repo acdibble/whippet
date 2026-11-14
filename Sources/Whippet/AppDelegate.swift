@@ -115,6 +115,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             guard let self, event.window === panel else { return event }
             return handleKey(event) ? nil : event
         }
+        // What's held changes what the footer offers for Return, such as Clean and Paste with Option.
+        NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            guard let self, event.window === panel else { return event }
+            model.heldModifiers = event.modifierFlags.intersection([.shift, .control, .option, .command])
+            return event
+        }
     }
 
     /// A key pressed in the panel, true when the launcher took it.
@@ -147,6 +153,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             model.moveSelection(by: 1)
         case kVK_Return where modifiers == [.command], kVK_ANSI_KeypadEnter where modifiers == [.command]:
             model.activateSecondary()
+        case kVK_Return where modifiers == [.option], kVK_ANSI_KeypadEnter where modifiers == [.option]:
+            // Without an alternate for the selection, the key is left to the field as before.
+            return model.input == nil && model.performShortcut(.optionReturn)
         case kVK_LeftArrow where modifiers.isEmpty, kVK_RightArrow where modifiers.isEmpty:
             // Columns swap sides in right-to-left languages, so the arrow keys follow the screen rather than the order.
             let towardStart =
@@ -233,6 +242,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model.targetApp = isWhippetInFront && model.targetWindow == nil ? nil : frontmost
         // The screen is chosen from the app in front, before Whippet activates and its own windows take focus.
         panel.center(onScreenOf: frontmost)
+        // Keys let go while the panel was closed sent it nothing, so what's held is read afresh.
+        model.heldModifiers = NSEvent.modifierFlags.intersection([.shift, .control, .option, .command])
         NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
     }

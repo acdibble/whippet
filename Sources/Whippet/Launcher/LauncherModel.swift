@@ -35,6 +35,9 @@ final class LauncherModel: ModuleHost {
     /// window doesn't lose what was typed.
     static let resumeInterval: TimeInterval = 60
 
+    /// The modifier keys held while the panel is open, so the footer can show what Return runs with them.
+    var heldModifiers: NSEvent.ModifierFlags = []
+
     var targetApp: NSRunningApplication?
     weak var targetWindow: NSWindow?
     /// The launcher's window, set once the app delegate has made it.
@@ -364,6 +367,13 @@ final class LauncherModel: ModuleHost {
         if let input { return input.submitTitle }
         if let item = selectedItem { return actions(for: item).first?.title }
         return activeScreen.screenActions.first?.title
+    }
+
+    /// What ⌥Return runs for the selection, while Option alone is held: the footer shows it in place of the first
+    /// action, such as Clean and Paste for a copied link.
+    var alternateAction: ItemAction? {
+        guard input == nil, heldModifiers == [.option], let item = selectedItem else { return nil }
+        return actions(for: item).first { $0.shortcut == .optionReturn }
     }
 
     /// Return: submits what's typed, or runs the selected item's first action, or the screen's first action.

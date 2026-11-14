@@ -142,7 +142,8 @@ extension ResultRow where Trailing == EmptyView {
     }
 }
 
-/// The footer's main action, what Return runs, drawn with `primaryKeys`, and the ⌘K menu with the rest.
+/// The footer's main action, what Return runs, drawn with `primaryKeys`, or while Option is held, the selection's
+/// alternate on ⌥Return, and the ⌘K menu with the rest.
 struct ResultActions: View {
     @Environment(LauncherModel.self) private var host
     var primaryKeys = ["return"]
@@ -150,8 +151,14 @@ struct ResultActions: View {
     var body: some View {
         if let title = host.primaryTitle {
             HStack(spacing: 4) {
-                FooterButton(Text(title), keys: primaryKeys.map { KeyCap(symbol: $0) }) {
-                    host.activate()
+                if let alternate = host.alternateAction {
+                    FooterButton(Text(alternate.title), keys: [KeyCap(symbol: "option"), KeyCap(symbol: "return")]) {
+                        _ = host.performShortcut(.optionReturn)
+                    }
+                } else {
+                    FooterButton(Text(title), keys: primaryKeys.map { KeyCap(symbol: $0) }) {
+                        host.activate()
+                    }
                 }
                 FooterDivider()
                 ActionsButton()
