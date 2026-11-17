@@ -228,12 +228,10 @@ final class ClipboardHistory {
             guard !existingFiles.isEmpty else { return false }
             pasteboard.clearContents()
             pasteboard.writeObjects(existingFiles as [NSURL])
-        } else if clean, item.kind == .link {
-            pasteboard.clearContents()
-            pasteboard.setString(LinkCleaning.clean(item.text ?? ""), forType: .string)
         } else {
+            let cleaner = Cleaner(shouldClean: clean)
             pasteboard.clearContents()
-            pasteboard.setString(item.text ?? "", forType: .string)
+            pasteboard.setString(cleaner.clean(item.text ?? "", type: item.kind), forType: .string)
         }
         didCopy(item)
         return true

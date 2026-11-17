@@ -33,6 +33,7 @@ stop:
 # Runs the tests without signing, as CI does, or one suite or test, e.g. `UnitConversionTests/rates`.
 test filter="": generate
     xcodebuild test -project {{project}} -scheme {{scheme}} -destination '{{destination}}' CODE_SIGNING_ALLOWED=NO \
+        -derivedDataPath {{dev_build}} \
         {{ if filter == "" { "" } else { "-only-testing:WhippetTests/" + filter } }}
 
 # Formats the Swift sources in place with swift-format, which comes with Xcode, using `.swift-format`.

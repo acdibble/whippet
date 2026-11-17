@@ -186,7 +186,7 @@ final class ClipboardScreen: LauncherScreen {
     /// pasted along with it and may hold a photo's metadata.
     static func canClean(_ item: ClipboardItem) -> Bool {
         switch item.kind {
-        case .link: item.text.map { LinkCleaning.clean($0) != $0 } ?? false
+        case .link, .text: true
         case .image: !item.fileURLs.isEmpty
         default: false
         }

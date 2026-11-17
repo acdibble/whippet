@@ -5,6 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Clean and Paste in Clipboard History, on ⌥Return: plain text can be trimmed before pasting.
+
 ## [1.7.0] - 2026-11-14
 
 ### Added

@@ -246,8 +246,8 @@ final class ModuleTests {
             return actions.contains { $0.id == "clipboard.clean-paste" && $0.shortcut == .optionReturn }
         }
         #expect(try cleans("utm_source", kind: .link))
-        #expect(try !cleans("plain", kind: .link))
-        #expect(try !cleans("hello", kind: .text))
+        #expect(try cleans("plain", kind: .link))
+        #expect(try cleans("hello", kind: .text))
         let images = clipboard.search("", kind: .image)
         #expect(images.count == 2)
         #expect(images.map(ClipboardScreen.canClean).sorted { !$0 && $1 } == [false, true])

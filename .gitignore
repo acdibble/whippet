@@ -4,6 +4,8 @@ build/
 # Packages pin their dependencies to exact commits in Package.swift, as project.yml does.
 Packages/*/Package.resolved
 *.xcodeproj
+# Written by `xcode-build-server config` for sourcekit-lsp, with paths on this machine.
+buildServer.json
 xcuserdata/
 .DS_Store
 .claude/
