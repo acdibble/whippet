@@ -150,10 +150,10 @@ enum Changelog {
     }()
 }
 
-/// Remembers the version last run, so that after an update the launcher can offer What's New for a week, until it's
+/// Remembers the version last run, so that after an update the launcher can offer What's New for a day, until it's
 /// opened or dismissed. Several updates before then are shown together, from the version first updated from.
 struct WhatsNew {
-    static let duration: TimeInterval = 7 * 24 * 60 * 60
+    static let duration: TimeInterval = 24 * 60 * 60
 
     private enum Keys {
         static let lastRunVersion = "lastRunVersion"

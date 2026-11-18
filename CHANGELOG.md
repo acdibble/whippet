@@ -5,6 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Hide "What's New" after one day instead of a week.
+
 ## [1.7.1] - 2026-11-18
 
 ### Added
